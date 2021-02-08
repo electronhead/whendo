@@ -1,7 +1,7 @@
 import time
-from mothership.continuous import Continuous
-from mothership.util import TimeUnit, PP
-from mothership.action import Action, ActionPayload
+from whendo.core.continuous import Continuous
+from whendo.core.util import TimeUnit, PP
+from whendo.core.action import Action, ActionPayload
 
 def test_timely_callable(tmp_path):
     """

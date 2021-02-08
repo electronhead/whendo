@@ -146,8 +146,8 @@ class Dirs:
     files in the installer's home directory. Can tackle file permissions for root-based directories later (/usr,
     /var, etc.).
     """
-    output_label, output_default_dir = 'PYRAMBIUM_OUTPUT_DIR', str(Path.home() / 'pyrambium/output') + '/'
-    saved_label, saved_default_dir = 'PYRAMBIUM_SAVED_DIR', str(Path.home() / 'pyrambium/saved') + '/'
+    output_label, output_default_dir = 'WHENDO_OUTPUT_DIR', str(Path.home() / 'whendo/output') + '/'
+    saved_label, saved_default_dir = 'WHENDO_SAVED_DIR', str(Path.home() / 'whendo/saved') + '/'
     @classmethod
     def compute_dir(cls, label, default_dir):
         dir = os.getenv(label)

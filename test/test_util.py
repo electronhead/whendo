@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 from pydantic import BaseModel
-from mothership.util import Now, all_visible_subclasses, key_strings_from_class, key_strings_from_dict, FilePathe
+from whendo.core.util import Now, all_visible_subclasses, key_strings_from_class, key_strings_from_dict, FilePathe
 
 def test_now_1():
     now1 = datetime.now()

@@ -1,6 +1,6 @@
 from datetime import time
-from mothership.scheduler import Scheduler
-from mothership.util import Now
+from whendo.core.scheduler import Scheduler
+from whendo.core.util import Now
     
 def test_during_period():
 

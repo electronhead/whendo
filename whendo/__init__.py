@@ -7,9 +7,9 @@ the inheritance trees are available before the function util.resolve_instance(..
 
 And thus was Equus again slain.
 """
-import mothership.util
-import mothership.action
-import mothership.scheduler
-import mothership.actions.file_action
-import mothership.actions.gpio_action
-import mothership.actions.http_action
+import whendo.core.util
+import whendo.core.action
+import whendo.core.scheduler
+import whendo.core.actions.file_action
+import whendo.core.actions.gpio_action
+import whendo.core.actions.http_action

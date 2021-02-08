@@ -1,6 +1,6 @@
 from fastapi import APIRouter, status
-from app.shared import return_success, raised_exception, get_mothership
-from mothership.util import FilePathe
+from whendo.api.shared import return_success, raised_exception, get_mothership
+from whendo.core.util import FilePathe
 
 router = APIRouter(
     prefix="/mothership",

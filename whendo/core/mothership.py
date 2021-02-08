@@ -11,11 +11,11 @@ from threading import RLock
 import pickle
 import json
 import os
-from mothership.util import PP, Dirs
-from mothership.action import Action
-from mothership.scheduler import Scheduler
-from mothership.continuous import Continuous
-from mothership.resolver import resolve_action, resolve_scheduler
+from whendo.core.util import PP, Dirs
+from whendo.core.action import Action
+from whendo.core.scheduler import Scheduler
+from whendo.core.continuous import Continuous
+from whendo.core.resolver import resolve_action, resolve_scheduler
 
 class Mothership(BaseModel):
     """

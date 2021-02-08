@@ -1,6 +1,6 @@
 import pytest
 import time
-from mothership.mothership import Mothership
+from whendo.core.mothership import Mothership
 from test.fixtures import friends
 
 def test_schedule_action(friends):

@@ -1,6 +1,6 @@
 from typing import Optional
-from mothership.util import PP
-from mothership.action import Action, ActionPayload
+from whendo.core.util import PP
+from whendo.core.action import Action, ActionPayload
 
 class FileHeartbeat(Action):
     """

@@ -4,11 +4,11 @@ pytest fixtures for unit testing
 
 import random
 import pytest
-from mothership.mothership import Mothership
-from mothership.actions.file_action import FileHeartbeat
-from mothership.scheduler import TimelyScheduler
-from mothership.continuous import Continuous
-from app import main_temp
+from whendo.core.mothership import Mothership
+from whendo.core.actions.file_action import FileHeartbeat
+from whendo.core.scheduler import TimelyScheduler
+from whendo.core.continuous import Continuous
+from whendo.api import main_temp
 from test.uvicorn_server import UvicornTestServer
 
 @pytest.fixture

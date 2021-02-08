@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 
-from mothership.util import PP, IP, Now, object_info
+from .util import PP, IP, Now, object_info
 
 class Action(BaseModel):
     """

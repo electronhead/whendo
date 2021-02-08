@@ -1,7 +1,6 @@
 from fastapi import APIRouter, status, Depends
-from app.shared import return_success, raised_exception, get_mothership
-from mothership.resolver import resolve_scheduler
-
+from whendo.api.shared import return_success, raised_exception, get_mothership
+from whendo.core.resolver import resolve_scheduler
 
 router = APIRouter(
     prefix='',

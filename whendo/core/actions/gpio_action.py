@@ -14,8 +14,8 @@ try:
     import RPi.GPIO as GPIO
 except ImportError:
     import FakeRPi.GPIO as GPIO
-from mothership.action import Action
-import mothership.util as util
+from whendo.core.action import Action
+import whendo.core.util as util
 
 class SetPin(Action):
     pin:int

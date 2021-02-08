@@ -1,9 +1,9 @@
 """
 These functions resolve mothership element instances from supplied dictionaries.
 """
-import mothership.action as action
-import mothership.scheduler as scheduler
-import mothership.util as util
+import whendo.core.action as action
+import whendo.core.scheduler as scheduler
+import whendo.core.util as util
 
 def resolve_action(dictionary:dict):
     return util.resolve_instance(action.Action, dictionary)

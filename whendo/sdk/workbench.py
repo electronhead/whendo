@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from sdk.mothership_client import MothershipClient
+from whendo.sdk.mothership_client import MothershipClient
     
 class Workbench(BaseModel):
     clients:dict={}

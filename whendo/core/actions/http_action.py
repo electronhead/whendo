@@ -1,7 +1,7 @@
 from typing import Optional
 import requests
-from mothership.action import Action, ActionPayload
-from mothership.util import PP, IP, Now, object_info, HttpVerb
+from whendo.core.action import Action, ActionPayload
+from whendo.core.util import PP, IP, Now, object_info, HttpVerb
 
 class SendHeartbeat(Action):
     """

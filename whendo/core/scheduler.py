@@ -2,9 +2,9 @@ from datetime import time
 from pydantic import BaseModel
 from typing import Optional
 from collections.abc import Callable
-from mothership.util import TimeUnit, Now, object_info
-from mothership.action import Action
-from mothership.continuous import Continuous
+from whendo.core.util import TimeUnit, Now, object_info
+from whendo.core.action import Action
+from whendo.core.continuous import Continuous
 
 class Scheduler(BaseModel):
     """
