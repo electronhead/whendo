@@ -13,8 +13,8 @@ from whendo.api import main
 parse command line arguments
 """
 parser = argparse.ArgumentParser()
-parser.add_argument('-host', '--host', type=str, default='127.0.0.1', dest='host')
-parser.add_argument('-port', '--port', type=int, default=8000, dest='port')
+parser.add_argument('--host', type=str, default='127.0.0.1', dest='host')
+parser.add_argument('--port', type=int, default=8000, dest='port')
 args = parser.parse_args()
 
 """
