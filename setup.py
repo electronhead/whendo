@@ -1,4 +1,21 @@
-# Always prefer setuptools over distutils
+"""
+This script sets up a library.
+
+Usage:
+
+    library creation...
+
+        python setup.py bdist_wheel
+
+        [stores .whl file in ./dist directory]
+
+            ./dist/whendo-0.0.1-py3-none-any.whl
+
+    library installation with example file...
+
+        pip install /path/to/whendo-0.0.1-py3-none-any.whl
+
+"""
 from setuptools import setup, find_packages, find_namespace_packages
 
 # To use a consistent encoding
