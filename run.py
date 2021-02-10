@@ -1,4 +1,23 @@
+"""
+This script runs the api server with optionally supplied host and port.
+"""
+import argparse
 import uvicorn
-from  whendo.api import main
 
-uvicorn.run(main.app, host='127.0.0.1', port=8000)
+"""
+import the main script that creates the FastAPI instance (main.app).
+"""
+from whendo.api import main
+
+"""
+parse command line arguments
+"""
+parser = argparse.ArgumentParser()
+parser.add_argument('-host', '--host', type=str, default='127.0.0.1', dest='host')
+parser.add_argument('-port', '--port', type=int, default=8000, dest='port')
+args = parser.parse_args()
+
+"""
+uvicorn is the ASGI server that runs the api specified with FastAPI.
+"""
+uvicorn.run(main.app, host=args.host, port=args.port)
