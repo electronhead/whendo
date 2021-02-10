@@ -6,7 +6,7 @@ class Action(BaseModel):
     """
     Actions get something done.
     """
-    def execute(self, tag=None, scheduler_info:dict=None):
+    def execute(self, tag:str=None, scheduler_info:dict=None):
         """
         This method does something and returns a useful result. If
         the action's benefit is only a side-effect, then returning some status information

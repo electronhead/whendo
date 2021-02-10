@@ -65,7 +65,10 @@ def resolve_instance(klass, dictionary:dict):
             if count<min_count: # pick class with fewest fields, resulting in tightest conformance with dictionary
                 selected_class = clas
                 min_count = count
-    return selected_class(**dictionary) if selected_class else None
+    if selected_class is None:
+        raise NameError(f"could not resolve dictionary ({dictionary}) to a subclass of ({klass})")
+    else:
+        return selected_class(**dictionary)
 
 def object_info(obj):
     return {

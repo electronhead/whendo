@@ -10,7 +10,7 @@ class SendHeartbeat(Action):
     url: str
     xtra: Optional[dict]=None
 
-    def execute(self, tag=None, scheduler_info:dict=None):
+    def execute(self, tag:str=None, scheduler_info:dict=None):
         payload = ActionPayload.build(action_info=self.info(), scheduler_info=scheduler_info)
         payload['tag'] = tag if tag else 'N/A'
         if self.xtra:

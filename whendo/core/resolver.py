@@ -12,4 +12,4 @@ def resolve_scheduler(dictionary:dict):
     return util.resolve_instance(scheduler.Scheduler, dictionary)
 
 def resolve_file_pathe(dictionary:dict):
-    return FilePath(**dictionary)
+    return util.FilePathe(**dictionary)

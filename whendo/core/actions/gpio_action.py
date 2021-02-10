@@ -21,7 +21,7 @@ class SetPin(Action):
     pin:int
     on:bool
 
-    def execute(self, tag=None, scheduler_info:dict=None):
+    def execute(self, tag:str=None, scheduler_info:dict=None):
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         GPIO.setup(self.pin, GPIO.OUT)
@@ -31,7 +31,7 @@ class SetPin(Action):
 class TogglePin(Action):
     pin:int
 
-    def execute(self, tag=None, scheduler_info:dict=None):
+    def execute(self, tag:str=None, scheduler_info:dict=None):
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         GPIO.setup(self.pin, GPIO.OUT)
@@ -40,5 +40,5 @@ class TogglePin(Action):
 
 class Cleanup(Action):
 
-    def execute(self, tag=None, scheduler_info:dict=None):
+    def execute(self, tag:str=None, scheduler_info:dict=None):
         GPIO.cleanup()

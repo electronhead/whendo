@@ -7,8 +7,7 @@ the inheritance trees are available before the function util.resolve_instance(..
 
 And thus was Equus again slain.
 """
-import whendo.api
-import whendo.sdk
+
 import whendo.core
 import whendo.core.util
 import whendo.core.action
@@ -16,3 +15,4 @@ import whendo.core.scheduler
 import whendo.core.actions.file_action
 import whendo.core.actions.gpio_action
 import whendo.core.actions.http_action
+import whendo.sdk
