@@ -43,11 +43,22 @@ def update_action(action_name:str, dictionary:dict):
 
 @router.get('/actions/{action_name}/execute', status_code=status.HTTP_200_OK)
 def execute_action(action_name:str):
+    """
+    Two potential types of exceptions below. One resulting from the actual execute_action call and
+    the other returned from the execution of the action itself.
+    """
+    exception = None # the action's exception if the action generated an exception
     try:
         result = get_mothership(router).execute_action(action_name=action_name)
-        return return_success({'msg': f"action ({action_name}) was successfully executed", 'result':result})
-    except Exception as e:
+        if not isinstance(result, Exception):
+            return return_success({'msg': f"action ({action_name}) was successfully executed", 'result':result})
+        else:
+            exception = raised_exception(f"failed to execute action ({action_name})", result)
+    except Exception as e: # from execute_action
         raise raised_exception(f"failed to execute action ({action_name})", e)
+    if exception is not None: # from the action
+        raise exception
+
 
 @router.get('/actions/{action_name}/unschedule', status_code=status.HTTP_200_OK)
 def unschedule_action(action_name:str):

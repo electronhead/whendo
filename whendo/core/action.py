@@ -8,11 +8,10 @@ class Action(BaseModel):
     """
     def execute(self, tag:str=None, scheduler_info:dict=None):
         """
-        This method does something and returns a useful result. If
-        the action's benefit is only a side-effect, then returning some status information
-        would be the polite thing to do.
+        This method attempts to do something useful, returning either an exception if there was
+        trouble or something indicating success.
         """
-        pass
+        return {'result':'something useful happened'}
 
     def info(self):
         return object_info(self)
