@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from pydantic import BaseModel
-from whendo.core.util import Now, all_visible_subclasses, key_strings_from_class, key_strings_from_dict, FilePathe
+from typing import List
+from whendo.core.util import Now, all_visible_subclasses, key_strings_from_class, key_strings_from_dict, FilePathe, resolve_instance
 
 def test_now_1():
     now1 = datetime.now()
@@ -46,6 +47,61 @@ def test_key_strings_from_dict():
     x = {'a', 'b'}
     y = key_strings_from_dict({'a':1, 'b':2})
     assert x == y
+
+def test_resolve_instance():
+    """
+    Top > A, B, D
+    D > C
+    """
+    class Top(BaseModel):
+        pass
+    class C(Top):
+        c:str
+    class D(C):
+        d:str
+        d_instance:Top
+    class B(Top):
+        b_instance:Top
+        b_list:List[Top]
+    class A(Top):
+        a_list:List[Top]
+
+    dictionary0 = {'c':'why'}
+    dictionary1 = { # D
+                        'c':'dc',
+                        'd':'abc',
+                        'd_instance': { # C
+                            'c':'mmm',
+                        }
+                    }
+    dictionary2 = { # A
+        'a_list': [
+            { # B
+                'b_instance': { # C
+                    'c':'xxx'
+                    },
+                'b_list': [
+                    {'c':'yyy'}, # C
+                    {'c':'zzz'}, # C
+                    dictionary1
+                    ]
+            },
+            { # D
+                'c':'people',
+                'd':'who',
+                'd_instance': dictionary0
+            }
+        ]
+    }
+    instance0 = resolve_instance(Top, dictionary0)
+    instance1 = resolve_instance(Top, dictionary1)
+    instance2 = resolve_instance(Top, dictionary2)
+    assert isinstance(instance0, C)
+    assert isinstance(instance1, D)
+    assert isinstance(instance2, A)
+    assert isinstance(instance2.a_list[0].b_instance, C)
+    assert instance1 == instance2.a_list[0].b_list[2]
+    assert instance0 == instance2.a_list[1].d_instance
 
 def test_filepathe():
     path = FilePathe(path = 'a/b/c')

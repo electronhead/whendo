@@ -4,16 +4,34 @@ from typing import List
 from enum import Enum
 import json
 
+class ExceptionAction(Action):
+    exception_tag_field:str="excepted"
+
+    def execute(self, tag:str=None, scheduler_info:dict=None):
+        return Exception(
+            'purposely unsuccessful execution',
+            self.json()
+        )
+
+class SuccessAction(Action):
+    success_tag_field:str="successful"
+
+    def execute(self, tag:str=None, scheduler_info:dict=None):
+        return {
+            'outcome':'purposely successful execution',
+            'action':self.info()
+            }
+
 class NotAction(Action):
     operand_action:Action
     
-    @classmethod
-    def resolve(cls, dictionary:dict):
-        result = cls(**dictionary)
+    # @classmethod
+    # def resolve(cls, dictionary:dict):
+    #     result = cls(**dictionary)
 
-        result.operand_action = resolve_action(result.operand_action)
+    #     result.operand_action = resolve_action(result.operand_action)
         
-        return result
+    #     return result
 
     def execute(self, tag:str=None, scheduler_info:dict=None):
         operand_result = self.operand_action.execute(tag=tag, scheduler_info=scheduler_info)
@@ -25,8 +43,8 @@ class NotAction(Action):
                 }
         else:
             return Exception(
-                'exception generated; action execution treaded as a failure',
-                json.dumps(self.info())
+                'exception generated; action execution treated as a failure',
+                self.json()
             )
 
 class ListOpMode(str, Enum):
@@ -39,15 +57,15 @@ class ListAction(Action):
     action_list:List[Action]
     exception_on_no_success:bool=False
 
-    @classmethod
-    def resolve(cls, dictionary:dict):
-        result = cls(**dictionary)
+    # @classmethod
+    # def resolve(cls, dictionary:dict):
+    #     result = cls(**dictionary)
 
-        action_list = dictionary['action_list']
-        computed_action_list = [resolve_action(action_dictionary) for action_dictionary in action_list]
-        result.action_list = computed_action_list
+    #     action_list = dictionary['action_list']
+    #     computed_action_list = [resolve_action(action_dictionary) for action_dictionary in action_list]
+    #     result.action_list = computed_action_list
 
-        return result
+    #     return result
 
     def execute(self, tag:str=None, scheduler_info:dict=None):
         processing_count, success_count, failure_count, successful_actions, exception_actions = process_action_list(
@@ -81,17 +99,17 @@ class IfElseAction(Action):
     else_action:Action
     exception_on_no_success:bool=False
 
-    @classmethod
-    def resolve(cls, dictionary:dict):
-        result = cls(**dictionary)
+    # @classmethod
+    # def resolve(cls, dictionary:dict):
+    #     result = cls(**dictionary)
 
-        result.test_action = resolve_action(result.test_action)
-        result.else_action = resolve_action(result.else_action)
-        action_list = dictionary['action_list']
-        computed_action_list = [resolve_action(action_dictionary) for action_dictionary in action_list]
-        result.action_list = computed_action_list
+    #     result.test_action = resolve_action(result.test_action)
+    #     result.else_action = resolve_action(result.else_action)
+    #     action_list = dictionary['action_list']
+    #     computed_action_list = [resolve_action(action_dictionary) for action_dictionary in action_list]
+    #     result.action_list = computed_action_list
         
-        return result
+    #     return result
 
     def execute(self, tag:str=None, scheduler_info:dict=None):
         test_result = self.test_action.execute(tag=tag, scheduler_info=scheduler_info)
@@ -105,7 +123,7 @@ class IfElseAction(Action):
             exception_count = 1
             exception_actions.append(self.test_action.dict())
 
-            else_result = else_action.execute(tag=tag, scheduler_info=scheduler_info)
+            else_result = self.else_action.execute(tag=tag, scheduler_info=scheduler_info)
             processing_count += 1
             if isinstance(else_result, Exception):
                 exception_count += 1
@@ -131,7 +149,7 @@ class IfElseAction(Action):
             'else_test':else_test,
             'processing_count':processing_count,
             'success_count':success_count,
-            'exception_count':failure_count,
+            'exception_count':exception_count,
             'successful_actions':successful_actions,
             'exception_actions':exception_actions
         }

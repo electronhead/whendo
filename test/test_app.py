@@ -10,6 +10,7 @@ from pydantic import BaseModel
 from httpx import AsyncClient
 from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
+from whendo.core.actions.logic_action import ListAction, ListOpMode
 from whendo.core.scheduler import TimelyScheduler, Scheduler
 from whendo.core.util import FilePathe, resolve_instance
 from test.fixtures import port, host, startup_and_shutdown_uvicorn, base_url
@@ -77,6 +78,33 @@ async def test_uvicorn_4(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await start_and_stop_jobs(base_url, 4)
     lines = None
     with open(action.file, 'r') as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+@pytest.mark.asyncio
+async def test_uvicorn_logic_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    """ Run two actions within one action. """
+    await reset_mothership_continuous(base_url, str(tmp_path))
+
+    action1 = FileHeartbeat(file=str(tmp_path / 'output1.txt'))
+    action2 = FileHeartbeat(file=str(tmp_path / 'output2.txt'))
+    action3 = ListAction(op_mode=ListOpMode.ALL, action_list=[action1, action2])
+    scheduler = TimelyScheduler(interval=1)
+
+    await add_action(base_url=base_url, name='foo', action=action3)
+    await add_scheduler(base_url=base_url, name='bar', scheduler=scheduler)
+    await schedule_action(base_url=base_url, action_name='foo', scheduler_name='bar')
+    await assert_job_count(base_url, 1)
+
+    await start_and_stop_jobs(base_url, 4)
+
+    lines = None
+    with open(action1.file, 'r') as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+    lines = None
+    with open(action2.file, 'r') as fid:
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 

@@ -69,11 +69,29 @@ def find_class(klass, dictionary:dict):
                 min_count = count
     return found_class
 
-def resolve_instance(klass, dictionary:dict):
+def resolve_instance(klass, dictionary:dict, check_for_found_class:bool=True):
+    """
+    if an (improper) subclass is found that maps to the supplied dictionary, the dictionary
+    is converted to an instance of that class. If the dictionary contains lists of dictionaries,
+    those dictionaries are recursively resolved.
+    """
     found_class = find_class(klass, dictionary)
     if found_class is None:
-        raise NameError(f"could not resolve dictionary ({dictionary}) to a subclass of ({klass})")
+        if check_for_found_class:
+            raise NameError(f"could not resolve dictionary ({dictionary}) to a subclass of ({klass})")
+        else:
+            return dictionary
     else:
+        # resolve singleton dictionary elements; not constrained to producing instance of klass subclass
+        for (key, value) in dictionary.items():
+            if isinstance(value, dict):
+                dictionary[key] = resolve_instance(klass, dictionary=value, check_for_found_class=False)
+        # resolve list containing all dictionary elements; likelihood of non-klass in this circumstance
+        # is very small, therefore more strict than for singletons
+        for (key, value) in dictionary.items():
+            if isinstance(value, list):
+                if all(isinstance(element, dict) for element in value):
+                    dictionary[key] = list(resolve_instance(klass, dictionary=element) for element in value)
         return found_class(**dictionary)
 
 def object_info(obj):
