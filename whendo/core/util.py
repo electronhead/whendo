@@ -52,23 +52,29 @@ def key_strings_from_class(klass):
 def key_strings_from_dict(dictionary:dict):
     return set(x for x in dictionary)
 
-def resolve_instance(klass, dictionary:dict):
+
+
+def find_class(klass, dictionary:dict):
     dictionary_keys = key_strings_from_dict(dictionary)
     classes = all_visible_subclasses(klass)
     classes.add(klass) # the top class might not be abstract
     min_count = 100
-    selected_class = None
+    found_class = None
     for clas in classes:
         class_keys = key_strings_from_class(clas)
         if len(dictionary_keys - class_keys) == 0: # make sure class has enough fields
             count = len(class_keys)
             if count<min_count: # pick class with fewest fields, resulting in tightest conformance with dictionary
-                selected_class = clas
+                found_class = clas
                 min_count = count
-    if selected_class is None:
+    return found_class
+
+def resolve_instance(klass, dictionary:dict):
+    found_class = find_class(klass, dictionary)
+    if found_class is None:
         raise NameError(f"could not resolve dictionary ({dictionary}) to a subclass of ({klass})")
     else:
-        return selected_class(**dictionary)
+        return found_class(**dictionary)
 
 def object_info(obj):
     return {
