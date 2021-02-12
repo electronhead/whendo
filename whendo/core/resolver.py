@@ -17,12 +17,4 @@ def resolve_scheduler(dictionary:dict):
     return util.resolve_instance(scheduler.Scheduler, dictionary)
 
 def resolve_file_pathe(dictionary:dict):
-    return FilePathe(**dictionary)
-
-def resolve_mothership(dictionary:dict):
-    found_class = util.find_class(mothership.Mothership, dictionary)
-    try:
-        resolved = found_class.resolve(dictionary) # for Action instances with embedded Action instances
-    except:
-        resolved = util.resolve_instance(mothership.Mothership, dictionary) # default handling
-    return resolved
+    return util.FilePathe(**dictionary)

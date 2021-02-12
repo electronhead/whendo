@@ -15,7 +15,7 @@ from whendo.core.util import PP, Dirs
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
 from whendo.core.continuous import Continuous
-from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_mothership
+from whendo.core.resolver import resolve_action, resolve_scheduler
 
 class Mothership(BaseModel):
     """
@@ -62,7 +62,7 @@ class Mothership(BaseModel):
             with open(self.saved_dir+name+'.json', 'r') as infile:
                 json_string = json.load(infile)
                 dictionary = json.loads(json_string)
-                return resolve_mothership(dictionary)
+                return Mothership.resolve(dictionary)
     def save_to_name(self, name:str):
         with Lok.lock:
             assert self.saved_dir, 'saved_dir must be set'
@@ -222,6 +222,7 @@ class Mothership(BaseModel):
     def scheduler_tag(self, schedule_name:str, action_name:str):
         # computes job tag for scheduler and action
         return f"{schedule_name}:{action_name}"
+        
     @classmethod
     def resolve(cls, dictionary:dict={}):
         """

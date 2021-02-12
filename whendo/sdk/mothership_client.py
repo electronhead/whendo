@@ -12,13 +12,13 @@ class MothershipClient(BaseModel):
 
     # /mothership
     def load_mothership(self):
-        return Mothership.instantiate_from_dict(self.get(f"/mothership/load"))
+        return Mothership.resolve(self.get(f"/mothership/load"))
     def save_mothership(self):
         return self.get("/mothership/save")
     def clear_mothership(self):
         return self.get("/mothership/clear")
     def load_mothership_from_name(self, name:str):
-        return Mothership.instantiate_from_dict(self.get(f"/mothership/load_from_name/{name}"))
+        return Mothership.resolve(self.get(f"/mothership/load_from_name/{name}"))
     def save_mothership_to_name(self, name:str):
         return self.get(f"/mothership/save_to_name/{name}")
     def get_saved_dir(self):
