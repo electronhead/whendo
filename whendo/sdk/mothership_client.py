@@ -67,23 +67,20 @@ class MothershipClient(BaseModel):
         return self.get(f"/jobs/count")
 
     # verbs
-    def get(self, path:str):
-        return self.perform(requests.get, path)
+    def get(self, path:str, data=None):
+        response = requests.get(self.cmd(path), data)
+        return response.json()
     def put(self, path:str, data:BaseModel):
-        return self.perform_base_model(requests.put, path, data)
+        response = requests.put(self.cmd(path), data.json())
+        return response.json()
     def post(self, path:str, data:BaseModel):
-        return self.perform_base_model(requests.post, path, data)
+        response = requests.post(self.cmd(path), data.json())
+        return response.json()
     def patch(self, path:str, data:dict):
-        return self.perform(requests.patch, path, data)
+        response = requests.patch(self.cmd(path), data)
+        return response.json()
     def delete(self, path:str):
-        return self.perform(requests.delete, path)
-
-    # verb support
-    def perform(self, verb, path, data=None):
-        cmd = f"http://{self.ip_addr}:{self.port}{path}"
-        response = verb(cmd, data)
+        response = requests.delete(self.cmd(path))
         return response.json()
-    def perform_base_model(self, verb, path, data:BaseModel):
-        cmd = f"http://{self.ip_addr}:{self.port}{path}"
-        response = verb(cmd, data.json())
-        return response.json()
+    def cmd(self, path:str):
+        return f"http://{self.ip_addr}:{self.port}{path}"
