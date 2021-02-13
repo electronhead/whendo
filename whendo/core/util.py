@@ -114,8 +114,6 @@ class Now:
     def t(cls):
         return cls.dt().time()
 
-
-
 class Output:
     """
     usage:
@@ -165,31 +163,27 @@ class IP:
 
 class Dirs:
     """
-    This class determines saved and output directories from environment variables, and if not there, will
-    use the specified defaults and set the corresponding environment variables.
-
-    If paths do not exist, this class will attempt to create the implied directory structure. Unless another
-    idea presents itself, it's probably best to leave the defaults as is, keeping the directories and
-    files in the installer's home directory. Can tackle file permissions for root-based directories later (/usr,
-    /var, etc.).
+    This class computes directory paths for saved, output and log files. It creates the directories if absent.
     """
-    output_label, output_default_dir = 'WHENDO_OUTPUT_DIR', str(Path.home() / 'whendo/output') + '/'
-    saved_label, saved_default_dir = 'WHENDO_SAVED_DIR', str(Path.home() / 'whendo/saved') + '/'
     @classmethod
-    def compute_dir(cls, label, default_dir):
-        dir = os.getenv(label)
-        if not dir:
-            dir = default_dir
-            os.environ[label] = dir # setting the environment variable is somewhat opinioated.
-        if not os.path.exists(dir):
-            os.makedirs(dir) # creating directories if absent is also somewhat opinionated. Opting for ease of use.
-        return dir
+    def saved_dir(cls, root_path:Path=None):
+        return cls.assure_dir(cls.compute_dir(label='saved', root_path=root_path))
     @classmethod
-    def output_dir(cls):
-        return cls.compute_dir(cls.output_label, cls.output_default_dir)
+    def output_dir(cls, root_path:Path=None):
+        return cls.assure_dir(cls.compute_dir(label='output', root_path=root_path))
     @classmethod
-    def saved_dir(cls):
-        return cls.compute_dir(cls.saved_label, cls.saved_default_dir)
+    def log_dir(cls, root_path:Path=None):
+        return cls.assure_dir(cls.compute_dir(label='log', root_path=root_path))
+
+    @classmethod
+    def compute_dir(cls, label:str, root_path:Path=None):
+        path = root_path if root_path else Path.home()
+        return str(path / f".whendo/{label}") + '/'
+    @classmethod
+    def assure_dir(cls, assured_dir:str):
+        if not os.path.exists(assured_dir):
+            os.makedirs(assured_dir)
+        return assured_dir
 
 class FilePathe(BaseModel):
     path: str

@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import List
-from whendo.core.util import Now, all_visible_subclasses, key_strings_from_class, key_strings_from_dict, FilePathe, resolve_instance
+from whendo.core.util import Now, all_visible_subclasses, key_strings_from_class, key_strings_from_dict, FilePathe, resolve_instance, Dirs
 
 def test_now_1():
     now1 = datetime.now()
@@ -107,3 +107,18 @@ def test_filepathe():
     path = FilePathe(path = 'a/b/c')
     new_path = FilePathe(**(path.dict()))
     assert path.path == new_path.path, 'path reconstruction failed'
+
+def test_dirs(tmp_path):
+    def assure_writes_and_reads(label, thunk):
+        lines = None
+        file = thunk(root_path=tmp_path) + f"saved_{label}.txt"
+        with open(file, 'w') as fid:
+            fid.write('blee blee blee\n')
+        with open(file, 'r') as fid:
+            lines = fid.readlines()
+        assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+        return file
+    file1 = assure_writes_and_reads('foo', Dirs.saved_dir)
+    file2 = assure_writes_and_reads('foo', Dirs.output_dir)
+    file3 = assure_writes_and_reads('foo', Dirs.log_dir)
+    assert file1 != file2 and file2 != file3 and file3 != file1
