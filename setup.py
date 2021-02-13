@@ -63,7 +63,7 @@ setup(
     ],
     packages=get_packages('whendo'),
     # packages=find_packages(exclude=['test', 'core', 'api', 'sdk']),
-    install_requires=["uvicorn", "fastapi", "pydantic", "schedule", "requests", "netifaces"],
+    install_requires=["uvicorn", "fastapi", "pydantic", "schedule", "requests", "netifaces", "Mock.GPIO"],
     setup_requires=["pytest-runner"],
     tests_require=["pytest", "httpx", "pytest-asyncio", "asyncio"],
     test_suite="test"
