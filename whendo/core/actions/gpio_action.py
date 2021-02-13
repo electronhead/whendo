@@ -16,13 +16,10 @@ class SetPin(Action):
     on:bool
 
     def execute(self, tag:str=None, scheduler_info:dict=None):
-        try:
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setwarnings(False)
-            GPIO.setup(self.pin, GPIO.OUT)
-            GPIO.output(self.pin, GPIO.HIGH if self.on else GPIO.LOW)
-        except Exception as exception:
-            return exception
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+        GPIO.setup(self.pin, GPIO.OUT)
+        GPIO.output(self.pin, GPIO.HIGH if self.on else GPIO.LOW)
 
 class TogglePin(Action):
     """
@@ -31,21 +28,16 @@ class TogglePin(Action):
     pin:int
 
     def execute(self, tag:str=None, scheduler_info:dict=None):
-        try:
-            GPIO.setmode(GPIO.BCM)
-            GPIO.setwarnings(False)
-            GPIO.setup(self.pin, GPIO.OUT)
-            GPIO.output(self.pin, not GPIO.input(self.pin))
-        except Exception as exception:
-            return exception
+        GPIO.setmode(GPIO.BCM)
+        GPIO.setwarnings(False)
+        GPIO.setup(self.pin, GPIO.OUT)
+        GPIO.output(self.pin, not GPIO.input(self.pin))
 
 class Cleanup(Action):
     """
     Clean up the pins. See the docs for GPIO.cleanup().
     """
+    cleanup:str='cleanup'
 
     def execute(self, tag:str=None, scheduler_info:dict=None):
-        try:
-            GPIO.cleanup()
-        except Exception as exception:
-            return exception
+        GPIO.cleanup()

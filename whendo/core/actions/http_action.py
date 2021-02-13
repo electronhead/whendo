@@ -9,10 +9,7 @@ class SendPayload(Action):
     payload:dict
 
     def execute(self, tag:str=None, scheduler_info:dict=None):
-        try:
-            response = requests.get(self.url, payload)
-            if response.status_code != requests.codes.ok:
-                raise Exception(response)
-            return response.json()
-        except Exception as exception:
-            return exception
+        response = requests.get(self.url, payload)
+        if response.status_code != requests.codes.ok:
+            raise Exception(response)
+        return response.json()

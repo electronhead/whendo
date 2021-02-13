@@ -11,17 +11,14 @@ class FileHeartbeat(Action):
     xtra: Optional[dict]=None
 
     def execute(self, tag:str=None, scheduler_info:dict=None):
-        try:
-            payload = ActionPayload.build(action_info=self.info(), scheduler_info=scheduler_info)
-            payload['tag'] = tag if tag else 'N/A'
-            if self.xtra:
-                payload['xtra'] = self.xtra # dictionaries are sorted by key. Nice to have extra information at the bottom.
-            with open(self.file, "a") as outfile:
-                PP.pprint(payload, stream=outfile)
-                outfile.write('\n')
-            return {'outcome':'file appended', 'action':self.info()}
-        except Exception as exception:
-            return exception
+        payload = ActionPayload.build(action_info=self.info(), scheduler_info=scheduler_info)
+        payload['tag'] = tag if tag else 'N/A'
+        if self.xtra:
+            payload['xtra'] = self.xtra # dictionaries are sorted by key. Nice to have extra information at the bottom.
+        with open(self.file, "a") as outfile:
+            PP.pprint(payload, stream=outfile)
+            outfile.write('\n')
+        return {'outcome':'file appended', 'action':self.info()}
     def set_xtra(self, xtra:dict=None):
         self.xtra = xtra
         return self

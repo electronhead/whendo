@@ -8,8 +8,7 @@ class Action(BaseModel):
     """
     def execute(self, tag:str=None, scheduler_info:dict=None):
         """
-        This method attempts to do something useful, returning either an exception if there was
-        trouble or something indicating success.
+        This method attempts to do something useful and return something useful
         """
         return {'result':'something useful happened'}
 

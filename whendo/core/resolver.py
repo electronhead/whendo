@@ -6,11 +6,6 @@ import whendo.core.scheduler as scheduler
 import whendo.core.util as util
 
 def resolve_action(dictionary:dict):
-    # found_class = util.find_class(action.Action, dictionary)
-    # try:
-    #     resolved = found_class.resolve(dictionary) # for Action instances with embedded Action instances
-    # except:
-    #     resolved = util.resolve_instance(action.Action, dictionary) # default handling
     return util.resolve_instance(action.Action, dictionary)
 
 def resolve_scheduler(dictionary:dict):

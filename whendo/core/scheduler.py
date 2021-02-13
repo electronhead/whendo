@@ -50,9 +50,28 @@ class Scheduler(BaseModel):
             is_in_period_wrapper = lambda start, stop: (lambda now: start < now and now < stop if (start < stop) else start < now or now < stop)
             is_in_period = is_in_period_wrapper(self.start, self.stop)
             do_nothing = lambda tag, scheduler_info: None
-            return lambda: (action_execute if is_in_period(Now.t()) else do_nothing)(tag=tag, scheduler_info=self.info())
+            return self.wrap(lambda: (action_execute if is_in_period(Now.t()) else do_nothing)(tag=tag, scheduler_info=self.info()))
         else:
-            return lambda: action_execute(tag=tag, scheduler_info=self.info())
+            return self.wrap(lambda: action_execute(tag=tag, scheduler_info=self.info()))
+    
+    def wrap(self, thunk:Callable[...,...]):
+        """
+        wraps the execution inside a try block
+        allows for handling of raised exception
+        """
+        result = None
+        def execute():
+            try:
+                result = thunk()
+            except Exception as exception:
+                result = exception
+            self.handle_if_exception(result)
+            return result
+        return execute
+
+    def handle_if_exception(self, arg:Exception):
+        if isinstance(arg, Exception):
+            print(f"exception encountered in schedule ({self.info()})", str(exception))
 
     def info(self):
         return object_info(self)

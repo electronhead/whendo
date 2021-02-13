@@ -8,7 +8,7 @@ class ExceptionAction(Action):
     exception_tag_field:str="excepted"
 
     def execute(self, tag:str=None, scheduler_info:dict=None):
-        return Exception(
+        raise Exception(
             'purposely unsuccessful execution',
             self.json()
         )
@@ -23,10 +23,14 @@ class SuccessAction(Action):
             }
 
 class NotAction(Action):
-    operand_action:Action
+    operand:Action
 
     def execute(self, tag:str=None, scheduler_info:dict=None):
-        operand_result = self.operand_action.execute(tag=tag, scheduler_info=scheduler_info)
+        operand_result = None
+        try:
+            operand_result = self.operand.execute(tag=tag, scheduler_info=scheduler_info)
+        except Exception as exception:
+            operand_result = exception
         if isinstance(operand_result, Exception):
             return {
                 'outcome':'exception negated; action execution treated as a success',
@@ -34,7 +38,7 @@ class NotAction(Action):
                 'action':self.info()
                 }
         else:
-            return Exception(
+            raise Exception(
                 'exception generated; action execution treated as a failure',
                 self.json()
             )
@@ -66,7 +70,7 @@ class ListAction(Action):
             'exception_actions':exception_actions
         }
         if success_count == 0 and self.exception_on_no_success:
-            return Exception(
+            raise Exception(
                 'exception generated; action execution treated as a failure',
                 json.dumps(self.dict()),
                 json.dumps(processing_info)
@@ -82,7 +86,10 @@ class IfElseAction(Action):
     exception_on_no_success:bool=False
 
     def execute(self, tag:str=None, scheduler_info:dict=None):
-        test_result = self.test_action.execute(tag=tag, scheduler_info=scheduler_info)
+        try:
+            test_result = self.test_action.execute(tag=tag, scheduler_info=scheduler_info)
+        except Exception as exception:
+            test_result = exception
         processing_count = 1
         success_count = 0
         exception_count = 0
@@ -93,7 +100,10 @@ class IfElseAction(Action):
             exception_count = 1
             exception_actions.append(self.test_action.dict())
 
-            else_result = self.else_action.execute(tag=tag, scheduler_info=scheduler_info)
+            try:
+                else_result = self.else_action.execute(tag=tag, scheduler_info=scheduler_info)
+            except Exception as exception:
+                else_result = exception
             processing_count += 1
             if isinstance(else_result, Exception):
                 exception_count += 1
@@ -124,7 +134,7 @@ class IfElseAction(Action):
             'exception_actions':exception_actions
         }
         if success_count == 0 and self.exception_on_no_success:
-            return Exception(
+            raise Exception(
                 'exception generated; action execution treated as a failure',
                 json.dumps(self.dict()),
                 json.dumps(processing_info)
@@ -144,7 +154,10 @@ def process_action_list(
     exception_actions:List[Action]=[]
     ):
     for action in action_list:
-        result = action.execute(tag=tag, scheduler_info=scheduler_info)
+        try: # in case an Action does not return an exception
+            result = action.execute(tag=tag, scheduler_info=scheduler_info)
+        except Exception as exception:
+            result = exception
         processing_count += 1
         if isinstance(result, Exception):
             exception_count += 1
