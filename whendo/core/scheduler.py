@@ -31,33 +31,33 @@ class Scheduler(BaseModel):
     def schedule_action(self, tag:str, action:Action, continuous:Continuous):
         pass
   
-    def during_period(self, action_execute:Callable[...,...], tag:str):
-        if (self.start is not None) and (self.stop is not None):
-            """
-            is_in_period_wrapper below takes (start) and (stop) and returns a 1-arg function that compares (start)
-            and (stop) with a supplied time (now).
+    def during_period(self, job_thunk:Callable[...,...], tag:str, info:dict):
+        """
+        is_in_period_wrapper below takes (start) and (stop) and returns a 1-arg function that compares (start)
+        and (stop) with a supplied time (now).
 
-            if start<stop, then the active period is defined by
-                start<now AND now<stop
-                e.g. - 6:00 => 18:00
-            if start>stop, then the period period is defined by
-                start<now OR now<stop
-                e.g. - 18:00 => 6:00
-            
-            This is done so that is_in_period is freshly evaluated at the times when the schedule library runs the job
-            (that is meant to invoke the Callable).
-            """
+        if start<stop, then the active period is defined by
+            start<now AND now<stop
+            e.g. - 6:00 => 18:00
+        if start>stop, then the period period is defined by
+            start<now OR now<stop
+            e.g. - 18:00 => 6:00
+        
+        This is done so that is_in_period is freshly evaluated at the times when the schedule library runs the job
+        (that is meant to invoke the Callable).
+        """
+        if (self.start is not None) and (self.stop is not None):
             is_in_period_wrapper = lambda start, stop: (lambda now: start < now and now < stop if (start < stop) else start < now or now < stop)
             is_in_period = is_in_period_wrapper(self.start, self.stop)
             do_nothing = lambda tag, scheduler_info: None
-            return self.wrap(lambda: (action_execute if is_in_period(Now.t()) else do_nothing)(tag=tag, scheduler_info=self.info()))
+            return self.wrap(lambda: (job_thunk if is_in_period(Now.t()) else do_nothing)(tag=tag, scheduler_info=self.info()), info=info)
         else:
-            return self.wrap(lambda: action_execute(tag=tag, scheduler_info=self.info()))
+            return self.wrap(lambda: job_thunk(tag=tag, scheduler_info=self.info()), info=info)
     
-    def wrap(self, thunk:Callable[...,...]):
+    def wrap(self, thunk:Callable[...,...], info:dict):
         """
-        wraps the execution inside a try block
-        allows for handling of raised exception
+        wraps the execution inside a try block;
+        allows for handling of logging and raised exceptions
         """
         result = None
         def execute():
@@ -98,7 +98,7 @@ class TimelyScheduler(Scheduler):
     second: Optional[int]=None
 
     def schedule_action(self, tag:str, action:Action, continuous:Continuous):
-        callable = self.during_period(action.execute, tag=tag)
+        callable = self.during_period(action.execute, tag=tag, info=action.info())
         continuous.schedule_timely_callable(
             tag=tag,
             callable=callable,
@@ -119,7 +119,7 @@ class RandomlyScheduler(Scheduler):
     high: int
 
     def schedule_action(self, tag:str, action:Action, continuous:Continuous):
-        callable = self.during_period(action.execute, tag=tag)
+        callable = self.during_period(action.execute, tag=tag, info=action.info())
         continuous.schedule_random_callable(
             tag=tag,
             callable=callable,

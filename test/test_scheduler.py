@@ -10,9 +10,10 @@ def test_during_period():
     s_daytime = Scheduler(start = daytime[0], stop = daytime[1])
     s_nighttime = Scheduler(start = nighttime[0], stop = nighttime[1])
 
+    
     callable = lambda tag, scheduler_info: True
-    daytime_callable = s_daytime.during_period(callable, tag='abc')
-    nighttime_callable = s_nighttime.during_period(callable, tag='abc')
+    daytime_callable = s_daytime.during_period(callable, tag='abc', info={})
+    nighttime_callable = s_nighttime.during_period(callable, tag='abc', info={})
 
     now = Now.t()
 
