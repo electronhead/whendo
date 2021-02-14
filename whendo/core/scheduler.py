@@ -2,9 +2,40 @@ from datetime import time
 from pydantic import BaseModel
 from typing import Optional
 from collections.abc import Callable
+from threading import RLock
+import logging
 from whendo.core.util import TimeUnit, Now, object_info
 from whendo.core.action import Action
 from whendo.core.continuous import Continuous
+import random
+
+logger = logging.getLogger(__name__)
+
+class Count:
+    """
+    This counter is useful for distiguishing between different sets of log entries as well as viewing a count for each tag.
+    """
+    good_count = {}
+    bad_count = {}
+    @classmethod
+    def good_up(cls, tag):
+        if tag not in cls.good_count:
+            cls.good_count[tag] = 0
+        cls.good_count[tag] = 1 + cls.good_count[tag]
+    @classmethod
+    def bad_up(cls, tag):
+        if tag not in cls.bad_count:
+            cls.bad_count[tag] = 0
+        cls.bad_count[tag] = 1 + cls.bad_count[tag]
+    @classmethod
+    def good(cls, tag):
+        return cls.good_count.get(tag, 0)
+    @classmethod
+    def bad(cls, tag):
+        return cls.bad_count.get(tag, 0)
+
+class DoNothing:
+    result = {"outcome":"DoNothing"}
 
 class Scheduler(BaseModel):
     """
@@ -31,7 +62,7 @@ class Scheduler(BaseModel):
     def schedule_action(self, tag:str, action:Action, continuous:Continuous):
         pass
   
-    def during_period(self, job_thunk:Callable[...,...], tag:str, info:dict):
+    def during_period(self, job_thunk:Callable[...,...], tag:str, action_info:object):
         """
         is_in_period_wrapper below takes (start) and (stop) and returns a 1-arg function that compares (start)
         and (stop) with a supplied time (now).
@@ -46,15 +77,16 @@ class Scheduler(BaseModel):
         This is done so that is_in_period is freshly evaluated at the times when the schedule library runs the job
         (that is meant to invoke the Callable).
         """
+        scheduler_info = self.json()
         if (self.start is not None) and (self.stop is not None):
             is_in_period_wrapper = lambda start, stop: (lambda now: start < now and now < stop if (start < stop) else start < now or now < stop)
             is_in_period = is_in_period_wrapper(self.start, self.stop)
-            do_nothing = lambda tag, scheduler_info: None
-            return self.wrap(lambda: (job_thunk if is_in_period(Now.t()) else do_nothing)(tag=tag, scheduler_info=self.info()), info=info)
+            do_nothing = lambda tag, scheduler_info: DoNothing.result
+            return self.wrap(lambda: (job_thunk if is_in_period(Now.t()) else do_nothing)(tag=tag, scheduler_info=scheduler_info), tag=tag, action_info=action_info, scheduler_info=scheduler_info, do_nothing=False)
         else:
-            return self.wrap(lambda: job_thunk(tag=tag, scheduler_info=self.info()), info=info)
+            return self.wrap(lambda: job_thunk(tag=tag, scheduler_info=scheduler_info), tag=tag, action_info=action_info, scheduler_info=scheduler_info, do_nothing=True)
     
-    def wrap(self, thunk:Callable[...,...], info:dict):
+    def wrap(self, thunk:Callable[...,...], tag:str, action_info:object, scheduler_info:object, do_nothing:bool):
         """
         wraps the execution inside a try block;
         allows for handling of logging and raised exceptions
@@ -63,15 +95,21 @@ class Scheduler(BaseModel):
         def execute():
             try:
                 result = thunk()
+                if result is DoNothing.result:
+                    return result
+                else:
+                    Count.good_up(tag)
+                    logger.info(f"({Count.good(tag):09}) tag={tag}")
+                    logger.info(f"({Count.good(tag):09}) scheduler={scheduler_info}")
+                    logger.info(f"({Count.good(tag):09}) action={action_info}")
             except Exception as exception:
                 result = exception
-            self.handle_if_exception(result)
+                Count.bad_up(tag)
+                logger.exception(f"({Count.bad(tag):09}) tag={tag}", exc_info=exception)
+                logger.exception(f"({Count.bad(tag):09}) scheduler={scheduler_info}", exc_info=exception)
+                logger.exception(f"({Count.bad(tag):09}) action={action_info}", exc_info=exception)
             return result
         return execute
-
-    def handle_if_exception(self, arg:Exception):
-        if isinstance(arg, Exception):
-            print(f"exception encountered in schedule ({self.info()})", str(arg))
 
     def info(self):
         return object_info(self)
@@ -98,7 +136,7 @@ class TimelyScheduler(Scheduler):
     second: Optional[int]=None
 
     def schedule_action(self, tag:str, action:Action, continuous:Continuous):
-        callable = self.during_period(action.execute, tag=tag, info=action.info())
+        callable = self.during_period(action.execute, tag=tag, action_info=action.json())
         continuous.schedule_timely_callable(
             tag=tag,
             callable=callable,
@@ -119,7 +157,7 @@ class RandomlyScheduler(Scheduler):
     high: int
 
     def schedule_action(self, tag:str, action:Action, continuous:Continuous):
-        callable = self.during_period(action.execute, tag=tag, info=action.info())
+        callable = self.during_period(action.execute, tag=tag, action_info=action.json())
         continuous.schedule_random_callable(
             tag=tag,
             callable=callable,

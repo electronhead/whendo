@@ -14,6 +14,9 @@ class Action(BaseModel):
 
     def info(self):
         return object_info(self)
+    
+    def flat(self):
+        return self.json()
 
 # auxilliary
    

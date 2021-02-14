@@ -6,7 +6,10 @@ from schedule import Scheduler
 from threading import Event, Thread
 import time
 from collections.abc import Callable
+import logging
 from whendo.core.util import Now, TimeUnit
+
+logger = logging.getLogger(__name__)
 
 class Continuous(Scheduler):
     """
@@ -49,12 +52,12 @@ class Continuous(Scheduler):
     def stop_running_continuously(self):
         if self.cease_continuous_run:
             if self.cease_continuous_run.is_set():
-                print(f"continuous run already stopped as of {Now.s()}")
+                logger.info(f"continuous run already stopped")
             else:
                 self.cease_continuous_run.set()
-                print(f"continuous run stopped at {Now.s()}")
+                logger.info(f"continuous run stopped")
         else:
-            print(f"yet to run continuously as of {Now.s()}")
+            logger.info(f"yet to run continuously")
 
     #
     # from https://github.com/mrhwick/schedule/blob/master/schedule/__init__.py
@@ -85,8 +88,9 @@ class Continuous(Scheduler):
                     time.sleep(interval)
 
         continuous_thread = ScheduleThread()
+        continuous_thread.setDaemon(True)
         continuous_thread.start()
-        print(f"started running continuously at {Now.s()}")
+        logger.info(f"started running continuously")
 
     # methods added to adapt to Mothership scheduling model (an adaptation of the schedule library model)
     def schedule_timely_callable(self, tag:str, callable:Callable[...,...], interval:int=1, hour:int=None, minute:int=None, second:int=None):

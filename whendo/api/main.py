@@ -8,6 +8,7 @@ from whendo.core.mothership import MothershipsLittleHelper
 from whendo.core.continuous import Continuous
 from whendo.api.router import actions, schedulers, mothership, jobs
 from whendo.api.shared import set_continuous, set_mothership
+import whendo.log.init
 
 app = FastAPI()
 
