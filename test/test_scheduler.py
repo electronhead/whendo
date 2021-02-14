@@ -1,6 +1,7 @@
 from datetime import time
 import whendo.core.scheduler as sched
 from whendo.core.util import Now
+from whendo.core.action import Action
     
 def test_during_period():
 
@@ -10,10 +11,16 @@ def test_during_period():
     s_daytime = sched.Scheduler(start = daytime[0], stop = daytime[1])
     s_nighttime = sched.Scheduler(start = nighttime[0], stop = nighttime[1])
 
+    class TestAction(Action):
+        fleas:int
+
+        def execute(tag:str, scheduler_info:dict):
+            return True
     
-    callable = lambda tag, scheduler_info: True
-    daytime_callable = s_daytime.during_period(callable, tag='abc', action_info={})
-    nighttime_callable = s_nighttime.during_period(callable, tag='abc', action_info={})
+    action = TestAction(fleas=185000000)
+
+    daytime_callable = s_daytime.during_period(tag='abc', action=action)
+    nighttime_callable = s_nighttime.during_period(tag='abc', action=action)
 
     now = Now.t()
 

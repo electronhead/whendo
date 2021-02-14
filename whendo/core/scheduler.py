@@ -62,7 +62,7 @@ class Scheduler(BaseModel):
     def schedule_action(self, tag:str, action:Action, continuous:Continuous):
         pass
   
-    def during_period(self, job_thunk:Callable[...,...], tag:str, action_info:object):
+    def during_period(self, tag:str, action:Action):
         """
         is_in_period_wrapper below takes (start) and (stop) and returns a 1-arg function that compares (start)
         and (stop) with a supplied time (now).
@@ -77,19 +77,18 @@ class Scheduler(BaseModel):
         This is done so that is_in_period is freshly evaluated at the times when the schedule library runs the job
         (that is meant to invoke the Callable).
         """
-        scheduler_info = self.json()
         if (self.start is not None) and (self.stop is not None):
             is_in_period_wrapper = lambda start, stop: (lambda now: start < now and now < stop if (start < stop) else start < now or now < stop)
             is_in_period = is_in_period_wrapper(self.start, self.stop)
             do_nothing = lambda tag, scheduler_info: DoNothing.result
-            return self.wrap(lambda: (job_thunk if is_in_period(Now.t()) else do_nothing)(tag=tag, scheduler_info=scheduler_info), tag=tag, action_info=action_info, scheduler_info=scheduler_info, do_nothing=False)
+            return self.wrap(lambda: (action.execute if is_in_period(Now.t()) else do_nothing)(tag=tag, scheduler_info=self.info()), tag=tag, action_json=action.json(), scheduler_json=self.json())
         else:
-            return self.wrap(lambda: job_thunk(tag=tag, scheduler_info=scheduler_info), tag=tag, action_info=action_info, scheduler_info=scheduler_info, do_nothing=True)
+            return self.wrap(lambda: action.execute(tag=tag, scheduler_info=self.info()), tag=tag, action_json=action.json(), scheduler_json=self.json())
     
-    def wrap(self, thunk:Callable[...,...], tag:str, action_info:object, scheduler_info:object, do_nothing:bool):
+    def wrap(self, thunk:Callable[...,...], tag:str, action_json:str, scheduler_json:str):
         """
         wraps the execution inside a try block;
-        allows for handling of logging and raised exceptions
+        allows for logging and handling of raised exceptions
         """
         result = None
         def execute():
@@ -100,14 +99,14 @@ class Scheduler(BaseModel):
                 else:
                     Count.good_up(tag)
                     logger.info(f"({Count.good(tag):09}) tag={tag}")
-                    logger.info(f"({Count.good(tag):09}) scheduler={scheduler_info}")
-                    logger.info(f"({Count.good(tag):09}) action={action_info}")
+                    logger.info(f"({Count.good(tag):09}) scheduler={scheduler_json}")
+                    logger.info(f"({Count.good(tag):09}) action={action_json}")
             except Exception as exception:
                 result = exception
                 Count.bad_up(tag)
                 logger.exception(f"({Count.bad(tag):09}) tag={tag}", exc_info=exception)
-                logger.exception(f"({Count.bad(tag):09}) scheduler={scheduler_info}", exc_info=exception)
-                logger.exception(f"({Count.bad(tag):09}) action={action_info}", exc_info=exception)
+                logger.exception(f"({Count.bad(tag):09}) scheduler={scheduler_json}", exc_info=exception)
+                logger.exception(f"({Count.bad(tag):09}) action={action_json}", exc_info=exception)
             return result
         return execute
 
@@ -136,12 +135,13 @@ class TimelyScheduler(Scheduler):
     second: Optional[int]=None
 
     def schedule_action(self, tag:str, action:Action, continuous:Continuous):
-        callable = self.during_period(action.execute, tag=tag, action_info=action.json())
+        callable = self.during_period(tag=tag, action=action)
         continuous.schedule_timely_callable(
             tag=tag,
             callable=callable,
             interval=self.interval,
-            hour=self.hour, minute=self.minute, second=self.second)
+            hour=self.hour, minute=self.minute, second=self.second
+        )
 
 class RandomlyScheduler(Scheduler):
     """
@@ -157,9 +157,10 @@ class RandomlyScheduler(Scheduler):
     high: int
 
     def schedule_action(self, tag:str, action:Action, continuous:Continuous):
-        callable = self.during_period(action.execute, tag=tag, action_info=action.json())
+        callable = self.during_period(tag=tag, action=action)
         continuous.schedule_random_callable(
             tag=tag,
             callable=callable,
             time_unit=self.time_unit,
-            low=self.low, high=self.high)
+            low=self.low, high=self.high
+        )
