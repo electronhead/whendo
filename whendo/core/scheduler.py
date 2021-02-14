@@ -71,7 +71,7 @@ class Scheduler(BaseModel):
 
     def handle_if_exception(self, arg:Exception):
         if isinstance(arg, Exception):
-            print(f"exception encountered in schedule ({self.info()})", str(exception))
+            print(f"exception encountered in schedule ({self.info()})", str(arg))
 
     def info(self):
         return object_info(self)
