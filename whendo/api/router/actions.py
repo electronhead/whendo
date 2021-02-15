@@ -1,6 +1,6 @@
 
 from fastapi import APIRouter, status, Depends
-from whendo.api.shared import return_success, raised_exception, get_mothership
+from whendo.api.shared import return_success, raised_exception, get_dispatcher
 from whendo.core.resolver import resolve_action
 
 router = APIRouter(
@@ -11,7 +11,7 @@ router = APIRouter(
 @router.get('/actions/{action_name}', status_code=status.HTTP_200_OK)
 def get_action(action_name:str):
     try:
-        action = get_mothership(router).get_action(action_name=action_name)
+        action = get_dispatcher(router).get_action(action_name=action_name)
         return return_success(action)
     except Exception as e:
         raise raised_exception(f"failed to retrieve the action ({action_name})", e)
@@ -20,7 +20,7 @@ def get_action(action_name:str):
 def add_action(action_name:str, action=Depends(resolve_action)):
     try:
         assert action, f"couldn't resolve class for action ({action_name})"
-        get_mothership(router).add_action(action_name=action_name, action=action)
+        get_dispatcher(router).add_action(action_name=action_name, action=action)
         return return_success(f"action ({action_name}) was successfully added")
     except Exception as e:
         raise raised_exception(f"failed to add action ({action_name})", e)
@@ -29,7 +29,7 @@ def add_action(action_name:str, action=Depends(resolve_action)):
 def set_action(action_name:str, action=Depends(resolve_action)):
     try:
         assert action, f"couldn't resolve class for action ({action_name})"
-        get_mothership(router).set_action(action_name=action_name, action=action)
+        get_dispatcher(router).set_action(action_name=action_name, action=action)
         return return_success(f"action ({action_name}) was successfully updated")
     except Exception as e:
         raise raised_exception(f"failed to update action ({action_name})", e)
@@ -37,7 +37,7 @@ def set_action(action_name:str, action=Depends(resolve_action)):
 @router.delete('/actions/{action_name}', status_code=status.HTTP_200_OK)
 def delete_action(action_name:str):
     try:
-        get_mothership(router).delete_action(action_name=action_name)
+        get_dispatcher(router).delete_action(action_name=action_name)
         return return_success(f"action ({action_name}) was successfully deleted")
     except Exception as e:
         raise raised_exception(f"failed to remove action ({action_name})", e)
@@ -50,7 +50,7 @@ def execute_action(action_name:str):
     """
     exception = None # the action's exception if the action generated an exception
     try:
-        result = get_mothership(router).execute_action(action_name=action_name)
+        result = get_dispatcher(router).execute_action(action_name=action_name)
         if not isinstance(result, Exception):
             return return_success({'msg': f"action ({action_name}) was successfully executed", 'result':result})
         else:
@@ -64,7 +64,7 @@ def execute_action(action_name:str):
 @router.get('/actions/{action_name}/unschedule', status_code=status.HTTP_200_OK)
 def unschedule_action(action_name:str):
     try:
-        get_mothership(router).unschedule_action(action_name=action_name)
+        get_dispatcher(router).unschedule_action(action_name=action_name)
         return return_success(f"action ({action_name}) was successfully unscheduled")
     except Exception as e:
         raise raised_exception(f"failed to unschedule action ({action_name})", e)

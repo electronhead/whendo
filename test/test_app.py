@@ -31,7 +31,7 @@ async def test_uvicorn_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """
     add action and scheduler
     """
-    await reset_mothership_continuous(base_url, str(tmp_path))
+    await reset_dispatcher_continuous(base_url, str(tmp_path))
 
     output_file = str(tmp_path / 'output.txt')
     xtra={'base_url':base_url}
@@ -46,7 +46,7 @@ async def test_uvicorn_3(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """
     add action and scheduler and then schedule the action
     """
-    await reset_mothership_continuous(base_url, str(tmp_path))
+    await reset_dispatcher_continuous(base_url, str(tmp_path))
 
     output_file = str(tmp_path / 'output.txt')
     xtra={'base_url':base_url}
@@ -63,7 +63,7 @@ async def test_uvicorn_4(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """
     add action and scheduler, run continuous, and then make sure the action produced file output
     """
-    await reset_mothership_continuous(base_url, str(tmp_path))
+    await reset_dispatcher_continuous(base_url, str(tmp_path))
 
     output_file = str(tmp_path / 'output.txt')
     xtra={'base_url':base_url}
@@ -84,7 +84,7 @@ async def test_uvicorn_4(startup_and_shutdown_uvicorn, base_url, tmp_path):
 @pytest.mark.asyncio
 async def test_uvicorn_logic_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """ Run two actions within one action. """
-    await reset_mothership_continuous(base_url, str(tmp_path))
+    await reset_dispatcher_continuous(base_url, str(tmp_path))
 
     action1 = FileHeartbeat(file=str(tmp_path / 'output1.txt'))
     action2 = FileHeartbeat(file=str(tmp_path / 'output2.txt'))
@@ -133,25 +133,25 @@ async def schedule_action(base_url:str, scheduler_name:str, action_name:str):
     response = await get(base_url=base_url, path=f"/schedulers/{scheduler_name}/actions/{action_name}")
     assert response.status_code == 200, f"failed to schedule action ({action_name}) using scheduler ({scheduler_name})"
 
-async def reset_mothership_continuous(base_url:str, tmp_dir:str):
+async def reset_dispatcher_continuous(base_url:str, tmp_dir:str):
     """
-    usage: reset_mothership_continuous(base_url, str(tmp_path))
+    usage: reset_dispatcher_continuous(base_url, str(tmp_path))
     """
 
     # set saved_dir to fixture, tmp_path (see usage)
     saved_dir = FilePathe(path=tmp_dir)
-    response = await put(base_url=base_url, path='/mothership/saved_dir', data=saved_dir)
+    response = await put(base_url=base_url, path='/dispatcher/saved_dir', data=saved_dir)
     assert response.status_code == 200, 'failed to set saved_dir'
-    response = await get(base_url=base_url, path='/mothership/saved_dir')
+    response = await get(base_url=base_url, path='/dispatcher/saved_dir')
     assert response.status_code == 200, 'failed to get saved_dir'
     saved_saved_dir = resolve_instance(FilePathe, response.json())
     assert saved_saved_dir == saved_dir
 
-    # empty the mothership and stop the jobs if they're running
+    # empty the dispatcher and stop the jobs if they're running
     # for uvicorn tests to run in a bunch, these objects need to be 'reset' since
     # evidently the app is shared during the running of the tests
-    response = await get(base_url=base_url, path='/mothership/clear')
-    assert response.status_code == 200, 'failed to get clear mothership'
+    response = await get(base_url=base_url, path='/dispatcher/clear')
+    assert response.status_code == 200, 'failed to get clear dispatcher'
     response = await get(base_url=base_url, path='/jobs/stop') # likely already stopped
 
 async def assert_job_count(base_url:str, n:int):

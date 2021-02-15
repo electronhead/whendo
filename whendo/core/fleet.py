@@ -1,5 +1,5 @@
 """
-Instances of this class manage motherships in putative mothership-ready, network-visible hosts.
+Instances of this class manage dispatchers in putative dispatcher-ready, network-visible hosts.
 
 A host will at least have ip address and port as properties
 """
@@ -19,7 +19,7 @@ class Fleet(BaseModel):
 class FleetHost(BaseModel):
     name:str
     description:str
-    ip_addr:str
+    host:str
     host_ports:List[HostPort]=[]
 
 class HostPort(BaseModel):

@@ -4,7 +4,7 @@ pytest fixtures for unit testing
 
 import random
 import pytest
-from whendo.core.mothership import Mothership
+from whendo.core.dispatcher import Dispatcher
 from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.scheduler import TimelyScheduler
 from whendo.core.continuous import Continuous
@@ -18,12 +18,12 @@ def friends(tmp_path):
         # want a fresh tuple from the fixture
         saved_dir = str(tmp_path)
         output_file = str(tmp_path / 'output.txt')
-        mothership = Mothership(saved_dir=saved_dir)
-        mothership.set_continuous(Continuous())
+        dispatcher = Dispatcher(saved_dir=saved_dir)
+        dispatcher.set_continuous(Continuous())
         action = FileHeartbeat(file=output_file)
         scheduler = TimelyScheduler(interval=1)
 
-        return mothership, scheduler, action
+        return dispatcher, scheduler, action
     return stuff
 
 @pytest.fixture

@@ -1,5 +1,5 @@
 """
-These functions resolve mothership element instances from supplied dictionaries.
+These functions resolve dispatcher element instances from supplied dictionaries.
 """
 import whendo.core.action as action
 import whendo.core.scheduler as scheduler

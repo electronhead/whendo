@@ -11,16 +11,19 @@ from threading import RLock
 import pickle
 import json
 import os
+import logging
 from whendo.core.util import PP, Dirs
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
 from whendo.core.continuous import Continuous
 from whendo.core.resolver import resolve_action, resolve_scheduler
 
-class Mothership(BaseModel):
+logger = logging.getLogger()
+
+class Dispatcher(BaseModel):
     """
     Serializations of this class are stored in the local file system. When a runtime starts
-    up, Mothership loads the last saved version.
+    up, Data loads the last saved version.
     """
     actions: dict={}
     schedulers: dict={}
@@ -62,7 +65,7 @@ class Mothership(BaseModel):
             with open(self.saved_dir+name+'.json', 'r') as infile:
                 json_string = json.load(infile)
                 dictionary = json.loads(json_string)
-                return Mothership.resolve(dictionary)
+                return Dispatcher.resolve(dictionary)
     def save_to_name(self, name:str):
         with Lok.lock:
             assert self.saved_dir, 'saved_dir must be set'
@@ -102,7 +105,7 @@ class Mothership(BaseModel):
     def set_action(self, action_name:str, action:Action):
         with Lok.lock:
             assert action_name in self.actions, f"action ({action_name}) does not exist"
-            actions[action_name] = action
+            self.actions[action_name] = action
             self.reschedule_action(action_name)
             self.save_current()
     def delete_action(self, action_name:str):
@@ -132,7 +135,7 @@ class Mothership(BaseModel):
     def set_scheduler(self, scheduler_name:str, scheduler:Scheduler):
         with Lok.lock:
             assert scheduler_name in self.schedulers, f"scheduler ({scheduler_name}) does not exist"
-            schedulers[schedule_name] = scheduler
+            self.schedulers[scheduler_name] = scheduler
             self.reschedule_scheduler(scheduler_name)
             self.save_current()
     def delete_scheduler(self, scheduler_name:str):
@@ -217,17 +220,17 @@ class Mothership(BaseModel):
             return sum(len(action_array) for action_array in self.schedulers_actions.values())
   
     # utility
-    def scheduler_tag(self, schedule_name:str, action_name:str):
+    def scheduler_tag(self, scheduler_name:str, action_name:str):
         # computes job tag for scheduler and action
-        return f"{schedule_name}:{action_name}"
+        return f"{scheduler_name}:{action_name}"
         
     @classmethod
     def resolve(cls, dictionary:dict={}):
         """
-        converts dictionary to an Mothership instance.
+        converts dictionary to an Data instance.
         """
         if len(dictionary) == 0:
-            return Mothership(saved_dir=Dirs.saved_dir)
+            return Dispatcher(saved_dir=Dirs.saved_dir)
         else:
             saved_dir = dictionary['saved_dir']
             actions = dictionary['actions']
@@ -238,7 +241,7 @@ class Mothership(BaseModel):
                 actions[action_name] = resolve_action(actions[action_name])
             for scheduler_name in schedulers:
                 schedulers[scheduler_name] = resolve_scheduler(schedulers[scheduler_name])
-            return Mothership(
+            return Dispatcher(
                 saved_dir=saved_dir,
                 actions=actions,
                 schedulers=schedulers,
@@ -258,18 +261,18 @@ class Lok:
     def reset(cls):
         cls.lock = RLock()
 
-class MothershipsLittleHelper:
-    # this call returns the standard non-test Mothership singleton
-    mothership = None
+class DispatcherSingleton:
+    # this call returns the standard non-test Data singleton
+    dispatcher = None
     @classmethod
     def get(cls):
-        if not cls.mothership:
-            cls.mothership = Mothership(saved_dir=Dirs.saved_dir())
+        if not cls.dispatcher:
+            cls.dispatcher = Dispatcher(saved_dir=Dirs.saved_dir())
             try:    
-                cls.mothership = cls.mothership.load_current()
-            except Exception as e:
-                print(e) # TODO: log it!
-            cls.mothership.set_continuous(Continuous.get())
-            cls.mothership.initialize()
-            cls.mothership.reschedule_all_schedulers()
-        return cls.mothership
+                cls.dispatcher = cls.dispatcher.load_current()
+            except Exception as exception:
+                logger.error("error loading dispatcher from disk", exception)
+            cls.dispatcher.set_continuous(Continuous.get())
+            cls.dispatcher.initialize()
+            cls.dispatcher.reschedule_all_schedulers()
+        return cls.dispatcher

@@ -30,12 +30,12 @@ class ActionPayload:
         payload.update({'action_info':action_info})
         if scheduler_info:
             payload.update({'scheduler_info':scheduler_info})
-        payload.update(cls.action_ip_address())
+        payload.update(cls.action_host())
         payload.update(cls.action_time())
         return payload
     @classmethod
-    def action_ip_address(cls):
-        return {'action_ip_address': IP.addr}
+    def action_host(cls):
+        return {'action_host': IP.addr}
     @classmethod
     def action_time(cls):
         return {'action_time':Now.s()}

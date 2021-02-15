@@ -92,7 +92,7 @@ class Continuous(Scheduler):
         continuous_thread.start()
         logger.info(f"started running continuously")
 
-    # methods added to adapt to Mothership scheduling model (an adaptation of the schedule library model)
+    # methods added to adapt to Dispatcher scheduling model (an adaptation of the schedule library model)
     def schedule_timely_callable(self, tag:str, callable:Callable[...,...], interval:int=1, hour:int=None, minute:int=None, second:int=None):
         time_unit, clock_time = TimeUnit.second, None # on a second boundary
         if hour is not None:

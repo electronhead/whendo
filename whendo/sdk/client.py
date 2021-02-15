@@ -4,27 +4,27 @@ from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
 from whendo.core.util import resolve_instance, FilePathe
-from whendo.core.mothership import Mothership
+from whendo.core.dispatcher import Dispatcher
 
 class Client(BaseModel):
-    ip_addr:str
+    host:str='127.0.0.1'
     port:int=8000
 
-    # /mothership
-    def load_mothership(self):
-        return Mothership.resolve(self.get(f"/mothership/load"))
-    def save_mothership(self):
-        return self.get("/mothership/save")
-    def clear_mothership(self):
-        return self.get("/mothership/clear")
-    def load_mothership_from_name(self, name:str):
-        return Mothership.resolve(self.get(f"/mothership/load_from_name/{name}"))
-    def save_mothership_to_name(self, name:str):
-        return self.get(f"/mothership/save_to_name/{name}")
+    # /dispatcher
+    def load_dispatcher(self):
+        return Dispatcher.resolve(self.get(f"/dispatcher/load"))
+    def save_dispatcher(self):
+        return self.get("/dispatcher/save")
+    def clear_dispatcher(self):
+        return self.get("/dispatcher/clear")
+    def load_dispatcher_from_name(self, name:str):
+        return Dispatcher.resolve(self.get(f"/dispatcher/load_from_name/{name}"))
+    def save_data_to_name(self, name:str):
+        return self.get(f"/dispatcher/save_to_name/{name}")
     def get_saved_dir(self):
-        return resolve_file_pathe(self.get("/mothership/saved_dir"))
+        return resolve_file_pathe(self.get("/dispatcher/saved_dir"))
     def set_saved_dir(self, saved_dir:FilePathe):
-        return self.put("/mothership/saved_dir", saved_dir)
+        return self.put("/dispatcher/saved_dir", saved_dir)
 
     # /actions
     def get_action(self, action_name:str):
@@ -83,4 +83,4 @@ class Client(BaseModel):
         response = requests.delete(self.cmd(path))
         return response.json()
     def cmd(self, path:str):
-        return f"http://{self.ip_addr}:{self.port}{path}"
+        return f"http://{self.host}:{self.port}{path}"

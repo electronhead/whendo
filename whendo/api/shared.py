@@ -2,7 +2,7 @@
 This code in this module is used in FastAPI and APIRouter code.
 """
 from fastapi import status, HTTPException, APIRouter
-from whendo.core.mothership import Mothership
+from whendo.core.dispatcher import Dispatcher
 from whendo.core.continuous import Continuous
 from whendo.core.util import Now
 
@@ -21,14 +21,14 @@ def raised_exception(text:str, exception:Exception):
     return HTTPException(status_code=status_code, detail=detail)
 
 # these functions enabling the passing down of singletons to routers from the main app
-def get_mothership(router:APIRouter):
-    return router.__dict__['_mothership']
+def get_dispatcher(router:APIRouter):
+    return router.__dict__['_dispatcher']
 
 def get_continuous(router:APIRouter):
     return router.__dict__['_continuous']
 
-def set_mothership(router:APIRouter, mothership:Mothership):
-    router.__dict__['_mothership'] = mothership
+def set_dispatcher(router:APIRouter, dispatcher:Dispatcher):
+    router.__dict__['_dispatcher'] = dispatcher
     return router
 
 def set_continuous(router:APIRouter, continuous:Continuous):

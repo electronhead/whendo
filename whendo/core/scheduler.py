@@ -35,6 +35,12 @@ class Count:
         return cls.bad_count.get(tag, 0)
 
 class DoNothing:
+    """
+    Returned by the do_nothing thunk. The exception handling
+    code needs to know when a result was produced by a do_nothing thunk.
+    In the abasence of an explicitly returned result, an Action will return
+    None. 
+    """
     result = {"outcome":"DoNothing"}
 
 class Scheduler(BaseModel):
