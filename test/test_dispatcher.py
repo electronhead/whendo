@@ -50,8 +50,7 @@ def test_reschedule_action(friends):
     dispatcher.add_action('foo', action)
     dispatcher.add_scheduler('bar', scheduler)
     dispatcher.schedule_action('bar', 'foo')
-    dispatcher.unschedule_action('foo')
-    dispatcher.schedule_action('bar', 'foo')
+    dispatcher.reschedule_action('foo')
 
     continuous.run_continuously()
     time.sleep(4)
@@ -62,6 +61,32 @@ def test_reschedule_action(friends):
     with open(action.file, 'r') as fid:
         line = fid.readline()
 
+    assert line is not None and type(line) is str and len(line) > 0
+
+def test_reschedule_action_2(friends, tmp_path):
+    """
+    Tests unscheduling and then rescheduling an action.
+    """
+    dispatcher, scheduler, action = friends()
+    continuous = dispatcher.get_continuous()
+    assert continuous.job_count() == 0
+
+    dispatcher.add_action('foo', action)
+    dispatcher.add_scheduler('bar', scheduler)
+    dispatcher.schedule_action('bar', 'foo')
+    stored_action = dispatcher.get_action('foo')
+    stored_action.file = str(tmp_path / 'output2.txt')
+    dispatcher.set_action('foo', stored_action)
+    dispatcher.reschedule_action('foo')
+
+    continuous.run_continuously()
+    time.sleep(4)
+    continuous.stop_running_continuously()
+    continuous.clear()
+
+    line = None
+    with open(stored_action.file, 'r') as fid:
+        line = fid.readline()
     assert line is not None and type(line) is str and len(line) > 0
 
 def test_unschedule_scheduler(friends):

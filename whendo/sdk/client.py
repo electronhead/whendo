@@ -3,7 +3,7 @@ import requests
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
-from whendo.core.util import resolve_instance, FilePathe
+from whendo.core.util import FilePathe
 from whendo.core.dispatcher import Dispatcher
 
 class Client(BaseModel):
@@ -69,18 +69,19 @@ class Client(BaseModel):
     # verbs
     def get(self, path:str, data=None):
         response = requests.get(self.cmd(path), data)
+        assert response.status_code == 200, response.text
         return response.json()
     def put(self, path:str, data:BaseModel):
         response = requests.put(self.cmd(path), data.json())
+        assert response.status_code == 200, response.text
         return response.json()
     def post(self, path:str, data:BaseModel):
         response = requests.post(self.cmd(path), data.json())
-        return response.json()
-    def patch(self, path:str, data:dict):
-        response = requests.patch(self.cmd(path), data)
+        assert response.status_code == 200, response.text
         return response.json()
     def delete(self, path:str):
         response = requests.delete(self.cmd(path))
+        assert response.status_code == 200, response.text
         return response.json()
     def cmd(self, path:str):
         return f"http://{self.host}:{self.port}{path}"

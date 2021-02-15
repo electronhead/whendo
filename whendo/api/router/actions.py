@@ -60,7 +60,6 @@ def execute_action(action_name:str):
     if exception is not None: # from the action
         raise exception
 
-
 @router.get('/actions/{action_name}/unschedule', status_code=status.HTTP_200_OK)
 def unschedule_action(action_name:str):
     try:
@@ -68,3 +67,11 @@ def unschedule_action(action_name:str):
         return return_success(f"action ({action_name}) was successfully unscheduled")
     except Exception as e:
         raise raised_exception(f"failed to unschedule action ({action_name})", e)
+
+@router.get('/actions/{action_name}/reschedule', status_code=status.HTTP_200_OK)
+def unschedule_action(action_name:str):
+    try:
+        get_dispatcher(router).reschedule_action(action_name=action_name)
+        return return_success(f"action ({action_name}) was successfully rescheduled")
+    except Exception as e:
+        raise raised_exception(f"failed to reschedule action ({action_name})", e)

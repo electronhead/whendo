@@ -13,7 +13,7 @@ app = FastAPI()
 
 @app.get('/')
 async def root():
-    return 'Pyrambium API server started (unit test)'
+    return 'whengo API server started (unit test)'
 
 dispatcher_instance = Dispatcher()
 continuous_instance = Continuous()
