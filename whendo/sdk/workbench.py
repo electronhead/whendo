@@ -1,9 +1,9 @@
 from pydantic import BaseModel
-from whendo.sdk.mothership_client import MothershipClient
+from whendo.sdk.client import Client
     
 class Workbench(BaseModel):
     clients:dict={}
-    def add_client(self, name:str, client:MothershipClient):
+    def add_client(self, name:str, client:Client):
         self.clients[name] = client
     def get_client(self, name:str):
         return self.clients.get(name, None)

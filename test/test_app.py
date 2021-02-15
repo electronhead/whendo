@@ -112,7 +112,7 @@ async def test_uvicorn_logic_action(startup_and_shutdown_uvicorn, base_url, tmp_
 
 async def add_action(base_url:str, name:str, action:Action):
     """ add an action and confirm """
-    response = await put(base_url=base_url, path=f"/actions/{name}", data=action)
+    response = await post(base_url=base_url, path=f"/actions/{name}", data=action)
     assert response.status_code == 200, f"failed to put action ({name})"
     response = await get(base_url, path=f"/actions/{name}")
     assert response.status_code == 200, f"failed to get action ({name})"
@@ -121,7 +121,7 @@ async def add_action(base_url:str, name:str, action:Action):
 
 async def add_scheduler(base_url:str, name:str, scheduler:Scheduler):
     """ add a scheduler and confirm """
-    response = await put(base_url=base_url, path=f"/schedulers/{name}", data=scheduler)
+    response = await post(base_url=base_url, path=f"/schedulers/{name}", data=scheduler)
     assert response.status_code == 200, f"failed to put scheduler ({name})"
     response = await get(base_url, path=f"/schedulers/{name}")
     assert response.status_code == 200, f"failed to get scheduler ({name})"

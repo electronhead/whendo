@@ -16,7 +16,7 @@ def get_action(action_name:str):
     except Exception as e:
         raise raised_exception(f"failed to retrieve the action ({action_name})", e)
 
-@router.put('/actions/{action_name}', status_code=status.HTTP_200_OK)
+@router.post('/actions/{action_name}', status_code=status.HTTP_200_OK)
 def add_action(action_name:str, action=Depends(resolve_action)):
     try:
         assert action, f"couldn't resolve class for action ({action_name})"
@@ -25,21 +25,22 @@ def add_action(action_name:str, action=Depends(resolve_action)):
     except Exception as e:
         raise raised_exception(f"failed to add action ({action_name})", e)
 
-@router.delete('/actions/{action_name}', status_code=status.HTTP_200_OK)
-def remove_action(action_name:str):
+@router.put('/actions/{action_name}', status_code=status.HTTP_200_OK)
+def set_action(action_name:str, action=Depends(resolve_action)):
     try:
-        get_mothership(router).remove_action(action_name=action_name)
-        return return_success(f"action ({action_name}) was successfully removed")
-    except Exception as e:
-        raise raised_exception(f"failed to remove action ({action_name})", e)
-
-@router.patch('/actions/{action_name}', status_code=status.HTTP_200_OK)
-def update_action(action_name:str, dictionary:dict):
-    try:
-        get_mothership(router).update_action(action_name=action_name, dictionary=dictionary)
+        assert action, f"couldn't resolve class for action ({action_name})"
+        get_mothership(router).set_action(action_name=action_name, action=action)
         return return_success(f"action ({action_name}) was successfully updated")
     except Exception as e:
         raise raised_exception(f"failed to update action ({action_name})", e)
+
+@router.delete('/actions/{action_name}', status_code=status.HTTP_200_OK)
+def delete_action(action_name:str):
+    try:
+        get_mothership(router).delete_action(action_name=action_name)
+        return return_success(f"action ({action_name}) was successfully deleted")
+    except Exception as e:
+        raise raised_exception(f"failed to remove action ({action_name})", e)
 
 @router.get('/actions/{action_name}/execute', status_code=status.HTTP_200_OK)
 def execute_action(action_name:str):

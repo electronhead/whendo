@@ -6,7 +6,7 @@ from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file
 from whendo.core.util import resolve_instance, FilePathe
 from whendo.core.mothership import Mothership
 
-class MothershipClient(BaseModel):
+class Client(BaseModel):
     ip_addr:str
     port:int=8000
 
@@ -30,11 +30,11 @@ class MothershipClient(BaseModel):
     def get_action(self, action_name:str):
         return resolve_action(self.get(f"/actions/{action_name}"))
     def add_action(self, action_name:str, action:Action):
+        return self.post(f"/actions/{action_name}", action)
+    def set_action(self, action_name:str, action:Action):
         return self.put(f"/actions/{action_name}", action)
-    def remove_action(self, action_name:str):
+    def delete_action(self, action_name:str):
         return self.delete(f"/actions/{action_name}")
-    def update_action(self, action_name:str, dictionary:dict):
-        return self.patch(f"/actions/{action_name}", dictionary)
     def execute_action(self, action_name:str):
         return self.get(f"/actions/{action_name}/execute")
     def unschedule_action(self, action_name:str):
@@ -46,22 +46,22 @@ class MothershipClient(BaseModel):
     def get_scheduler(self, scheduler_name:str):
         return resolve_scheduler(self.get(f"/schedulers/{scheduler_name}"))
     def add_scheduler(self, scheduler_name:str, scheduler:Scheduler):
+        return self.post(f"/schedulers/{scheduler_name}", scheduler)
+    def set_scheduler(self, scheduler_name:str, scheduler:Scheduler):
         return self.put(f"/schedulers/{scheduler_name}", scheduler)
-    def remove_scheduler(self, scheduler_name:str):
+    def delete_scheduler(self, scheduler_name:str):
         return self.delete(f"/schedulers/{scheduler_name}")
-    def update_scheduler(self, scheduler_name:str, dictionary:dict):
-        return self.patch(f"/schedulers/{scheduler_name}", dictionary)
-    def execute_scheduler_actions(self, scheduler_name:str):
-        return self.get(f"/schedulers/{scheduler_name}/execute")
     def unschedule_scheduler(self, scheduler_name:str):
         return self.delete(f"/schedulers/{scheduler_name}/unschedule")
     def reschedule_all_schedulers(self):
         return self.delete(f"/schedulers/reschedule_all")
+    def execute_scheduler_actions(self, scheduler_name:str):
+        return self.get(f"/schedulers/{scheduler_name}/execute")
 
     # /jobs
-    def start_scheduled_jobs(self):
+    def start_jobs(self):
         return self.get(f"/jobs/start")
-    def stop_scheduled_jobs(self):
+    def stop_jobs(self):
         return self.get(f"/jobs/stop")
     def job_count(self):
         return self.get(f"/jobs/count")

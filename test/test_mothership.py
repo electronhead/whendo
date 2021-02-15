@@ -87,6 +87,28 @@ def test_unschedule_scheduler(friends):
     assert mothership.get_scheduler('bar')
     assert mothership.get_action('foo')
 
+
+def test_clear_mothership(friends):
+    """
+    Tests clearing a mothership.
+    """
+    mothership, scheduler, action = friends()
+    continuous = mothership.get_continuous()
+    assert continuous.job_count() == 0
+
+    mothership.add_action('foo', action)
+    mothership.add_scheduler('bar', scheduler)
+    mothership.schedule_action('bar', 'foo')
+    assert continuous.job_count() == 1
+    
+    mothership.clear_all()
+    assert continuous.job_count() == 0
+    assert mothership.get_scheduled_action_count() == continuous.job_count()
+
+    # make sure that bar and foo are Gone
+    assert mothership.get_scheduler('bar') is None
+    assert mothership.get_action('foo') is None
+
 def test_saved_dir_1(tmp_path):
     saved_dir = str(tmp_path)
     mothership = Mothership()

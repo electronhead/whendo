@@ -23,7 +23,7 @@ def get_scheduler(scheduler_name:str):
     except Exception as e:
         raise raised_exception(f"failed to retrieve the scheduler ({scheduler_name})", e)
 
-@router.put('/schedulers/{scheduler_name}', status_code=status.HTTP_200_OK)
+@router.post('/schedulers/{scheduler_name}', status_code=status.HTTP_200_OK)
 def add_scheduler(scheduler_name:str, scheduler=Depends(resolve_scheduler)):
     try:
         assert scheduler, f"couldn't resolve class for scheduler ({scheduler_name})"
@@ -32,6 +32,15 @@ def add_scheduler(scheduler_name:str, scheduler=Depends(resolve_scheduler)):
     except Exception as e:
         raise raised_exception(f"failed to add scheduler ({scheduler_name})", e)
 
+@router.put('/schedulers/{scheduler_name}', status_code=status.HTTP_200_OK)
+def set_scheduler(scheduler_name:str, scheduler=Depends(resolve_scheduler)):
+    try:
+        assert scheduler, f"couldn't resolve class for scheduler ({scheduler_name})"
+        get_mothership(router).set_scheduler(scheduler_name=scheduler_name, scheduler=scheduler)
+        return return_success(f"scheduler ({scheduler_name}) was successfully updated")
+    except Exception as e:
+        raise raised_exception(f"failed to update scheduler ({scheduler_name})", e)
+
 @router.delete('/schedulers/{scheduler_name}', status_code=status.HTTP_200_OK)
 def remove_scheduler(scheduler_name:str):
     try:
@@ -39,14 +48,6 @@ def remove_scheduler(scheduler_name:str):
         return return_success(f"scheduler ({scheduler_name}) was successfully removed")
     except Exception as e:
         raise raised_exception(f"failed to remove scheduler ({scheduler_name})", e)
-
-@router.patch('/schedulers/{scheduler_name}', status_code=status.HTTP_200_OK)
-def update_scheduler(scheduler_name:str, dictionary:dict):
-    try:
-        get_mothership(router).update_scheduler(scheduler_name=scheduler_name, dictionary=dictionary)
-        return return_success(f"scheduler ({scheduler_name}) was successfully updated")
-    except Exception as e:
-        raise raised_exception(f"failed to update scheduler ({scheduler_name})", e)
 
 @router.get('/schedulers/{scheduler_name}/execute', status_code=status.HTTP_200_OK)
 def execute_scheduler_actions(scheduler_name:str):

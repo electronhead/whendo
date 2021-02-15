@@ -82,29 +82,30 @@ class Mothership(BaseModel):
         with Lok.lock:
             schedulers_copy = self.schedulers.copy()
             for scheduler_name in schedulers_copy:
-                self.remove_scheduler(scheduler_name)
+                self.delete_scheduler(scheduler_name)
             actions_copy = self.actions.copy()
             for action_name in actions_copy:
-                self.remove_action(action_name)
+                self.delete_action(action_name)
             self.schedulers_actions.clear()
             self.save_current()
 
-    def get_scheduled_action_count(self):
-        # returns the total number of actions in the schedulers_actions dictionary
-        # should be equal to the number of jobs in related Continuous instance
+    # actions
+    def get_action(self, action_name:str):
         with Lok.lock:
-            return sum(len(action_array) for action_array in self.schedulers_actions.values())
-
+            # assert action_name in self.actions, f"action ({action_name}) does not exist"
+            return self.actions.get(action_name, None)
     def add_action(self, action_name:str, action:Action):
         with Lok.lock:
             assert not action_name in self.actions, f"action ({action_name}) already exists"
             self.actions[action_name] = action
             self.save_current()
-    def get_action(self, action_name:str):
+    def set_action(self, action_name:str, action:Action):
         with Lok.lock:
             assert action_name in self.actions, f"action ({action_name}) does not exist"
-            return self.actions.get(action_name)
-    def remove_action(self, action_name:str):
+            actions[action_name] = action
+            self.reschedule_action(action_name)
+            self.save_current()
+    def delete_action(self, action_name:str):
         with Lok.lock:
             assert action_name in self.actions, f"action ({action_name}) does not exist"
             for scheduler_name in self.schedulers:
@@ -113,42 +114,34 @@ class Mothership(BaseModel):
                 if action_name in action_names: action_names.remove(action_name)
             self.actions.pop(action_name, None)
             self.save_current()
-    def update_action(self, action_name:str, dictionary:dict):
-        with Lok.lock:
-            assert action_name in self.actions, f"action ({action_name}) does not exist"
-            action = self.actions.get(action_name)
-            action.__dict__.update(dictionary)
-            self.reschedule_action(action_name)
-            self.save_current()
     def execute_action(self, action_name:str):
         with Lok.lock:
             assert action_name in self.actions, f"action ({action_name}) does not exist"
             return self.get_action(action_name).execute()
 
     # schedulers
+    def get_scheduler(self, scheduler_name:str):
+        with Lok.lock:
+            return self.schedulers.get(scheduler_name, None)
     def add_scheduler(self, scheduler_name:str, scheduler:Scheduler):
         with Lok.lock:
             assert not scheduler_name in self.schedulers, f"scheduler ({scheduler_name}) already exists"
             self.schedulers[scheduler_name] = scheduler
             self.schedulers_actions[scheduler_name] = []
             self.save_current()
-    def get_scheduler(self, scheduler_name:str):
+    def set_scheduler(self, scheduler_name:str, scheduler:Scheduler):
         with Lok.lock:
-            return self.schedulers.get(scheduler_name, None)
-    def remove_scheduler(self, scheduler_name:str):
+            assert scheduler_name in self.schedulers, f"scheduler ({scheduler_name}) does not exist"
+            schedulers[schedule_name] = scheduler
+            self.reschedule_scheduler(scheduler_name)
+            self.save_current()
+    def delete_scheduler(self, scheduler_name:str):
         with Lok.lock:
             assert scheduler_name in self.schedulers, f"scheduler ({scheduler_name}) does not exist"
             self.unschedule_scheduler(scheduler_name)
             self.schedulers.pop(scheduler_name)
             self.schedulers_actions[scheduler_name].clear() # pro-actively clean up. less work for GC.
             self.schedulers_actions.pop(scheduler_name)
-            self.save_current()
-    def update_scheduler(self, scheduler_name:str, dictionary:dict):
-        with Lok.lock:
-            assert scheduler_name in self.schedulers, f"scheduler ({scheduler_name}) does not exist"
-            scheduler = self.schedulers.get(scheduler_name)
-            scheduler.__dict__.update(dictionary)
-            self.reschedule_scheduler(scheduler_name)
             self.save_current()
     def execute_scheduler_actions(self, scheduler_name:str):
         with Lok.lock:
@@ -217,6 +210,11 @@ class Mothership(BaseModel):
                     scheduler = self.get_scheduler(scheduler_name)
                     action = self.actions[action_name]
                     scheduler.schedule_action(tag, action, self._continuous)
+    def get_scheduled_action_count(self):
+        # returns the total number of actions in the schedulers_actions dictionary
+        # should be equal to the number of jobs in related Continuous instance
+        with Lok.lock:
+            return sum(len(action_array) for action_array in self.schedulers_actions.values())
   
     # utility
     def scheduler_tag(self, schedule_name:str, action_name:str):
