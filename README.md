@@ -2,8 +2,6 @@
 
 whendo a single process/local file system-based action scheduling API server. No SQL and no No SQL. An action can be something as simple as turning on a raspberry pi pin or blowing a fog horn or capturing scheduled data feeds from a public api.
 
-## What it does:
-
 whendo let's you define actions, perform them individually, and schedule them to be performed at specified times and intervals during the day (with schedulers). You can create actions and run schedulers from a python script, within a Python CLI interpreter, within a Jupyter notebook -- basically anywhere you can run Python.
 
 To start a whendo server, in a virtual environment install the wheel file using pip and invoke the run file with Python.
@@ -11,16 +9,23 @@ To start a whendo server, in a virtual environment install the wheel file using 
 (venv) blah blah $ pip install /path/to/wheel/file/
 (venv) blah blah $ python run.py --host 127.0.0.1 --port 8000
 ```
-Jupyter notebooks are a great way to get start with using whendo.
+whendo stores its files in {home}/.whendo.
 ```
+from datetime import time
 from whendo.sdk.client import Client
+from whendo.core.scheduler import TimelyScheduler
+from whendo.core.actions.gpio_action import TogglePin
 
-# create an action that toggles pin 25
+# create an action that toggles pin 25 (connected to red LED)
 red_action = TogglePin(pin:25)
 
-# create a scheduler that executes an action at the 15th second after the
-# top of the minute from 8:00 to 18:00.
-daily_by_minute = TimelyScheduler(interval=1, start=time(8,0,0), stop=time(18,0,0), second=15)
+# create a scheduler that executes an action at the 15th
+# second after the top of the minute, from 8:00 to 18:00.
+# The start and stop times operate on a 24 hour clock.
+daily_by_minute = TimelyScheduler(interval=1, start=time(8,0,0), stop=time(18,0,0))
+# reverse the start and stop times to start at 18:00 and stop
+# at 8:00.
+nightly_by_minute = TimelyScheduler(interval=1, start=time(18,0,0), stop=time(8,0,0))
 
 # run individually...
 red_action.execute()
@@ -44,6 +49,7 @@ client.set_action('red_toggle', red_toggle)
 # run individually through the client
 client.execute_action('red_toggle')
 
+client.stop_jobs()
 ```
 
 ## To do:
