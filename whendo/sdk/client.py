@@ -39,6 +39,8 @@ class Client(BaseModel):
         return self.get(f"/actions/{action_name}/execute")
     def unschedule_action(self, action_name:str):
         return self.get(f"/actions/{action_name}/unschedule")
+    def reschedule_action(self, action_name:str):
+        return self.get(f"/actions/{action_name}/reschedule")
 
     # /schedulers
     def schedule_action(self, scheduler_name:str, action_name:str):
@@ -52,19 +54,23 @@ class Client(BaseModel):
     def delete_scheduler(self, scheduler_name:str):
         return self.delete(f"/schedulers/{scheduler_name}")
     def unschedule_scheduler(self, scheduler_name:str):
-        return self.delete(f"/schedulers/{scheduler_name}/unschedule")
+        return self.get(f"/schedulers/{scheduler_name}/unschedule")
     def reschedule_all_schedulers(self):
-        return self.delete(f"/schedulers/reschedule_all")
+        return self.get(f"/schedulers/reschedule_all")
     def execute_scheduler_actions(self, scheduler_name:str):
         return self.get(f"/schedulers/{scheduler_name}/execute")
 
     # /jobs
-    def start_jobs(self):
-        return self.get(f"/jobs/start")
+    def run_jobs(self):
+        return self.get(f"/jobs/run")
     def stop_jobs(self):
         return self.get(f"/jobs/stop")
+    def jobs_are_running(self):
+        return self.get(f"/jobs/are_running")
     def job_count(self):
         return self.get(f"/jobs/count")
+    def clear_jobs(self):
+        return self.get(f"/jobs/clear")
 
     # verbs
     def get(self, path:str, data=None):

@@ -40,7 +40,7 @@ def delete_action(action_name:str):
         get_dispatcher(router).delete_action(action_name=action_name)
         return return_success(f"action ({action_name}) was successfully deleted")
     except Exception as e:
-        raise raised_exception(f"failed to remove action ({action_name})", e)
+        raise raised_exception(f"failed to delete action ({action_name})", e)
 
 @router.get('/actions/{action_name}/execute', status_code=status.HTTP_200_OK)
 def execute_action(action_name:str):

@@ -38,6 +38,17 @@ class Dispatcher(BaseModel):
     def set_continuous(self, continuous:Continuous):
         self._continuous = continuous
 
+    def run_jobs(self):
+        self._continuous.run_continuously()
+    def stop_jobs(self):
+        self._continuous.stop_running_continuously()
+    def jobs_are_running(self):
+        return self._continuous.is_running()
+    def job_count(self):
+        return self._continuous.job_count()
+    def clear_jobs(self):
+        self._continuous.clear()
+
     def get_actions(self):
         with Lok.lock:
             return self.actions

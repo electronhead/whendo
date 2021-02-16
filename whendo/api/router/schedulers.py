@@ -42,12 +42,12 @@ def set_scheduler(scheduler_name:str, scheduler=Depends(resolve_scheduler)):
         raise raised_exception(f"failed to update scheduler ({scheduler_name})", e)
 
 @router.delete('/schedulers/{scheduler_name}', status_code=status.HTTP_200_OK)
-def remove_scheduler(scheduler_name:str):
+def delete_scheduler(scheduler_name:str):
     try:
-        get_dispatcher(router).remove_scheduler(scheduler_name=scheduler_name)
-        return return_success(f"scheduler ({scheduler_name}) was successfully removed")
+        get_dispatcher(router).delete_scheduler(scheduler_name=scheduler_name)
+        return return_success(f"scheduler ({scheduler_name}) was successfully deleted")
     except Exception as e:
-        raise raised_exception(f"failed to remove scheduler ({scheduler_name})", e)
+        raise raised_exception(f"failed to delete scheduler ({scheduler_name})", e)
 
 @router.get('/schedulers/{scheduler_name}/execute', status_code=status.HTTP_200_OK)
 def execute_scheduler_actions(scheduler_name:str):

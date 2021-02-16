@@ -13,31 +13,33 @@ whendo stores its files in {home}/.whendo.
 ```
 from datetime import time
 from whendo.sdk.client import Client
-from whendo.core.scheduler import TimelyScheduler
+from whendo.core.scheduler import TimelyScheduler, RandomlyScheduler
 from whendo.core.actions.gpio_action import TogglePin
 
-# create an action that toggles pin 25 (connected to red LED)
+# create action that toggles pin 25 (connected to red LED)
 red_action = TogglePin(pin:25)
+# create action that toggles pin 27 (connected to green LED)
+green_action = TogglePin(pin:25)
 
-# create a scheduler that executes an action at the 15th
-# second after the top of the minute, from 8:00 to 18:00.
+# see how they toggle
+[ lambda y: (red_action.execute(), green_action.execute(), time.sleep(y))(x) for x in [1,2,3,4,3,2,1,2,3,4,3,2,1]]
+
+# create a scheduler that executes an action every second
+# second after the top of the minute, from 6:00 to 23:00.
 # The start and stop times operate on a 24 hour clock.
-daily_by_minute = TimelyScheduler(interval=1, start=time(8,0,0), stop=time(18,0,0))
-# reverse the start and stop times to start at 18:00 and stop
-# at 8:00.
-nightly_by_minute = TimelyScheduler(interval=1, start=time(18,0,0), stop=time(8,0,0))
+timely_secondly = TimelyScheduler(interval=1, start=time(6,0,0), stop=time(23,0,0))
 
-# run individually...
-red_action.execute()
-# or directly...
-TogglePin(pin:25).execute()
+randomly_secondly = RandomlyScheduler(interval=1, start=time(6,0,0), stop=time(23,0,0))
 
 # scheduled run...
 client = Client(host='127.0.0.1', port=8000)
-client.add_action('red_toggle', red_action)
-client.add_scheduler('daily_by_minute', daily_by_minute)
-client.schedule_action('hourly_daily', 'red_toggle')
-client.start_jobs()
+client.add_action('green_action', green_action)
+client.add_action('red_action', red_action)
+client.add_scheduler('timely_secondly', timely_secondly)
+client.add_scheduler('randomly_secondly', randomly_secondly)
+client.schedule_action('timely_secondly', 'green_action')
+client.schedule_action('randomly_secondly', 'red_action')
+client.run_jobs()
 
 # change to pin 27
 red_toggle.pin = 27
@@ -51,17 +53,6 @@ client.execute_action('red_toggle')
 
 client.stop_jobs()
 ```
-
-## To do:
-
-- installation instructions
-- pip install whendo (currently a wheel file)
-- always more unit tests
-- documentation
-- later
-  - Docker
-  - authentication / authorization
-
 ## Dependencies [from setup.py]
 
 - install_requires=["uvicorn", "fastapi", "pydantic", "schedule", "requests", "netifaces", "Mock.GPIO"], # includes RPi.GPIO for raspberry pi's

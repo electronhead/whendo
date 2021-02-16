@@ -42,6 +42,8 @@ class ClientAsync(BaseModel):
         return await self.delete(f"/actions/{action_name}")
     async def execute_action(self, action_name:str):
         return await self.get(f"/actions/{action_name}/execute")
+    async def reschedule_action(self, action_name:str):
+        return await self.get(f"/actions/{action_name}/reschedule")
     async def unschedule_action(self, action_name:str):
         return await self.get(f"/actions/{action_name}/unschedule")
 
@@ -57,19 +59,23 @@ class ClientAsync(BaseModel):
     async def delete_scheduler(self, scheduler_name:str):
         return await self.delete(f"/schedulers/{scheduler_name}")
     async def unschedule_scheduler(self, scheduler_name:str):
-        return await self.delete(f"/schedulers/{scheduler_name}/unschedule")
+        return await self.get(f"/schedulers/{scheduler_name}/unschedule")
     async def reschedule_all_schedulers(self):
-        return await self.delete(f"/schedulers/reschedule_all")
+        return await self.get(f"/schedulers/reschedule_all")
     async def execute_scheduler_actions(self, scheduler_name:str):
         return await self.get(f"/schedulers/{scheduler_name}/execute")
 
     # /jobs
-    async def start_jobs(self):
-        return await self.get(f"/jobs/start")
+    async def run_jobs(self):
+        return await self.get(f"/jobs/run")
     async def stop_jobs(self):
         return await self.get(f"/jobs/stop")
+    async def jobs_are_running(self):
+        return await self.get(f"/jobs/are_running")
     async def job_count(self):
         return await self.get(f"/jobs/count")
+    async def clear_jobs(self):
+        return await self.get(f"/jobs/clear")
 
     # verbs
     async def get(self, path:str):

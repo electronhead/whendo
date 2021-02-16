@@ -3,7 +3,6 @@ This code in this module is used in FastAPI and APIRouter code.
 """
 from fastapi import status, HTTPException, APIRouter
 from whendo.core.dispatcher import Dispatcher
-from whendo.core.continuous import Continuous
 from whendo.core.util import Now
 
 def return_success(dictionary:dict):
@@ -24,13 +23,6 @@ def raised_exception(text:str, exception:Exception):
 def get_dispatcher(router:APIRouter):
     return router.__dict__['_dispatcher']
 
-def get_continuous(router:APIRouter):
-    return router.__dict__['_continuous']
-
 def set_dispatcher(router:APIRouter, dispatcher:Dispatcher):
     router.__dict__['_dispatcher'] = dispatcher
-    return router
-
-def set_continuous(router:APIRouter, continuous:Continuous):
-    router.__dict__['_continuous'] = continuous
     return router

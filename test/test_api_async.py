@@ -31,7 +31,7 @@ async def test_uvicorn_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """
     add action and scheduler
     """
-    await reset_dispatcher_continuous(base_url, str(tmp_path))
+    await reset_dispatcher(base_url, str(tmp_path))
 
     output_file = str(tmp_path / 'output.txt')
     xtra={'base_url':base_url}
@@ -46,11 +46,10 @@ async def test_uvicorn_3(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """
     add action and scheduler and then schedule the action
     """
-    await reset_dispatcher_continuous(base_url, str(tmp_path))
+    await reset_dispatcher(base_url, str(tmp_path))
 
     output_file = str(tmp_path / 'output.txt')
-    xtra={'base_url':base_url}
-    action = FileHeartbeat(file=output_file, xtra=xtra)
+    action = FileHeartbeat(file=output_file)
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(base_url=base_url, action_name='foo', action=action)
@@ -63,7 +62,7 @@ async def test_uvicorn_4(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """
     add action and scheduler, run continuous, and then make sure the action produced file output
     """
-    await reset_dispatcher_continuous(base_url, str(tmp_path))
+    await reset_dispatcher(base_url, str(tmp_path))
 
     output_file = str(tmp_path / 'output.txt')
     xtra={'base_url':base_url}
@@ -75,7 +74,7 @@ async def test_uvicorn_4(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await schedule_action(base_url=base_url, action_name='foo', scheduler_name='bar')
     await assert_job_count(base_url=base_url, n=1)
 
-    await start_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=4)
     lines = None
     with open(action.file, 'r') as fid:
         lines = fid.readlines()
@@ -84,7 +83,7 @@ async def test_uvicorn_4(startup_and_shutdown_uvicorn, base_url, tmp_path):
 @pytest.mark.asyncio
 async def test_uvicorn_logic_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """ Run two actions within one action. """
-    await reset_dispatcher_continuous(base_url, str(tmp_path))
+    await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = FileHeartbeat(file=str(tmp_path / 'output1.txt'))
     action2 = FileHeartbeat(file=str(tmp_path / 'output2.txt'))
@@ -96,7 +95,7 @@ async def test_uvicorn_logic_action(startup_and_shutdown_uvicorn, base_url, tmp_
     await schedule_action(base_url=base_url, action_name='foo', scheduler_name='bar')
     await assert_job_count(base_url=base_url, n=1)
 
-    await start_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=4)
 
     lines = None
     with open(action1.file, 'r') as fid:
@@ -111,7 +110,7 @@ async def test_uvicorn_logic_action(startup_and_shutdown_uvicorn, base_url, tmp_
 @pytest.mark.asyncio
 async def test_set_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """ unschedule an action. """
-    await reset_dispatcher_continuous(base_url, str(tmp_path))
+    await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = FileHeartbeat(file=str(tmp_path / 'output1.txt'))
     action2 = FileHeartbeat(file=str(tmp_path / 'output2.txt'))
@@ -122,7 +121,7 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await schedule_action(base_url=base_url, action_name='foo', scheduler_name='bar')
     await assert_job_count(base_url=base_url, n=1)
 
-    await start_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=4)
 
     lines = None
     with open(action1.file, 'r') as fid:
@@ -133,7 +132,7 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await reschedule_action(base_url=base_url, action_name='foo')
     await assert_job_count(base_url=base_url, n=1)
 
-    await start_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=4)
 
     lines = None
     with open(action2.file, 'r') as fid:
@@ -143,7 +142,7 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
 @pytest.mark.asyncio
 async def test_unschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """ unschedule an action. """
-    await reset_dispatcher_continuous(base_url, str(tmp_path))
+    await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = FileHeartbeat(file=str(tmp_path / 'output1.txt'))
     action2 = FileHeartbeat(file=str(tmp_path / 'output2.txt'))
@@ -165,7 +164,7 @@ async def test_unschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_p
 @pytest.mark.asyncio
 async def test_unschedule_action_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """ unschedule an action. make sure both schedulers are affected."""
-    await reset_dispatcher_continuous(base_url, str(tmp_path))
+    await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = FileHeartbeat(file=str(tmp_path / 'output1.txt'))
     action2 = FileHeartbeat(file=str(tmp_path / 'output2.txt'))
@@ -190,7 +189,7 @@ async def test_unschedule_action_2(startup_and_shutdown_uvicorn, base_url, tmp_p
 @pytest.mark.asyncio
 async def test_reschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """ schedule action, run it, change it, re-run it """
-    await reset_dispatcher_continuous(base_url, str(tmp_path))
+    await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = FileHeartbeat(file=str(tmp_path / 'output1.txt'))
     action2 = FileHeartbeat(file=str(tmp_path / 'output2.txt'))
@@ -201,7 +200,7 @@ async def test_reschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_p
     await schedule_action(base_url=base_url, action_name='foo', scheduler_name='bar')
     await assert_job_count(base_url=base_url, n=1)
 
-    await start_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=4)
     lines = None
     with open(action1.file, 'r') as fid:
         lines = fid.readlines()
@@ -211,7 +210,7 @@ async def test_reschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_p
     await reschedule_action(base_url=base_url, action_name='foo')
     await assert_job_count(base_url=base_url, n=1)
 
-    await start_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=4)
     lines = None
     with open(action2.file, 'r') as fid:
         lines = fid.readlines()
@@ -219,8 +218,8 @@ async def test_reschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_p
     
 @pytest.mark.asyncio
 async def test_unschedule_scheduler(startup_and_shutdown_uvicorn, base_url, tmp_path):
-    """ unschedule a scheduler. """
-    await reset_dispatcher_continuous(base_url, str(tmp_path))
+    """ unschedule a sch eduler. """
+    await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = FileHeartbeat(file=str(tmp_path / 'output1.txt'))
     action2 = FileHeartbeat(file=str(tmp_path / 'output2.txt'))
@@ -259,7 +258,7 @@ async def add_action(base_url:str, action_name:str, action:Action):
     assert isinstance(retrieved_action, Action), str(type(retrieved_action))
 
 async def set_action(base_url:str, action_name:str, action:Action):
-    """ add an action and confirm """
+    """ set an action and confirm """
     response = await put(base_url=base_url, path=f"/actions/{action_name}", data=action)
     assert response.status_code == 200, f"failed to put action ({action_name})"
     response = await get(base_url, path=f"/actions/{action_name}")
@@ -310,9 +309,9 @@ async def schedule_action(base_url:str, scheduler_name:str, action_name:str):
     response = await get(base_url=base_url, path=f"/schedulers/{scheduler_name}/actions/{action_name}")
     assert response.status_code == 200, f"failed to schedule action ({action_name}) using scheduler ({scheduler_name})"
 
-async def reset_dispatcher_continuous(base_url:str, tmp_dir:str):
+async def reset_dispatcher(base_url:str, tmp_dir:str):
     """
-    usage: reset_dispatcher_continuous(base_url, str(tmp_path))
+    usage: reset_dispatcher(base_url, str(tmp_path))
     """
 
     # set saved_dir to fixture, tmp_path (see usage)
@@ -335,11 +334,11 @@ async def assert_job_count(base_url:str, n:int):
     response = await get(base_url, '/jobs/count')
     assert response.status_code == 200, 'failed to retrieve job count'
     job_count = response.json()['job_count']
-    assert job_count == n, f"expected a job count of ({n})"
+    assert job_count == n, f"expected a job count of ({n}); instead got ({job_count})"
 
-async def start_and_stop_jobs(base_url:str, pause:int):
-    response = await get(base_url, '/jobs/start')
-    assert response.status_code == 200, 'failed to start jobs'
+async def run_and_stop_jobs(base_url:str, pause:int):
+    response = await get(base_url, '/jobs/run')
+    assert response.status_code == 200, 'failed to run jobs'
     time.sleep(pause)
     response = await get(base_url, '/jobs/stop')
     assert response.status_code == 200, 'failed to stop jobs'
