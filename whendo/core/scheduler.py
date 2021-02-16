@@ -96,7 +96,6 @@ class Scheduler(BaseModel):
         wraps the execution inside a try block;
         allows for logging and handling of raised exceptions
         """
-        result = None
         def execute():
             try:
                 result = thunk()
@@ -155,7 +154,7 @@ class RandomlyScheduler(Scheduler):
     
     The time unit is supplied at instance creation.
 
-    For example, for low=30, hight=90 and time_unit=second, the system will execute the action
+    For example, for low=30, hight=90 and time_unit=second, the system will again execute the action
     randomly every 30 to 90 seconds after each execution.
     """
     time_unit: Optional[TimeUnit]=TimeUnit.second
