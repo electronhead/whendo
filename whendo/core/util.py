@@ -3,12 +3,13 @@ from pprint import PrettyPrinter
 from sys import stdout
 import netifaces
 from datetime import datetime
-from typing import Union
+from typing import Union, Callable
 from functools import reduce
 import os
 from pydantic import BaseModel
 from typing import List
 from pathlib import Path
+from threading import RLock
 
 # Enums
 
@@ -187,3 +188,52 @@ class Dirs:
 
 class FilePathe(BaseModel):
     path: str
+
+class Shared():
+    """
+    This class provides in-memory shared data so that actions can communicate with each other during
+    an api server's lifetime. Not meant to be persisted. Persisting shared data is a different feature.
+
+    Instances not meant to be created directly. Use Shareds.get(...) instead.
+
+    Usage:
+        sh = Shareds.get('foo')
+        def update(d:dict):
+            d['a'] = 1
+            return 1
+        result = sh.apply(update)
+        print(result, sh.copy_data())
+    """
+    def __init__(self, dictionary:dict={}):
+        self.lock = RLock()
+        self.data = dictionary
+
+    def data_copy(self):
+        return self.data.copy()
+    
+    def apply(self, callable:Callable):
+        """
+        Transactionally applies callable to a copy of the data. A failure within
+        the callable won't corrupt the dictionary.
+        """
+        with self.lock:
+            copy = self.data_copy()
+            result = callable(copy)
+            self.data = copy
+            return result
+
+class Shareds:
+    """
+    A dictionary of instances of Shared.
+    """
+    singletons = {}
+
+    @classmethod
+    def get(cls, label:str, dictionary:dict={}) -> Shared:
+        if label not in cls.singletons:
+            cls.singletons[label] = Shared(dictionary=dictionary)
+        return cls.singletons[label]
+    
+    @classmethod
+    def key_set(cls):
+        return set(cls.singletons.keys())

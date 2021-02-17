@@ -1,17 +1,17 @@
 from datetime import datetime, timedelta
 from pydantic import BaseModel
 from typing import List
-from whendo.core.util import Now, all_visible_subclasses, key_strings_from_class, key_strings_from_dict, FilePathe, resolve_instance, Dirs
+import whendo.core.util as util
 
 def test_now_1():
     now1 = datetime.now()
-    now2 = Now.dt()
+    now2 = util.Now.dt()
     elapsed = now2 - now1
     assert elapsed < timedelta(microseconds=100.0)
 
 def test_now_2():
     now = datetime.now()
-    now2 = Now.t()
+    now2 = util.Now.t()
     date2 = datetime(year=now.year, month=now.month, day=now.day, hour=now2.hour, minute=now2.minute, second=now2.second, microsecond=now2.microsecond)
     elapsed = date2 - now
     assert elapsed < timedelta(microseconds=100.0)
@@ -19,7 +19,7 @@ def test_now_2():
 def test_now_3():
     now1 = datetime.now().time()
     now1_str = now1.strftime('%H:%M:%S')
-    now2 = Now.s()
+    now2 = util.Now.s()
     assert now1_str in now2
 
 def test_all_visible_subclasses():
@@ -31,7 +31,7 @@ def test_all_visible_subclasses():
         pass
     class D(B):
         pass
-    x = all_visible_subclasses(A)
+    x = util.all_visible_subclasses(A)
     y = {B,C,D}
     assert x == y
 
@@ -40,12 +40,12 @@ def test_key_strings_from_class():
         a:str
         b:str
     x = {'a', 'b'}
-    y = key_strings_from_class(A)
+    y = util.key_strings_from_class(A)
     assert x == y
 
 def test_key_strings_from_dict():
     x = {'a', 'b'}
-    y = key_strings_from_dict({'a':1, 'b':2})
+    y = util.key_strings_from_dict({'a':1, 'b':2})
     assert x == y
 
 def test_resolve_instance():
@@ -93,9 +93,9 @@ def test_resolve_instance():
             }
         ]
     }
-    instance0 = resolve_instance(Top, dictionary0)
-    instance1 = resolve_instance(Top, dictionary1)
-    instance2 = resolve_instance(Top, dictionary2)
+    instance0 = util.resolve_instance(Top, dictionary0)
+    instance1 = util.resolve_instance(Top, dictionary1)
+    instance2 = util.resolve_instance(Top, dictionary2)
     assert isinstance(instance0, C)
     assert isinstance(instance1, D)
     assert isinstance(instance2, A)
@@ -104,8 +104,8 @@ def test_resolve_instance():
     assert instance0 == instance2.a_list[1].d_instance
 
 def test_filepathe():
-    path = FilePathe(path = 'a/b/c')
-    new_path = FilePathe(**(path.dict()))
+    path = util.FilePathe(path = 'a/b/c')
+    new_path = util.FilePathe(**(path.dict()))
     assert path.path == new_path.path, 'path reconstruction failed'
 
 def test_dirs(tmp_path):
@@ -118,7 +118,34 @@ def test_dirs(tmp_path):
             lines = fid.readlines()
         assert lines is not None and isinstance(lines, list) and len(lines) >= 1
         return file
-    file1 = assure_writes_and_reads('foo', Dirs.saved_dir)
-    file2 = assure_writes_and_reads('foo', Dirs.output_dir)
-    file3 = assure_writes_and_reads('foo', Dirs.log_dir)
+    file1 = assure_writes_and_reads('foo', util.Dirs.saved_dir)
+    file2 = assure_writes_and_reads('foo', util.Dirs.output_dir)
+    file3 = assure_writes_and_reads('foo', util.Dirs.log_dir)
     assert file1 != file2 and file2 != file3 and file3 != file1
+
+def test_shared_1():
+    shared = util.Shareds.get('foo')
+    def funk(dictionary:dict):
+        dictionary['a'] = 1
+        return 1
+    result = shared.apply(funk)
+    assert result == 1
+    assert isinstance(shared.data_copy(), dict)
+
+def test_shared_2():
+    """
+    Test transactional nature with a funky failure.
+    """
+    shared = util.Shareds.get('foo')
+    def funk1(dictionary:dict):
+        dictionary['a'] = 1
+        return 1
+    result = shared.apply(funk1)
+    def funk2(dictionary:dict):
+        dictionary['a'] = 2
+        raise Exception('oops')
+    try:
+        shared.apply(funk2)
+    except:
+        pass
+    assert shared.data_copy()['a'] == 1
