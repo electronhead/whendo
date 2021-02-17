@@ -3,8 +3,7 @@ from pprint import PrettyPrinter
 from sys import stdout
 import netifaces
 from datetime import datetime
-from typing import Union, Callable
-from functools import reduce
+from typing import Callable
 import os
 from pydantic import BaseModel
 from typing import List
@@ -189,27 +188,50 @@ class Dirs:
 class FilePathe(BaseModel):
     path: str
 
-class Shared():
+class SharedRO():
     """
     This class provides in-memory shared data so that actions can communicate with each other during
     an api server's lifetime. Not meant to be persisted. Persisting shared data is a different feature.
 
-    Instances not meant to be created directly. Use Shareds.get(...) instead.
+    The point of this class is to treat the initializing dictionary as read-only data. Subsequent
+    accesses always produce the same result. The contract has only one access point for the contained
+    dictionary, the data_copy method.
+
+    Instances not meant to be created directly. Use Shared_ROs.get(...) instead.
 
     Usage:
-        sh = Shareds.get('foo')
-        def update(d:dict):
-            d['a'] = 1
-            return 1
-        result = sh.apply(update)
-        print(result, sh.copy_data())
+        sh = Shared_ROs.get('foo', some_dictionary)
+        assert sh.get('foo') == some_dictionary # not identity comparison
     """
     def __init__(self, dictionary:dict={}):
-        self.lock = RLock()
-        self.data = dictionary
+        self.data = dictionary.copy()
 
     def data_copy(self):
         return self.data.copy()
+
+class SharedRW(SharedRO):
+    """
+    This class provides in-memory shared data so that actions can communicate with each other during
+    an api server's lifetime. Not meant to be persisted. Persisting shared data is a different feature.
+    
+    The point of this class is to treat the initializing dictionary as writeable data. Review the
+    apply method, which implements a critical section with a threading.RLock. The supplied Callable
+    operates on a copy of the contained dictionary.
+
+    Instances not meant to be created directly. Use Shared_RWs.get(...) instead.
+
+    Usage:
+        sh = Shared_RWs.get('foo')
+        def update(d:dict):
+            d['a'] = 1
+            return d['a']
+        result = sh.apply(update)
+        assert 1 == result
+        assert sh.data.copy()['a'] == 1
+    """
+    def __init__(self, dictionary:dict={}):
+        super().__init__(dictionary=dictionary)
+        self.lock = RLock()
     
     def apply(self, callable:Callable):
         """
@@ -222,16 +244,32 @@ class Shared():
             self.data = copy
             return result
 
-class Shareds:
+class SharedROs:
     """
-    A dictionary of instances of Shared.
+    A dictionary of instances of Shared_RO's.
     """
     singletons = {}
 
     @classmethod
-    def get(cls, label:str, dictionary:dict={}) -> Shared:
+    def get(cls, label:str, dictionary:dict) -> SharedRO:
         if label not in cls.singletons:
-            cls.singletons[label] = Shared(dictionary=dictionary)
+            cls.singletons[label] = SharedRO(dictionary=dictionary)
+        return cls.singletons[label]
+    
+    @classmethod
+    def key_set(cls):
+        return set(cls.singletons.keys())
+
+class SharedRWs:
+    """
+    A dictionary of instances of Shared_WR's.
+    """
+    singletons = {}
+
+    @classmethod
+    def get(cls, label:str, dictionary:dict={}) -> SharedRW:
+        if label not in cls.singletons:
+            cls.singletons[label] = SharedRW(dictionary=dictionary)
         return cls.singletons[label]
     
     @classmethod

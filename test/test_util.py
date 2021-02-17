@@ -123,8 +123,8 @@ def test_dirs(tmp_path):
     file3 = assure_writes_and_reads('foo', util.Dirs.log_dir)
     assert file1 != file2 and file2 != file3 and file3 != file1
 
-def test_shared_1():
-    shared = util.Shareds.get('foo')
+def test_shared_rw_1():
+    shared = util.SharedRWs.get('foo')
     def funk(dictionary:dict):
         dictionary['a'] = 1
         return 1
@@ -132,11 +132,11 @@ def test_shared_1():
     assert result == 1
     assert isinstance(shared.data_copy(), dict)
 
-def test_shared_2():
+def test_shared_rw_2():
     """
     Test transactional nature with a funky failure.
     """
-    shared = util.Shareds.get('foo')
+    shared = util.SharedRWs.get('foo')
     def funk1(dictionary:dict):
         dictionary['a'] = 1
         return 1
@@ -148,4 +148,11 @@ def test_shared_2():
         shared.apply(funk2)
     except:
         pass
+    assert shared.data_copy()['a'] == 1
+
+
+def test_shared_ro_1():
+    dictionary = {'a':1}
+    shared = util.SharedROs.get('foo', dictionary)
+    dictionary['a'] = 3
     assert shared.data_copy()['a'] == 1
