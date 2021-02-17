@@ -246,7 +246,7 @@ class SharedRW(SharedRO):
 
 class SharedROs:
     """
-    A dictionary of instances of Shared_RO's.
+    A dictionary of instances of SharedRO's.
     """
     singletons = {}
 
@@ -262,7 +262,7 @@ class SharedROs:
 
 class SharedRWs:
     """
-    A dictionary of instances of Shared_WR's.
+    A dictionary of instances of SharedWR's.
     """
     singletons = {}
 
