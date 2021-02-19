@@ -12,9 +12,11 @@ import whendo.log.init
 
 app = FastAPI()
 
-@app.get('/')
+
+@app.get("/")
 async def root():
-    return 'whengo API server started'
+    return "whengo API server started"
+
 
 dispatcher_instance = DispatcherSingleton.get()
 

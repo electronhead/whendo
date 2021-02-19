@@ -11,9 +11,11 @@ from whendo.api.shared import set_dispatcher
 
 app = FastAPI()
 
-@app.get('/')
+
+@app.get("/")
 async def root():
-    return 'whengo API server started (unit test)'
+    return "whengo API server started (unit test)"
+
 
 dispatcher_instance = Dispatcher()
 dispatcher_instance.set_continuous(Continuous())

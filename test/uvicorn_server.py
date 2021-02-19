@@ -3,6 +3,7 @@ import asyncio
 import uvicorn
 from typing import Optional, List
 
+
 class UvicornTestServer(uvicorn.Server):
     """Uvicorn test server
 
@@ -17,7 +18,7 @@ class UvicornTestServer(uvicorn.Server):
             await server.up()
             yield
             await server.down()
-        
+
     Note:
         The fixture mechanism calls the above fixture twice. Once at the beginning of the
         relevant test function, and once at the exit of the test function. The yield
