@@ -1,6 +1,6 @@
 from whendo.core.action import Action
 from whendo.core.resolver import resolve_action
-from typing import List
+from typing import List, Dict, Any, Optional
 from enum import Enum
 import json
 
@@ -53,11 +53,11 @@ class ListAction(Action):
     action_list:List[Action]
     exception_on_no_success:bool=False
 
-    def execute(self, tag:str=None, scheduler_info:dict=None):
+    def execute(self, tag:str=None, scheduler_info:Dict[str,Any]=None):
         processing_count, success_count, failure_count, successful_actions, exception_actions = process_action_list(
-            tag=tag,
-            scheduler_info=scheduler_info,
-            op_mode=self.op_mode,
+            tag,
+            scheduler_info,
+            self.op_mode,
             action_list=self.action_list,
             successful_actions=[],
             exception_actions=[]
@@ -143,15 +143,15 @@ class IfElseAction(Action):
             return {'outcome':'if else action executed', 'action':self.info(), 'processing_info':processing_info}
 
 def process_action_list(
-    tag:str,
-    scheduler_info:dict,
+    tag:Optional[str],
+    scheduler_info:Optional[Dict[str,Any]],
     op_mode:ListOpMode,
     action_list:List[Action],
     processing_count:int=0,
     success_count:int=0,
     exception_count:int=0,
-    successful_actions:List[Action]=[],
-    exception_actions:List[Action]=[]
+    successful_actions:List[Dict[Any, Any]]=[],
+    exception_actions:List[Dict[Any, Any]]=[]
     ):
     for action in action_list:
         try: # in case an Action does not return an exception

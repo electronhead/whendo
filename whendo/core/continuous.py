@@ -93,7 +93,7 @@ class Continuous(Scheduler):
         logger.info(f"started running continuously")
 
     # methods added to adapt to Dispatcher scheduling model (an adaptation of the schedule library model)
-    def schedule_timely_callable(self, tag:str, callable:Callable[...,...], interval:int=1, hour:int=None, minute:int=None, second:int=None):
+    def schedule_timely_callable(self, tag:str, callable:Callable, interval:int=1, hour:int=None, minute:int=None, second:int=None):
         time_unit, clock_time = TimeUnit.second, None # on a second boundary
         if hour is not None:
             if minute is None:
@@ -117,7 +117,7 @@ class Continuous(Scheduler):
         elif time_unit == TimeUnit.second:
             self.every(interval).second.do(callable).tag(tag)
 
-    def schedule_random_callable(self, tag:str, callable:Callable[...,...], time_unit:TimeUnit, low:int, high:int):
+    def schedule_random_callable(self, tag:str, callable:Callable, time_unit:TimeUnit, low:int, high:int):
         if time_unit == TimeUnit.second:
             self.every(low).to(high).seconds.do(callable).tag(tag)
         elif time_unit == TimeUnit.minute:

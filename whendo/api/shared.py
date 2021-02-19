@@ -5,11 +5,11 @@ from fastapi import status, HTTPException, APIRouter
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.util import Now
 
-def return_success(dictionary:dict):
+def return_success(obj:object):
     """
     for successful returns
     """
-    return dictionary
+    return obj
 
 def raised_exception(text:str, exception:Exception):
     """

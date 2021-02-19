@@ -12,6 +12,7 @@ import pickle
 import json
 import os
 import logging
+from typing import Optional, Dict, Any
 from whendo.core.util import PP, Dirs
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
@@ -28,7 +29,7 @@ class Dispatcher(BaseModel):
     actions: dict={}
     schedulers: dict={}
     schedulers_actions: dict={}
-    saved_dir: str=None
+    saved_dir: Optional[str]=None
 
     # not treated as a model attr
     _continuous: Continuous = PrivateAttr(default_factory = Continuous.get)

@@ -23,7 +23,7 @@ class ClientAsync(BaseModel):
     async def clear_dispatcher(self):
         return await self.get("/dispatcher/clear")
     async def load_dispatcher_from_name(self, name:str):
-        return Dispatch.resolve(await self.get_as_json(f"/dispatcher/load_from_name/{name}"))
+        return Dispatcher.resolve(await self.get_as_json(f"/dispatcher/load_from_name/{name}"))
     async def save_data_to_name(self, name:str):
         return await self.get(f"/dispatcher/save_to_name/{name}")
     async def get_saved_dir(self):

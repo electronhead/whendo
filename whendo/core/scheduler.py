@@ -1,13 +1,13 @@
 from datetime import time
 from pydantic import BaseModel
-from typing import Optional
+from typing import Dict, Optional
 from collections.abc import Callable
 from threading import RLock
 import logging
+import random
 from whendo.core.util import TimeUnit, Now, object_info
 from whendo.core.action import Action
 from whendo.core.continuous import Continuous
-import random
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +15,8 @@ class Count:
     """
     This counter is useful for distiguishing between different sets of log entries as well as viewing a count for each tag.
     """
-    good_count = {}
-    bad_count = {}
+    good_count:Dict[str,int] = {}
+    bad_count:Dict[str,int]  = {}
     @classmethod
     def good_up(cls, tag):
         if tag not in cls.good_count:
@@ -62,8 +62,8 @@ class Scheduler(BaseModel):
            mechanism does not support it. So it's done using a less than optimal approach that alters the execution
            behavior within a scheduled job. Outside of the specified period, a job will be run. It just won't do anything. [see do_nothing below]
     """
-    start: Optional[time]=None
-    stop: Optional[time]=None
+    start:Optional[time] = None
+    stop:Optional[time] = None
     
     def schedule_action(self, tag:str, action:Action, continuous:Continuous):
         pass
@@ -91,7 +91,7 @@ class Scheduler(BaseModel):
         else:
             return self.wrap(lambda: action.execute(tag=tag, scheduler_info=self.info()), tag=tag, action_json=action.json(), scheduler_json=self.json())
     
-    def wrap(self, thunk:Callable[...,...], tag:str, action_json:str, scheduler_json:str):
+    def wrap(self, thunk:Callable, tag:str, action_json:str, scheduler_json:str):
         """
         wraps the execution inside a try block;
         allows for logging and handling of raised exceptions
@@ -135,9 +135,9 @@ class TimelyScheduler(Scheduler):
     execute the action every 2 hours at 15 minutes past the hour.
     """
     interval: int
-    hour: Optional[int]=None
-    minute: Optional[int]=None
-    second: Optional[int]=None
+    hour:Optional[int] = None
+    minute:Optional[int] = None
+    second:Optional[int] = None
 
     def schedule_action(self, tag:str, action:Action, continuous:Continuous):
         callable = self.during_period(tag=tag, action=action)
@@ -157,7 +157,7 @@ class RandomlyScheduler(Scheduler):
     For example, for low=30, hight=90 and time_unit=second, the system will again execute the action
     randomly every 30 to 90 seconds after each execution.
     """
-    time_unit: Optional[TimeUnit]=TimeUnit.second
+    time_unit:TimeUnit=TimeUnit.second
     low: int
     high: int
 

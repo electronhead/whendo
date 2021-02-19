@@ -1,12 +1,12 @@
 from enum import Enum
 from pprint import PrettyPrinter
 from sys import stdout
-import netifaces
+# import netifaces
 from datetime import datetime
 from typing import Callable
 import os
 from pydantic import BaseModel
-from typing import List
+from typing import List, Dict, Any
 from pathlib import Path
 from threading import RLock
 
@@ -46,15 +46,13 @@ def all_visible_subclasses(klass):
     helper(klass, result)
     return result
 
+def key_strings_from_dict(dictionary:Dict[str, Any]):
+    return set(x for x in dictionary)
+
 def key_strings_from_class(klass):
     return set(x for x in klass.__fields__.keys())
 
-def key_strings_from_dict(dictionary:dict):
-    return set(x for x in dictionary)
-
-
-
-def find_class(klass, dictionary:dict):
+def find_class(klass, dictionary:Dict[str, Any]):
     dictionary_keys = key_strings_from_dict(dictionary)
     classes = all_visible_subclasses(klass)
     classes.add(klass) # the top class might not be abstract
@@ -69,7 +67,7 @@ def find_class(klass, dictionary:dict):
                 min_count = count
     return found_class
 
-def resolve_instance(klass, dictionary:dict, check_for_found_class:bool=True):
+def resolve_instance(klass, dictionary:Dict[str, Any], check_for_found_class:bool=True):
     """
     if an (improper) subclass is found that maps to the supplied dictionary, the dictionary
     is converted to an instance of that class. If the dictionary contains lists of dictionaries,
@@ -248,7 +246,7 @@ class SharedROs:
     """
     A dictionary of instances of SharedRO's.
     """
-    singletons = {}
+    singletons:Dict[str, SharedRO] = {}
 
     @classmethod
     def get(cls, label:str, dictionary:dict) -> SharedRO:
@@ -264,7 +262,7 @@ class SharedRWs:
     """
     A dictionary of instances of SharedWR's.
     """
-    singletons = {}
+    singletons:Dict[str, SharedRW] = {}
 
     @classmethod
     def get(cls, label:str, dictionary:dict={}) -> SharedRW:

@@ -69,7 +69,7 @@ def unschedule_action(action_name:str):
         raise raised_exception(f"failed to unschedule action ({action_name})", e)
 
 @router.get('/actions/{action_name}/reschedule', status_code=status.HTTP_200_OK)
-def unschedule_action(action_name:str):
+def reschedule_action(action_name:str):
     try:
         get_dispatcher(router).reschedule_action(action_name=action_name)
         return return_success(f"action ({action_name}) was successfully rescheduled")

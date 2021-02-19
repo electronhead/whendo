@@ -10,10 +10,10 @@ class Fleet(BaseModel):
     host:FleetHost
     fleet_hosts:List[FleetHost]=[]
 
-    def collect_hosts():
-    """
-    populate hosts with locatable fleet hosts
-    """
+    def collect_hosts(self):
+        """
+        populate hosts with locatable fleet hosts
+        """
         pass
 
 class FleetHost(BaseModel):

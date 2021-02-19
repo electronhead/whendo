@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-
+from typing import Dict, Any
 from whendo.core.util import PP, IP, Now, object_info
 
 class Action(BaseModel):
@@ -25,7 +25,7 @@ class ActionPayload:
     This class produces a status-oriented payload, including action and scheduler info.
     """
     @classmethod
-    def build(cls, action_info:dict, scheduler_info:dict):
+    def build(cls, action_info:Dict[str, Any], scheduler_info:Dict[str, Any]=None):
         payload = {}
         payload.update({'action_info':action_info})
         if scheduler_info:

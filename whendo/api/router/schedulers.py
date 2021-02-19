@@ -66,7 +66,7 @@ def unschedule_scheduler(scheduler_name:str):
         raise raised_exception(f"failed to unschedule scheduler ({scheduler_name})", e)
 
 @router.get('/schedulers/{scheduler_name}/reschedule', status_code=status.HTTP_200_OK)
-def unschedule_scheduler(scheduler_name:str):
+def reschedule_scheduler(scheduler_name:str):
     try:
         get_dispatcher(router).reschedule_scheduler(scheduler_name=scheduler_name)
         return return_success(f"scheduler ({scheduler_name}) was successfully rescheduled")

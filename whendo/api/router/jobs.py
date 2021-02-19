@@ -39,7 +39,7 @@ def jobs_are_running():
         raise raised_exception("failed to get job count", e)
 
 @router.get('/clear', status_code=status.HTTP_200_OK)
-def jobs_are_running():
+def clear():
     try:
         return return_success({'job_count':get_dispatcher(router).clear_jobs()})
     except Exception as e:
