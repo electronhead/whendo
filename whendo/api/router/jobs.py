@@ -39,14 +39,15 @@ def job_count():
 @router.get("/are_running", status_code=status.HTTP_200_OK)
 def jobs_are_running():
     try:
-        return return_success({"job_count": get_dispatcher(router).jobs_are_running()})
+        return return_success(get_dispatcher(router).jobs_are_running())
     except Exception as e:
-        raise raised_exception("failed to get job count", e)
+        raise raised_exception("failed to determine if jobs are running", e)
 
 
 @router.get("/clear", status_code=status.HTTP_200_OK)
 def clear():
     try:
-        return return_success({"job_count": get_dispatcher(router).clear_jobs()})
+        get_dispatcher(router).clear_jobs()
+        return return_success("jobs cleared")
     except Exception as e:
         raise raised_exception("failed to get job count", e)

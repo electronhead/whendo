@@ -1,7 +1,10 @@
 import pytest
 import time
+import json
 from whendo.core.dispatcher import Dispatcher
 from test.fixtures import friends
+
+pause = 3
 
 
 def test_schedule_action(friends):
@@ -14,11 +17,10 @@ def test_schedule_action(friends):
     dispatcher.add_scheduler("bar", scheduler)
     dispatcher.schedule_action("bar", "foo")
 
-    continuous = dispatcher.get_continuous()
-    continuous.run_continuously()
-    time.sleep(4)
-    continuous.stop_running_continuously()
-    continuous.clear()
+    dispatcher.run_jobs()
+    time.sleep(pause)
+    dispatcher.stop_jobs()
+    dispatcher.clear_jobs()
 
     line = None
     with open(action.file, "r") as fid:
@@ -35,11 +37,10 @@ def test_unschedule_action(friends):
     dispatcher.add_action("foo", action)
     dispatcher.add_scheduler("bar", scheduler)
     dispatcher.schedule_action("bar", "foo")
+    assert dispatcher.job_count() == 1
     dispatcher.unschedule_action("foo")
-
-    continuous = dispatcher.get_continuous()
-    assert continuous.job_count() == 0
-    assert dispatcher.get_scheduled_action_count() == continuous.job_count()
+    assert dispatcher.job_count() == 0
+    assert dispatcher.get_scheduled_action_count() == dispatcher.job_count()
 
 
 def test_reschedule_action(friends):
@@ -47,18 +48,17 @@ def test_reschedule_action(friends):
     Tests unscheduling and then rescheduling an action.
     """
     dispatcher, scheduler, action = friends()
-    continuous = dispatcher.get_continuous()
-    assert continuous.job_count() == 0
+    assert dispatcher.job_count() == 0
 
     dispatcher.add_action("foo", action)
     dispatcher.add_scheduler("bar", scheduler)
     dispatcher.schedule_action("bar", "foo")
     dispatcher.reschedule_action("foo")
 
-    continuous.run_continuously()
-    time.sleep(4)
-    continuous.stop_running_continuously()
-    continuous.clear()
+    dispatcher.run_jobs()
+    time.sleep(pause)
+    dispatcher.stop_jobs()
+    dispatcher.clear_jobs()
 
     line = None
     with open(action.file, "r") as fid:
@@ -72,8 +72,7 @@ def test_reschedule_action_2(friends, tmp_path):
     Tests unscheduling and then rescheduling an action.
     """
     dispatcher, scheduler, action = friends()
-    continuous = dispatcher.get_continuous()
-    assert continuous.job_count() == 0
+    assert dispatcher.job_count() == 0
 
     dispatcher.add_action("foo", action)
     dispatcher.add_scheduler("bar", scheduler)
@@ -83,10 +82,10 @@ def test_reschedule_action_2(friends, tmp_path):
     dispatcher.set_action("foo", stored_action)
     dispatcher.reschedule_action("foo")
 
-    continuous.run_continuously()
-    time.sleep(4)
-    continuous.stop_running_continuously()
-    continuous.clear()
+    dispatcher.run_jobs()
+    time.sleep(pause)
+    dispatcher.stop_jobs()
+    dispatcher.clear_jobs()
 
     line = None
     with open(stored_action.file, "r") as fid:
@@ -99,23 +98,47 @@ def test_unschedule_scheduler(friends):
     Tests unscheduling a scheduler.
     """
     dispatcher, scheduler, action = friends()
-    continuous = dispatcher.get_continuous()
-    assert continuous.job_count() == 0
+    assert dispatcher.job_count() == 0
 
     dispatcher.add_action("foo", action)
     dispatcher.add_scheduler("bar", scheduler)
     dispatcher.schedule_action("bar", "foo")
 
-    assert continuous.job_count() == 1
+    assert dispatcher.job_count() == 1
 
     dispatcher.unschedule_scheduler("bar")
 
-    assert continuous.job_count() == 0
-    assert dispatcher.get_scheduled_action_count() == continuous.job_count()
+    assert dispatcher.job_count() == 0
+    assert dispatcher.get_scheduled_action_count() == dispatcher.job_count()
 
     # make sure that bar and foo remain
     assert dispatcher.get_scheduler("bar")
     assert dispatcher.get_action("foo")
+
+
+def test_reschedule_all(friends):
+    """
+    Tests unscheduling a scheduler.
+    """
+    dispatcher, scheduler, action = friends()
+    assert dispatcher.job_count() == 0
+
+    dispatcher.add_action("foo", action)
+    dispatcher.add_scheduler("bar", scheduler)
+    dispatcher.schedule_action("bar", "foo")
+    assert dispatcher.job_count() == 1
+
+    dispatcher.clear_jobs()
+    assert dispatcher.job_count() == 0
+
+    dispatcher.add_action("foo2", action)
+    dispatcher.schedule_action("bar", "foo2")
+    assert dispatcher.job_count() == 1
+
+    dispatcher.reschedule_all_schedulers()
+    assert dispatcher.job_count() == 2
+
+    assert dispatcher.get_scheduled_action_count() == dispatcher.job_count()
 
 
 def test_clear_dispatcher(friends):
@@ -123,21 +146,110 @@ def test_clear_dispatcher(friends):
     Tests clearing a dispatcher.
     """
     dispatcher, scheduler, action = friends()
-    continuous = dispatcher.get_continuous()
-    assert continuous.job_count() == 0
+    assert dispatcher.job_count() == 0
 
     dispatcher.add_action("foo", action)
     dispatcher.add_scheduler("bar", scheduler)
     dispatcher.schedule_action("bar", "foo")
-    assert continuous.job_count() == 1
+    assert dispatcher.job_count() == 1
 
     dispatcher.clear_all()
-    assert continuous.job_count() == 0
-    assert dispatcher.get_scheduled_action_count() == continuous.job_count()
+    assert dispatcher.job_count() == 0
+    assert dispatcher.get_scheduled_action_count() == dispatcher.job_count()
 
     # make sure that bar and foo are Gone
     assert dispatcher.get_scheduler("bar") is None
     assert dispatcher.get_action("foo") is None
+
+
+def test_scheduled_action_count(friends):
+    """
+    Tests scheduled action count
+    """
+    # original
+    dispatcher, scheduler, action = friends()
+    dispatcher.add_action("foo", action)
+    dispatcher.add_scheduler("bar", scheduler)
+    dispatcher.schedule_action(action_name="foo", scheduler_name="bar")
+    assert 1 == dispatcher.get_scheduled_action_count()
+    assert 1 == dispatcher.job_count()
+
+
+def test_jobs_are_running(friends):
+    dispatcher, scheduler, action = friends()
+    try:
+        dispatcher.run_jobs()
+        assert dispatcher.jobs_are_running()
+    finally:
+        try:
+            dispatcher.stop_jobs()
+        except:
+            pass
+
+
+def test_jobs_are_not_running(friends):
+    dispatcher, scheduler, action = friends()
+    try:
+        dispatcher.run_jobs()
+        assert dispatcher.jobs_are_running()
+        dispatcher.stop_jobs()
+        assert not dispatcher.jobs_are_running()
+    finally:
+        try:
+            dispatcher.stop_jobs()
+        except:
+            pass
+
+
+def test_replace_dispatcher(friends):
+    """
+    Tests replacing a dispatcher
+    """
+    # original
+    dispatcher, scheduler, action = friends()
+    saved_dir = dispatcher.get_saved_dir()
+    dispatcher.add_action("foo", action)
+    dispatcher.add_scheduler("bar", scheduler)
+    dispatcher.schedule_action(action_name="foo", scheduler_name="bar")
+    # replacement
+    replacement = Dispatcher()  # no saved_dir
+    replacement.add_action("flea", action)
+    replacement.add_scheduler("bath", scheduler)
+    replacement.schedule_action(action_name="flea", scheduler_name="bath")
+    # do the business
+    dispatcher.replace_all(replacement.dict())
+    # is everyone okay?
+    assert not dispatcher.get_action("foo")
+    assert not dispatcher.get_scheduler("bar")
+    assert dispatcher.get_action("flea")
+    assert dispatcher.get_scheduler("bath")
+    assert {"bath"} == set(k for k in dispatcher.get_schedulers())
+    assert {"flea"} == set(k for k in dispatcher.get_actions())
+    assert {"bath"} == set(k for k in dispatcher.get_schedulers_actions())
+    assert {"flea"} == set(dispatcher.get_schedulers_actions()["bath"])
+
+
+def test_load_dispatcher(friends):
+    """
+    Tests loading a dispatcher
+    """
+    dispatcher, scheduler, action = friends()
+    saved_dir = dispatcher.get_saved_dir()
+    assert saved_dir is not None
+    dispatcher.add_action("foo", action)
+    dispatcher.add_scheduler("bar", scheduler)
+    dispatcher.schedule_action(action_name="foo", scheduler_name="bar")
+    dispatcher2 = dispatcher.load_current()
+    assert dispatcher2 is not None, f"saved_dir({saved_dir})"
+    assert set(k for k in dispatcher.get_actions()) == set(
+        k for k in dispatcher2.get_actions()
+    )
+    assert set(k for k in dispatcher.get_schedulers()) == set(
+        k for k in dispatcher2.get_schedulers()
+    )
+    assert set(k for k in dispatcher.get_schedulers_actions()) == set(
+        k for k in dispatcher2.get_schedulers_actions()
+    )
 
 
 def test_saved_dir_1(tmp_path):

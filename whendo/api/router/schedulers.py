@@ -1,8 +1,28 @@
 from fastapi import APIRouter, status, Depends
 from whendo.api.shared import return_success, raised_exception, get_dispatcher
 from whendo.core.resolver import resolve_scheduler
+import whendo.core.util as util
 
 router = APIRouter(prefix="", tags=["Schedulers"])
+
+
+@router.get("/schedulers/action_count", status_code=status.HTTP_200_OK)
+def get_scheduled_action_count():
+    try:
+        return return_success(
+            {"action_count": get_dispatcher(router).get_scheduled_action_count()}
+        )
+    except Exception as e:
+        raise raised_exception(f"failed to retrieve the scheduled action count", e)
+
+
+@router.get("/schedulers/reschedule_all", status_code=status.HTTP_200_OK)
+def reschedule_all_schedulers():
+    try:
+        get_dispatcher(router).reschedule_all_schedulers()
+        return return_success("all schedulers were successfully unscheduled")
+    except Exception as e:
+        raise raised_exception("failed to unschedule all schedulers", e)
 
 
 @router.get(
@@ -104,12 +124,3 @@ def reschedule_scheduler(scheduler_name: str):
         )
     except Exception as e:
         raise raised_exception(f"failed to reschedule scheduler ({scheduler_name})", e)
-
-
-@router.get("/schedulers/reschedule_all", status_code=status.HTTP_200_OK)
-def reschedule_all_schedulers():
-    try:
-        get_dispatcher(router).reschedule_all_schedulers()
-        return return_success("all schedulers were successfully unscheduled")
-    except Exception as e:
-        raise raised_exception("failed to unschedule all schedulers", e)

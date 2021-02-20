@@ -1,17 +1,28 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, status, Depends
 from whendo.api.shared import return_success, raised_exception, get_dispatcher
+from whendo.core.dispatcher import Dispatcher
 from whendo.core.util import FilePathe
 
 router = APIRouter(prefix="/dispatcher", tags=["Dispatcher"])
 
 
 @router.get("/clear", status_code=status.HTTP_200_OK)
-def clear_dispatcher():
+def clear():
     try:
         get_dispatcher(router).clear_all()
         return return_success("dispatcher cleared")
     except Exception as e:
         raise raised_exception("failed to clear the Dispatcher", e)
+
+
+@router.put("/replace", status_code=status.HTTP_200_OK)
+def replace(replacement=Depends(Dispatcher.resolve)):
+    try:
+        assert replacement, f"couldn't resolve class for replacement dispatcher"
+        get_dispatcher(router).replace_all(replacement=replacement.dict())
+        return return_success(f"dispatcher was successfully replaced")
+    except Exception as e:
+        raise raised_exception(f"failed to replace dispatcher", e)
 
 
 @router.get("/load", status_code=status.HTTP_200_OK)

@@ -142,6 +142,15 @@ def test_dirs(tmp_path):
     assert file1 != file2 and file2 != file3 and file3 != file1
 
 
+def test_output(tmp_path):
+    file = str(tmp_path / "output.txt")
+    util.Output.pprint({"what": "hmmm"}, file=file)
+    lines = None
+    with open(file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+
 def test_shared_rw_1():
     shared = util.SharedRWs.get("foo")
 

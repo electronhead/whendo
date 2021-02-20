@@ -13,13 +13,13 @@ import json
 import os
 import logging
 from typing import Optional, Dict, Any
-from whendo.core.util import PP, Dirs
+from whendo.core.util import PP, Dirs, Output
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
 from whendo.core.continuous import Continuous
 from whendo.core.resolver import resolve_action, resolve_scheduler
 
-logger = logging.getLogger()
+logger = logging.getLogger(__name__)
 
 
 class Dispatcher(BaseModel):
@@ -36,6 +36,7 @@ class Dispatcher(BaseModel):
     # not treated as a model attr
     _continuous: Continuous = PrivateAttr(default_factory=Continuous.get)
 
+    # jobs and continuous object
     def get_continuous(self):
         return self._continuous
 
@@ -57,6 +58,7 @@ class Dispatcher(BaseModel):
     def clear_jobs(self):
         self._continuous.clear()
 
+    # internal dispatcher state access
     def get_actions(self):
         with Lok.lock:
             return self.actions
@@ -84,29 +86,36 @@ class Dispatcher(BaseModel):
 
     def load_from_name(self, name: str):
         with Lok.lock:
-            assert self.saved_dir, "saved_dir must be set"
-            with open(self.saved_dir + name + ".json", "r") as infile:
-                json_string = json.load(infile)
-                dictionary = json.loads(json_string)
-                return Dispatcher.resolve(dictionary)
+            if self.saved_dir:
+                with open(self.saved_dir + name + ".json", "r") as infile:
+                    json_string = json.load(infile)
+                    dictionary = json.loads(json_string)
+                    return Dispatcher.resolve(dictionary)
+            else:
+                return None
 
     def save_to_name(self, name: str):
         with Lok.lock:
-            assert self.saved_dir, "saved_dir must be set"
-            with open(self.saved_dir + name + ".json", "w") as outfile:
-                json.dump(self.json(), outfile, indent=2)
+            if self.saved_dir:
+                with open(self.saved_dir + name + ".json", "w") as outfile:
+                    json.dump(self.json(), outfile, indent=2)
 
     def get_saved_dir(self):
         return self.saved_dir
 
     def set_saved_dir(self, saved_dir: str):
         with Lok.lock:
-            if not os.path.exists(saved_dir):
-                os.makedirs(saved_dir)
+            if saved_dir:
+                if not os.path.exists(saved_dir):
+                    os.makedirs(saved_dir)
             self.saved_dir = saved_dir
             self.save_current()
 
-    def clear_all(self):
+    def clear_all(self, should_save: bool = True):
+        """
+        Removes all actions and schedulers and ceases their involvement
+        with job processing.
+        """
         with Lok.lock:
             schedulers_copy = self.schedulers.copy()
             for scheduler_name in schedulers_copy:
@@ -115,6 +124,25 @@ class Dispatcher(BaseModel):
             for action_name in actions_copy:
                 self.delete_action(action_name)
             self.schedulers_actions.clear()
+            if should_save:
+                self.save_current()
+
+    def replace_all(self, replacement: dict):
+        """
+        1. except for the saved_dir, clear everything first
+        2. replace elements with replacement elements
+        3. save
+
+        Note: after [1] all previous actions and schedules are no longer in existence.
+        If processing should continue, invoke reschedule_all_schedulers() after
+        invoking this method.
+        """
+        with Lok.lock:
+            real_replacement = Dispatcher.resolve(replacement)
+            self.clear_all(should_save=False)
+            self.actions = real_replacement.get_actions()
+            self.schedulers = real_replacement.get_schedulers()
+            self.schedulers_actions = real_replacement.get_schedulers_actions()
             self.save_current()
 
     # actions
@@ -288,10 +316,10 @@ class Dispatcher(BaseModel):
     @classmethod
     def resolve(cls, dictionary: dict = {}):
         """
-        converts dictionary to an Data instance.
+        converts dictionary to an Dispatcher instance.
         """
         if len(dictionary) == 0:
-            return Dispatcher(saved_dir=Dirs.saved_dir)
+            return Dispatcher()
         else:
             saved_dir = dictionary["saved_dir"]
             actions = dictionary["actions"]
