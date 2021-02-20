@@ -1,11 +1,13 @@
-from whendo.core.action import Action
-from whendo.core.resolver import resolve_action
 from typing import List, Dict, Any, Optional
 from enum import Enum
 import json
+from whendo.core.action import Action
+from whendo.core.resolver import resolve_action
 
 
 class ExceptionAction(Action):
+    """ acts like False """
+
     exception_tag_field: str = "excepted"
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
@@ -13,6 +15,8 @@ class ExceptionAction(Action):
 
 
 class SuccessAction(Action):
+    """ acts like True """
+
     success_tag_field: str = "successful"
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
@@ -20,6 +24,8 @@ class SuccessAction(Action):
 
 
 class NotAction(Action):
+    """ acts like negation """
+
     operand: Action
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
@@ -50,6 +56,15 @@ class ListOpMode(str, Enum):
 
 
 class ListAction(Action):
+    """
+    executes actions based on:
+
+        ListOpMode.ALL:   executes all, irrespective of individual outcomes
+        ListOpMode.OR:    executes until the first successful action
+        ListOpMode.AND:   executes until the first exception
+
+    """
+
     op_mode: ListOpMode
     action_list: List[Action]
     exception_on_no_success: bool = False
@@ -91,6 +106,15 @@ class ListAction(Action):
 
 
 class IfElseAction(Action):
+    """
+    executes actions based on:
+
+        if test_action is successful, executes if_actions as if they were a
+            ListAction using the provided ListOpMode
+        otherwise executes the else_action
+
+    """
+
     op_mode: ListOpMode
     test_action: Action
     if_actions: List[Action]
@@ -180,6 +204,9 @@ def process_action_list(
     successful_actions: List[Dict[Any, Any]] = [],
     exception_actions: List[Dict[Any, Any]] = [],
 ):
+    """
+    services the two action list classes
+    """
     for action in action_list:
         try:  # in case an Action does not return an exception
             result = action.execute(tag=tag, scheduler_info=scheduler_info)
