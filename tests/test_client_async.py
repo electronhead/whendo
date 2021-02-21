@@ -8,16 +8,15 @@ import time
 import pytest
 from pydantic import BaseModel
 from httpx import AsyncClient
-from test.client_async import ClientAsync
 from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.actions.logic_action import ListAction, ListOpMode
 from whendo.core.scheduler import TimelyScheduler, Scheduler
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.util import FilePathe, resolve_instance
-from test.fixtures import port, host, startup_and_shutdown_uvicorn
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
-
+from .fixtures import port, host, startup_and_shutdown_uvicorn
+from .client_async import ClientAsync
 
 @pytest.mark.asyncio
 async def test_client_1(startup_and_shutdown_uvicorn, host, port, tmp_path):

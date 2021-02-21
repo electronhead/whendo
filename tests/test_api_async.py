@@ -14,8 +14,8 @@ from whendo.core.actions.logic_action import ListAction, ListOpMode
 from whendo.core.scheduler import TimelyScheduler, Scheduler
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.util import FilePathe, resolve_instance, Output
-from test.fixtures import port, host, startup_and_shutdown_uvicorn, base_url
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
+from .fixtures import port, host, startup_and_shutdown_uvicorn, base_url
 import logging
 
 logger = logging.getLogger(__name__)

@@ -2,7 +2,7 @@ import pytest
 import time
 import json
 from whendo.core.dispatcher import Dispatcher
-from test.fixtures import friends
+from .fixtures import friends
 
 pause = 3
 
