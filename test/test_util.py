@@ -132,6 +132,7 @@ def test_dirs(tmp_path):
     test to make sure that files with the same name are written to
     separate directories
     """
+
     def assure_writes_and_reads(thunk):
         """ make sure that files can be written to and read from """
         lines = None
@@ -147,6 +148,7 @@ def test_dirs(tmp_path):
     file2 = assure_writes_and_reads(util.Dirs.output_dir)
     file3 = assure_writes_and_reads(util.Dirs.log_dir)
     assert file1 != file2 and file2 != file3 and file3 != file1
+
 
 def test_dirs_2(tmp_path):
     try:

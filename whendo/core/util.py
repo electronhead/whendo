@@ -206,23 +206,23 @@ class Dirs:
     to move the relevant subdirectory of [{home dir}/.whendo/].
 
     """
-    
-    @classmethod
-    def output_dir(cls, home_path:Path=None):
-        return str(cls.assure_dir(cls.dir_from_label('output', home_path)))
 
     @classmethod
-    def saved_dir(cls, home_path:Path=None):
-        return str(cls.assure_dir(cls.dir_from_label('saved', home_path)))
+    def output_dir(cls, home_path: Path = None):
+        return str(cls.assure_dir(cls.dir_from_label("output", home_path)))
 
     @classmethod
-    def log_dir(cls, home_path:Path=None):
-        return str(cls.assure_dir(cls.dir_from_label('log', home_path)))
+    def saved_dir(cls, home_path: Path = None):
+        return str(cls.assure_dir(cls.dir_from_label("saved", home_path)))
 
     @classmethod
-    def dir_from_label(cls, label:str, home_path:Path=None):
+    def log_dir(cls, home_path: Path = None):
+        return str(cls.assure_dir(cls.dir_from_label("log", home_path)))
+
+    @classmethod
+    def dir_from_label(cls, label: str, home_path: Path = None):
         path = home_path if home_path else Path.home()
-        return str(path / ".whendo" / os.getcwd().split("/")[-1:][0] / label) + '/'
+        return str(path / ".whendo" / os.getcwd().split("/")[-1:][0] / label) + "/"
 
     @classmethod
     def assure_dir(cls, assured_dir: str):
