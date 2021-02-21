@@ -257,7 +257,7 @@ async def test_unschedule_scheduler(startup_and_shutdown_uvicorn, base_url, tmp_
 
 @pytest.mark.asyncio
 async def test_job_count(startup_and_shutdown_uvicorn, base_url, tmp_path):
-    """ replace innards of the active dispatcher """
+    """ test job_count """
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))

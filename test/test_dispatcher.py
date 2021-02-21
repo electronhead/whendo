@@ -217,7 +217,7 @@ def test_replace_dispatcher(friends):
     replacement.add_scheduler("bath", scheduler)
     replacement.schedule_action(action_name="flea", scheduler_name="bath")
     # do the business
-    dispatcher.replace_all(replacement.dict())
+    dispatcher.replace_all(replacement)
     # is everyone okay?
     assert not dispatcher.get_action("foo")
     assert not dispatcher.get_scheduler("bar")

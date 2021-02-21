@@ -19,7 +19,7 @@ def clear():
 def replace(replacement=Depends(Dispatcher.resolve)):
     try:
         assert replacement, f"couldn't resolve class for replacement dispatcher"
-        get_dispatcher(router).replace_all(replacement=replacement.dict())
+        get_dispatcher(router).replace_all(replacement=replacement)
         return return_success(f"dispatcher was successfully replaced")
     except Exception as e:
         raise raised_exception(f"failed to replace dispatcher", e)

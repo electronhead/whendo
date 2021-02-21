@@ -127,23 +127,31 @@ class Dispatcher(BaseModel):
             if should_save:
                 self.save_current()
 
-    def replace_all(self, replacement: dict):
+    def replace_all(self, replacement: object):
         """
+        Note #1: the assumption is that the replacement is a Dispatcher. There's
+        an module import circularity somewhere. Have yet to find a solution beyond
+        this one. This will suffice for now. The submethod is there to show
+        intention.
+
         1. except for the saved_dir, clear everything first
         2. replace elements with replacement elements
         3. save
 
-        Note: after [1] all previous actions and schedules are no longer in existence.
+        Note #2: after [1] all previous actions and schedules are no longer in existence.
         If processing should continue, invoke reschedule_all_schedulers() after
         invoking this method.
         """
-        with Lok.lock:
-            real_replacement = Dispatcher.resolve(replacement)
-            self.clear_all(should_save=False)
-            self.actions = real_replacement.get_actions()
-            self.schedulers = real_replacement.get_schedulers()
-            self.schedulers_actions = real_replacement.get_schedulers_actions()
-            self.save_current()
+
+        def typed_replace_all(replacement: Dispatcher):
+            with Lok.lock:
+                self.clear_all(should_save=False)
+                self.actions = replacement.get_actions()
+                self.schedulers = replacement.get_schedulers()
+                self.schedulers_actions = replacement.get_schedulers_actions()
+                self.save_current()
+
+        typed_replace_all(replacement)
 
     # actions
     def get_action(self, action_name: str):

@@ -33,6 +33,9 @@ class Client(BaseModel):
     def set_saved_dir(self, saved_dir: FilePathe):
         return self.put("/dispatcher/saved_dir", saved_dir)
 
+    def replace_dispatcher(self, replacement: Dispatcher):
+        return self.put("/dispatcher/replace", replacement)
+
     # /actions
     def get_action(self, action_name: str):
         return resolve_action(self.get(f"/actions/{action_name}"))
@@ -56,6 +59,9 @@ class Client(BaseModel):
         return self.get(f"/actions/{action_name}/reschedule")
 
     # /schedulers
+    def scheduled_action_count(self):
+        return self.get("/schedulers/action_count")
+
     def schedule_action(self, scheduler_name: str, action_name: str):
         return self.get(f"/schedulers/{scheduler_name}/actions/{action_name}")
 

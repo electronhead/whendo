@@ -13,6 +13,7 @@ from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.actions.logic_action import ListAction, ListOpMode
 from whendo.core.scheduler import TimelyScheduler, Scheduler
+from whendo.core.dispatcher import Dispatcher
 from whendo.core.util import FilePathe, resolve_instance
 from test.fixtures import port, host, startup_and_shutdown_uvicorn
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
@@ -250,6 +251,114 @@ async def test_unschedule_scheduler(startup_and_shutdown_uvicorn, host, port, tm
     await get_scheduler(client=client, scheduler_name="bar")
 
 
+@pytest.mark.asyncio
+async def test_job_count(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    """ test job_count """
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    scheduler = TimelyScheduler(interval=1)
+
+    await add_action(client=client, action_name="foo1", action=action1)
+    await add_action(client=client, action_name="foo2", action=action2)
+    await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
+    await schedule_action(client=client, action_name="foo1", scheduler_name="bar")
+    await schedule_action(client=client, action_name="foo2", scheduler_name="bar")
+    await assert_job_count(client=client, n=2)
+
+
+@pytest.mark.asyncio
+async def test_schedulers_action_count(
+    startup_and_shutdown_uvicorn, host, port, tmp_path
+):
+    """ tests scheduled action count """
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    scheduler = TimelyScheduler(interval=1)
+
+    await add_action(client=client, action_name="foo1", action=action1)
+    await add_action(client=client, action_name="foo2", action=action2)
+    await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
+    await schedule_action(client=client, action_name="foo1", scheduler_name="bar")
+    await schedule_action(client=client, action_name="foo2", scheduler_name="bar")
+    await assert_scheduled_action_count(client=client, n=2)
+
+
+@pytest.mark.asyncio
+async def test_replace_dispatcher(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    """ replace innards of the active dispatcher """
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    saved_dir = await get_saved_dir(client=client)
+
+    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    scheduler = TimelyScheduler(interval=1)
+
+    await add_action(client=client, action_name="foo", action=action1)
+    await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
+    await schedule_action(client=client, action_name="foo", scheduler_name="bar")
+    await assert_job_count(client=client, n=1)
+    await assert_scheduled_action_count(client=client, n=1)
+
+    # action1 doing its thing
+    await run_and_stop_jobs(client=client, pause=4)
+    lines = None
+    with open(action1.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+    # replacement dispatcher
+    replacement = Dispatcher()  # no saved_dir
+    replacement.add_action("flea", action2)
+    replacement.add_scheduler("bath", scheduler)
+    replacement.schedule_action(action_name="flea", scheduler_name="bath")
+    assert replacement.get_saved_dir() is None
+    await assert_job_count(client=client, n=1)
+
+    # do the business
+    await replace_dispatcher(client=client, replacement=replacement)
+
+    # check the business before checking the behavior of action2
+    await assert_scheduled_action_count(client=client, n=1)
+    await assert_job_count(client=client, n=0)
+
+    action3 = await get_action(client=client, action_name="flea")
+    assert action3 is not None
+    assert action3.file.count("output2") > 0
+
+    scheduler2 = await get_scheduler(client=client, scheduler_name="bath")
+    assert scheduler2 is not None
+    assert scheduler2.interval == 1
+
+    new_saved_dir = await get_saved_dir(client=client)
+    assert new_saved_dir == saved_dir
+
+    dispatcher = await load_dispatcher(client=client)
+    assert "flea" in dispatcher.get_actions()
+    assert "bath" in dispatcher.get_schedulers()
+    assert "bath" in dispatcher.get_schedulers_actions()
+    assert "flea" in dispatcher.get_schedulers_actions()["bath"]
+
+    # add the job
+    await assert_scheduled_action_count(client=client, n=1)
+    await reschedule_all(client=client)
+    await assert_job_count(client=client, n=1)
+
+    # did action2 do what it was supposed to do?
+    await run_and_stop_jobs(client=client, pause=4)
+    lines = None
+    with open(action2.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+
 # helpers
 
 
@@ -332,6 +441,38 @@ async def schedule_action(client: ClientAsync, scheduler_name: str, action_name:
     ), f"failed to schedule action ({action_name}) using scheduler ({scheduler_name})"
 
 
+async def load_dispatcher(client: ClientAsync):
+    """ return the saved dispatcher """
+    retrieved_dispatcher = await client.load_dispatcher()
+    assert isinstance(retrieved_dispatcher, Dispatcher), str(type(retrieved_dispatcher))
+    return retrieved_dispatcher
+
+
+async def get_saved_dir(client: ClientAsync):
+    """ return saved_dir """
+    retrieved_file_path = await client.get_saved_dir()
+    assert isinstance(retrieved_file_path, FilePathe), str(type(retrieved_file_path))
+    return retrieved_file_path
+
+
+async def replace_dispatcher(client: ClientAsync, replacement: Dispatcher):
+    """
+    replace a dispatcher
+    """
+    response = await client.replace_dispatcher(replacement)
+    assert (
+        response.status_code == 200
+    ), f"failed to replace the dispatcher ({response.json()}"
+
+
+async def reschedule_all(client: ClientAsync):
+    """
+    reschedule all schedulers and actions
+    """
+    response = await client.reschedule_all_schedulers()
+    assert response.status_code == 200, "failed to reschedule all schedulers"
+
+
 async def reset_dispatcher(client: ClientAsync, tmp_dir: str):
     """
     usage: reset_dispatcher(client, str(tmp_path))
@@ -356,6 +497,13 @@ async def assert_job_count(client: ClientAsync, n: int):
     assert response.status_code == 200, "failed to retrieve job count"
     job_count = response.json()["job_count"]
     assert job_count == n, f"expected a job count of ({n})"
+
+
+async def assert_scheduled_action_count(client: ClientAsync, n: int):
+    response = await client.scheduled_action_count()
+    assert response.status_code == 200, "failed to retrieve job count"
+    action_count = response.json()["action_count"]
+    assert action_count == n, f"expected an action count of ({n})"
 
 
 async def run_and_stop_jobs(client: ClientAsync, pause: int):

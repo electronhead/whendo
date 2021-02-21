@@ -43,6 +43,9 @@ class ClientAsync(BaseModel):
     async def set_saved_dir(self, saved_dir: FilePathe):
         return await self.put("/dispatcher/saved_dir", saved_dir)
 
+    async def replace_dispatcher(self, replacement: Dispatcher):
+        return await self.put("/dispatcher/replace", replacement)
+
     # /actions
     async def get_action(self, action_name: str):
         return resolve_action(
@@ -69,6 +72,9 @@ class ClientAsync(BaseModel):
         return await self.get(f"/actions/{action_name}/unschedule")
 
     # /schedulers
+    async def scheduled_action_count(self):
+        return await self.get("/schedulers/action_count")
+
     async def schedule_action(self, scheduler_name: str, action_name: str):
         return await self.get(f"/schedulers/{scheduler_name}/actions/{action_name}")
 
