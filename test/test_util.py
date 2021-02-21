@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+import os
+import pathlib
 from pydantic import BaseModel
 from typing import List
 import whendo.core.util as util
@@ -126,9 +128,14 @@ def test_filepathe():
 
 
 def test_dirs(tmp_path):
-    def assure_writes_and_reads(label, thunk):
+    """
+    test to make sure that files with the same name are written to
+    separate directories
+    """
+    def assure_writes_and_reads(thunk):
+        """ make sure that files can be written to and read from """
         lines = None
-        file = thunk(root_path=tmp_path) + f"saved_{label}.txt"
+        file = thunk(home_path=tmp_path) + "foo.txt"
         with open(file, "w") as fid:
             fid.write("blee blee blee\n")
         with open(file, "r") as fid:
@@ -136,10 +143,16 @@ def test_dirs(tmp_path):
         assert lines is not None and isinstance(lines, list) and len(lines) >= 1
         return file
 
-    file1 = assure_writes_and_reads("foo", util.Dirs.saved_dir)
-    file2 = assure_writes_and_reads("foo", util.Dirs.output_dir)
-    file3 = assure_writes_and_reads("foo", util.Dirs.log_dir)
+    file1 = assure_writes_and_reads(util.Dirs.saved_dir)
+    file2 = assure_writes_and_reads(util.Dirs.output_dir)
+    file3 = assure_writes_and_reads(util.Dirs.log_dir)
     assert file1 != file2 and file2 != file3 and file3 != file1
+
+def test_dirs_2(tmp_path):
+    try:
+        file_path = os.path.join(util.Dirs.log_dir(home_path=tmp_path), "job.log")
+    except:
+        assert False
 
 
 def test_output(tmp_path):

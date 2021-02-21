@@ -6,9 +6,9 @@ from sys import stdout
 from datetime import datetime
 from typing import Callable
 import os
+from pathlib import Path
 from pydantic import BaseModel
 from typing import List, Dict, Any
-from pathlib import Path
 from threading import RLock
 
 # Enums
@@ -195,24 +195,34 @@ class IP:
 class Dirs:
     """
     This class computes directory paths for saved, output and log files. It creates the directories if absent.
+
+    {home dir} / .whendo / cwd directory name / label /
+
+    For example, if /home/pi/dev/whatnot/ were the current working directory, the computed directory with
+    a label of 'output' would be /home/pi/.whendo/whatnot/output.
+
+    This allows multiple whendo api servers running on a computer. That said, its important to give some thought to
+    where you choose to initially run the server. You can run the server from another directory if you remember
+    to move the relevant subdirectory of [{home dir}/.whendo/].
+
     """
+    
+    @classmethod
+    def output_dir(cls, home_path:Path=None):
+        return str(cls.assure_dir(cls.dir_from_label('output', home_path)))
 
     @classmethod
-    def saved_dir(cls, root_path: Path = None):
-        return cls.assure_dir(cls.compute_dir(label="saved", root_path=root_path))
+    def saved_dir(cls, home_path:Path=None):
+        return str(cls.assure_dir(cls.dir_from_label('saved', home_path)))
 
     @classmethod
-    def output_dir(cls, root_path: Path = None):
-        return cls.assure_dir(cls.compute_dir(label="output", root_path=root_path))
+    def log_dir(cls, home_path:Path=None):
+        return str(cls.assure_dir(cls.dir_from_label('log', home_path)))
 
     @classmethod
-    def log_dir(cls, root_path: Path = None):
-        return cls.assure_dir(cls.compute_dir(label="log", root_path=root_path))
-
-    @classmethod
-    def compute_dir(cls, label: str, root_path: Path = None):
-        path = root_path if root_path else Path.home()
-        return str(path / f".whendo/{label}") + "/"
+    def dir_from_label(cls, label:str, home_path:Path=None):
+        path = home_path if home_path else Path.home()
+        return str(path / ".whendo" / os.getcwd().split("/")[-1:][0] / label) + '/'
 
     @classmethod
     def assure_dir(cls, assured_dir: str):

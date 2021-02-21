@@ -1,5 +1,6 @@
 from typing import Dict, Any, Optional
-from whendo.core.util import PP
+import os
+from whendo.core.util import PP, Dirs
 from whendo.core.action import Action, ActionPayload
 
 
@@ -23,7 +24,7 @@ class FileHeartbeat(Action):
             ] = (
                 self.xtra
             )  # dictionaries are sorted by key. Nice to have extra information at the bottom.
-        with open(self.file, "a") as outfile:
+        with open(os.path.join(Dirs.output_dir(), self.file), "a") as outfile:
             PP.pprint(payload, stream=outfile)
             outfile.write("\n")
         return {"outcome": "file appended", "action": self.info()}
