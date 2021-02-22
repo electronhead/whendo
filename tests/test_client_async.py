@@ -11,6 +11,7 @@ from httpx import AsyncClient
 from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.actions.logic_action import ListAction, ListOpMode
+from whendo.core.actions.http_action import ExecuteAction
 from whendo.core.scheduler import TimelyScheduler, Scheduler
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.util import FilePathe, resolve_instance
@@ -358,6 +359,23 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, host, port, tmp_
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
 
+@pytest.mark.asyncio
+async def test_execute_action(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    """ execute an action at a host/port """
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    action = FileHeartbeat(file=str(tmp_path / "output.txt"))
+    await add_action(client=client, action_name="foo", action=action)
+
+    execute_action = ExecuteActionAsync(client=client, host=host, port=port, action_name='foo')
+    await execute_action.execute()
+    lines = None
+    with open(action.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+
 # helpers
 
 
@@ -511,3 +529,12 @@ async def run_and_stop_jobs(client: ClientAsync, pause: int):
     time.sleep(pause)
     response = await client.stop_jobs()
     assert response.status_code == 200, "failed to stop jobs"
+
+class ExecuteActionAsync(ExecuteAction):
+    """
+    Execute an action at host:port.
+    """
+    client: ClientAsync
+
+    async def execute(self, tag: str = None, scheduler_info: dict = None):
+        await self.client.execute_action(self.action_name)
