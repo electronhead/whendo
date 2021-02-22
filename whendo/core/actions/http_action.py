@@ -23,6 +23,7 @@ class ExecuteAction(Action):
     """
     Execute an action at host:port.
     """
+
     host: str
     port: int
     action_name: str

@@ -19,6 +19,7 @@ from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file
 from .fixtures import port, host, startup_and_shutdown_uvicorn
 from .client_async import ClientAsync
 
+
 @pytest.mark.asyncio
 async def test_client_1(startup_and_shutdown_uvicorn, host, port, tmp_path):
     """
@@ -368,7 +369,9 @@ async def test_execute_action(startup_and_shutdown_uvicorn, host, port, tmp_path
     action = FileHeartbeat(file=str(tmp_path / "output.txt"))
     await add_action(client=client, action_name="foo", action=action)
 
-    execute_action = ExecuteActionAsync(client=client, host=host, port=port, action_name='foo')
+    execute_action = ExecuteActionAsync(
+        client=client, host=host, port=port, action_name="foo"
+    )
     await execute_action.execute()
     lines = None
     with open(action.file, "r") as fid:
@@ -530,10 +533,12 @@ async def run_and_stop_jobs(client: ClientAsync, pause: int):
     response = await client.stop_jobs()
     assert response.status_code == 200, "failed to stop jobs"
 
+
 class ExecuteActionAsync(ExecuteAction):
     """
     Execute an action at host:port.
     """
+
     client: ClientAsync
 
     async def execute(self, tag: str = None, scheduler_info: dict = None):
