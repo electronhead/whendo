@@ -1,9 +1,9 @@
 from enum import Enum
 from pprint import PrettyPrinter
 from sys import stdout
-
-# import netifaces
-from datetime import datetime
+import psutil
+import socket
+from datetime import datetime, timedelta
 from typing import Callable
 import os
 from pathlib import Path
@@ -12,20 +12,6 @@ from typing import List, Dict, Any
 from threading import RLock
 
 # Enums
-
-
-class HttpVerb(str, Enum):
-    """
-    usage:
-        HttpVerb.get
-    """
-
-    get = "get"
-    put = "put"
-    patch = "patch"
-    post = "post"
-    delete = "delete"
-
 
 class TimeUnit(str, Enum):
     """
@@ -40,6 +26,11 @@ class TimeUnit(str, Enum):
 
 
 # functions
+
+
+def ip_addrs():
+    nia = psutil.net_if_addrs()
+    return dict((k,nia[k][0].address) for k in nia if nia[k][0].family == socket.AF_INET)
 
 
 def all_visible_subclasses(klass):
@@ -170,28 +161,6 @@ class PP:
     def pprint(cls, dictionary, indent=2, stream=stdout):
         PrettyPrinter(indent=indent, stream=stream).pprint(dictionary)
 
-
-class IP:
-    """
-    usage:
-        IP.addr
-    note:
-        singleton
-    lineage:
-        from netifaces import interfaces, ifaddresses, AF_INET
-        for ifaceName in interfaces():
-            addresses = [i['addr'] for i in ifaddresses(ifaceName).setdefault(AF_INET, [{'addr':'No IP addr'}] )]
-            print ('%s: %s' % (ifaceName, ', '.join(addresses)))
-    """
-
-    local = "127.0.0.1"
-    addr = "need a fix for linux"  # netifaces.ifaddresses('en0').setdefault(netifaces.AF_INET)[0]['addr']
-
-    @classmethod
-    def reset(cls):
-        cls.addr = "need a fix for linux"  # netifaces.ifaddresses('en0').setdefault(AF_INET)[0]['addr']
-
-
 class Dirs:
     """
     This class computes directory paths for saved, output and log files. It creates the directories if absent.
@@ -251,11 +220,18 @@ class SharedRO:
         assert sh.get('foo') == some_dictionary # not identity comparison
     """
 
-    def __init__(self, dictionary: dict = {}):
+    def __init__(self, dictionary: dict):
         self.data = dictionary.copy()
 
     def data_copy(self):
-        return self.data.copy()
+        intermediate_result = self.data.copy()
+        for key,value in intermediate_result.items():
+            if isinstance(value, Callable):
+                intermediate_result[key] = value()
+        return intermediate_result
+    
+    def clear(self):
+        self.data.clear()
 
 
 class SharedRW(SharedRO):
@@ -289,7 +265,7 @@ class SharedRW(SharedRO):
         the callable won't corrupt the dictionary.
         """
         with self.lock:
-            copy = self.data_copy()
+            copy = self.data.copy()
             result = callable(copy)
             self.data = copy
             return result
@@ -303,7 +279,7 @@ class SharedROs:
     singletons: Dict[str, SharedRO] = {}
 
     @classmethod
-    def get(cls, label: str, dictionary: dict) -> SharedRO:
+    def get(cls, label: str, dictionary: dict = {}) -> SharedRO:
         if label not in cls.singletons:
             cls.singletons[label] = SharedRO(dictionary=dictionary)
         return cls.singletons[label]
@@ -311,6 +287,10 @@ class SharedROs:
     @classmethod
     def key_set(cls):
         return set(cls.singletons.keys())
+
+    @classmethod
+    def clear(cls):
+        cls.singletons.clear()
 
 
 class SharedRWs:
@@ -329,3 +309,52 @@ class SharedRWs:
     @classmethod
     def key_set(cls):
         return set(cls.singletons.keys())
+
+    @classmethod
+    def clear(cls):
+        cls.singletons.clear()
+
+class SystemInfo:
+    initialized = False
+    @classmethod
+    def init(cls, host:str, port:int):
+        SharedRWs.clear()
+        start = Now.dt()
+        SharedRWs.get("system_info", {
+            "host": host,
+            "port": port,
+            "start": start,
+            "current": lambda: Now.dt(),
+            "elapsed": lambda: str(Now.dt() - start),
+            "successes":0,
+            "failures": 0,
+            "cwd": os.getcwd(),
+            "login": os.getlogin(),
+            "os_version": os.uname()[3],
+            "ip_addrs": ip_addrs(),
+            "virtual_memory": lambda: dict(zip(psutil.virtual_memory()._fields, ["{:,}".format(n) for n in psutil.virtual_memory()])),
+            "load_avg": lambda: dict(zip(['1min', '5min', '15min'], psutil.getloadavg())),
+            "cpu_percent": lambda: psutil.cpu_percent()
+            })
+        cls.initialized = True
+
+
+    @classmethod
+    def increment_successes(cls):
+        if cls.initialized:
+            system_info = SharedRWs.get("system_info")
+            def update(dictionary:dict):
+                dictionary["successes"] = 1 + dictionary["successes"]
+            system_info.apply(update)
+
+    @classmethod
+    def increment_failures(cls):
+        if cls.initialized:
+            system_info = SharedRWs.get("system_info")
+            def update(dictionary:dict):
+                dictionary["failures"] = 1 + dictionary["failures"]
+            system_info.apply(update)
+
+    @classmethod
+    def get(cls):
+        return SharedRWs.get("system_info").data_copy()

@@ -4,7 +4,7 @@ import json
 from whendo.core.dispatcher import Dispatcher
 from .fixtures import friends
 
-pause = 3
+pause = 2
 
 
 def test_schedule_action(friends):

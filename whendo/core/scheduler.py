@@ -5,7 +5,7 @@ from collections.abc import Callable
 from threading import RLock
 import logging
 import random
-from whendo.core.util import TimeUnit, Now, object_info
+from whendo.core.util import TimeUnit, Now, object_info, SystemInfo
 from whendo.core.action import Action
 from whendo.core.continuous import Continuous
 
@@ -133,6 +133,7 @@ class Scheduler(BaseModel):
                     logger.info(f"({Count.good(tag):09}) tag={tag}")
                     logger.info(f"({Count.good(tag):09}) scheduler={scheduler_json}")
                     logger.info(f"({Count.good(tag):09}) action={action_json}")
+                    SystemInfo.increment_successes()
             except Exception as exception:
                 result = exception
                 Count.bad_up(tag)
@@ -144,6 +145,7 @@ class Scheduler(BaseModel):
                 logger.exception(
                     f"({Count.bad(tag):09}) action={action_json}", exc_info=exception
                 )
+                SystemInfo.increment_failures()
             return result
 
         return execute

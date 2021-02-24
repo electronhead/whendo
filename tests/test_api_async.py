@@ -82,7 +82,7 @@ async def test_uvicorn_4(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await schedule_action(base_url=base_url, action_name="foo", scheduler_name="bar")
     await assert_job_count(base_url=base_url, n=1)
 
-    await run_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=2)
     lines = None
     with open(action.file, "r") as fid:
         lines = fid.readlines()
@@ -104,7 +104,7 @@ async def test_uvicorn_logic_action(startup_and_shutdown_uvicorn, base_url, tmp_
     await schedule_action(base_url=base_url, action_name="foo", scheduler_name="bar")
     await assert_job_count(base_url=base_url, n=1)
 
-    await run_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=2)
 
     lines = None
     with open(action1.file, "r") as fid:
@@ -131,7 +131,7 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await schedule_action(base_url=base_url, action_name="foo", scheduler_name="bar")
     await assert_job_count(base_url=base_url, n=1)
 
-    await run_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=2)
 
     lines = None
     with open(action1.file, "r") as fid:
@@ -142,7 +142,7 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await reschedule_action(base_url=base_url, action_name="foo")
     await assert_job_count(base_url=base_url, n=1)
 
-    await run_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=2)
 
     lines = None
     with open(action2.file, "r") as fid:
@@ -215,7 +215,7 @@ async def test_reschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_p
     await schedule_action(base_url=base_url, action_name="foo", scheduler_name="bar")
     await assert_job_count(base_url=base_url, n=1)
 
-    await run_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=2)
     lines = None
     with open(action1.file, "r") as fid:
         lines = fid.readlines()
@@ -225,7 +225,7 @@ async def test_reschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_p
     await reschedule_action(base_url=base_url, action_name="foo")
     await assert_job_count(base_url=base_url, n=1)
 
-    await run_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=2)
     lines = None
     with open(action2.file, "r") as fid:
         lines = fid.readlines()
@@ -309,7 +309,7 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, base_url, tmp_pa
     await assert_scheduled_action_count(base_url=base_url, n=1)
 
     # action1 doing its thing
-    await run_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=2)
     lines = None
     with open(action1.file, "r") as fid:
         lines = fid.readlines()
@@ -353,7 +353,7 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, base_url, tmp_pa
     await assert_job_count(base_url=base_url, n=1)
 
     # did action2 do what it was supposed to do?
-    await run_and_stop_jobs(base_url=base_url, pause=4)
+    await run_and_stop_jobs(base_url=base_url, pause=2)
     lines = None
     with open(action2.file, "r") as fid:
         lines = fid.readlines()

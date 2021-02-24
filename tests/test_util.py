@@ -206,3 +206,18 @@ def test_shared_ro_1():
     shared = util.SharedROs.get("foo", dictionary)
     dictionary["a"] = 3
     assert shared.data_copy()["a"] == 1
+
+def test_system_info():
+    util.SystemInfo.init(host="127.0.0.4", port=8000)
+    info = util.SystemInfo.get()
+    assert "host" in info
+    assert info["host"] == "127.0.0.4"
+    assert "port" in info
+    assert info["port"] == 8000
+    assert "start" in info
+    assert "cwd" in info
+    assert "login" in info
+    assert "os_version" in info
+    assert "successes" in info
+    assert "failures" in info
+    assert "elapsed" in info

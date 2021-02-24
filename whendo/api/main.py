@@ -1,7 +1,6 @@
 """
-This module is the top of the path tree. Establishes all sub-path routers.
-
-It is used for command line invocation.
+This script establishes the top FastAPI path and all sub-path routers.
+It also initializes the Dispatcher for the calling ASGI server.
 """
 from fastapi import FastAPI
 from whendo.core.dispatcher import DispatcherSingleton

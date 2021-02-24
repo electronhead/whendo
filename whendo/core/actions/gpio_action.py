@@ -22,6 +22,7 @@ class SetPin(Action):
         GPIO.setwarnings(False)
         GPIO.setup(self.pin, GPIO.OUT)
         GPIO.output(self.pin, GPIO.HIGH if self.on else GPIO.LOW)
+        return self.on
 
 
 class TogglePin(Action):
@@ -35,7 +36,9 @@ class TogglePin(Action):
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
         GPIO.setup(self.pin, GPIO.OUT)
-        GPIO.output(self.pin, not GPIO.input(self.pin))
+        result = not GPIO.input(self.pin)
+        GPIO.output(self.pin, result)
+        return result
 
 
 class Cleanup(Action):
@@ -47,3 +50,4 @@ class Cleanup(Action):
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
         GPIO.cleanup()
+        return False

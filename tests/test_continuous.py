@@ -3,6 +3,7 @@ from whendo.core.continuous import Continuous
 from whendo.core.util import TimeUnit, PP
 from whendo.core.action import Action, ActionPayload
 
+pause = 3
 
 def test_timely_callable(tmp_path):
     """
@@ -30,7 +31,7 @@ def test_timely_callable(tmp_path):
             continuous = Continuous()
             continuous.schedule_timely_callable("tag", self.callable)
             continuous.run_continuously()
-            time.sleep(4)
+            time.sleep(pause)
             continuous.stop_running_continuously()
             continuous.clear()
 
@@ -103,7 +104,7 @@ def test_file_action(tmp_path):
             continuous = Continuous()
             continuous.schedule_timely_callable("tag", self.action.execute)
             continuous.run_continuously()
-            time.sleep(4)
+            time.sleep(pause)
             continuous.stop_running_continuously()
             continuous.clear()
 

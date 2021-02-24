@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Dict, Any
-from whendo.core.util import PP, IP, Now, object_info
+from whendo.core.util import PP, SystemInfo, Now, object_info
 
 
 class Action(BaseModel):
@@ -41,7 +41,7 @@ class ActionPayload:
 
     @classmethod
     def action_host(cls):
-        return {"action_host": IP.addr}
+        return {"action_host": SystemInfo.get()['host']}
 
     @classmethod
     def action_time(cls):

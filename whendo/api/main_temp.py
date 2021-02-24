@@ -1,7 +1,9 @@
 """
-This module is the top of the path tree. Establishes all sub-path routers.
+This script establishes the top FastAPI path and all sub-path routers.
+It also initializes the Dispatcher for the calling ASGI server.
 
-It is used for unit testing.
+This version is only used in unit testing -- the Dispatcher construction
+is different from main.py.
 """
 from fastapi import FastAPI
 from whendo.core.dispatcher import Dispatcher

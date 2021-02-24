@@ -2,6 +2,7 @@ from fastapi import FastAPI
 import asyncio
 import uvicorn
 from typing import Optional, List
+from whendo.core.util import SystemInfo
 
 
 class UvicornTestServer(uvicorn.Server):
@@ -30,6 +31,7 @@ class UvicornTestServer(uvicorn.Server):
         """
         Create a Uvicorn test server for use as a pytest fixture
         """
+        SystemInfo.init(host=host, port=port)
         self._startup_done = asyncio.Event()
         super().__init__(config=uvicorn.Config(app, host=host, port=port, workers=1))
 

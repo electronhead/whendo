@@ -29,4 +29,4 @@ class ExecuteAction(Action):
     action_name: str
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
-        Client(host=self.host, port=self.port).execute_action(self.action_name)
+        return Client(host=self.host, port=self.port).execute_action(self.action_name)
