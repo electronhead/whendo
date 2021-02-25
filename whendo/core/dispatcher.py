@@ -190,6 +190,10 @@ class Dispatcher(BaseModel):
             assert action_name in self.actions, f"action ({action_name}) does not exist"
             return self.get_action(action_name).execute()
 
+    def execute_supplied_action(self, supplied_action: Action):
+        with Lok.lock:
+            return supplied_action.execute()
+
     # schedulers
     def get_scheduler(self, scheduler_name: str):
         with Lok.lock:

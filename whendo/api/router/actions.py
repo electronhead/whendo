@@ -85,3 +85,13 @@ def reschedule_action(action_name: str):
         return return_success(f"action ({action_name}) was successfully rescheduled")
     except Exception as e:
         raise raised_exception(f"failed to reschedule action ({action_name})", e)
+
+
+
+@router.put("/actions/execute", status_code=status.HTTP_200_OK)
+def execute_supplied_action(action_name: str, action=Depends(resolve_action)):
+    try:
+        assert action, f"couldn't resolve class for action ({action})"
+        return get_dispatcher(router).execute_supplied_action(supplied_action=action)
+    except Exception as e:
+        raise raised_exception(f"failed to directly execute the action ({action})", e)

@@ -29,7 +29,7 @@ async def test_client_1(startup_and_shutdown_uvicorn, host, port, tmp_path):
     await reset_dispatcher(client, str(tmp_path))
 
     output_file = str(tmp_path / "output.txt")
-    action = FileHeartbeat(file=output_file)
+    action = FileHeartbeat(relative_to_output_dir=False, file=output_file)
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(client=client, action_name="foo", action=action)
@@ -45,7 +45,7 @@ async def test_client_2(startup_and_shutdown_uvicorn, host, port, tmp_path):
     await reset_dispatcher(client, str(tmp_path))
 
     output_file = str(tmp_path / "output.txt")
-    action = FileHeartbeat(file=output_file)
+    action = FileHeartbeat(relative_to_output_dir=False, file=output_file)
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(client=client, action_name="foo", action=action)
@@ -63,7 +63,7 @@ async def test_client_3(startup_and_shutdown_uvicorn, host, port, tmp_path):
     await reset_dispatcher(client, str(tmp_path))
 
     output_file = str(tmp_path / "output.txt")
-    action = FileHeartbeat(file=output_file)
+    action = FileHeartbeat(relative_to_output_dir=False, file=output_file)
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(client=client, action_name="foo", action=action)
@@ -85,8 +85,8 @@ async def test_client_logic_action(startup_and_shutdown_uvicorn, host, port, tmp
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     action3 = ListAction(op_mode=ListOpMode.ALL, action_list=[action1, action2])
     scheduler = TimelyScheduler(interval=1)
 
@@ -114,8 +114,8 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, host, port, tmp_path):
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(client=client, action_name="foo", action=action1)
@@ -149,8 +149,8 @@ async def test_unschedule_action_1(startup_and_shutdown_uvicorn, host, port, tmp
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(client=client, action_name="foo1", action=action1)
@@ -173,8 +173,8 @@ async def test_unschedule_action_2(startup_and_shutdown_uvicorn, host, port, tmp
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(client=client, action_name="foo1", action=action1)
@@ -202,8 +202,8 @@ async def test_reschedule_action_1(startup_and_shutdown_uvicorn, host, port, tmp
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(client=client, action_name="foo", action=action1)
@@ -234,8 +234,8 @@ async def test_unschedule_scheduler(startup_and_shutdown_uvicorn, host, port, tm
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(client=client, action_name="foo1", action=action1)
@@ -258,8 +258,8 @@ async def test_job_count(startup_and_shutdown_uvicorn, host, port, tmp_path):
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(client=client, action_name="foo1", action=action1)
@@ -278,8 +278,8 @@ async def test_schedulers_action_count(
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(client=client, action_name="foo1", action=action1)
@@ -298,8 +298,8 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, host, port, tmp_
 
     saved_dir = await get_saved_dir(client=client)
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(client=client, action_name="foo", action=action1)
@@ -366,13 +366,29 @@ async def test_execute_action(startup_and_shutdown_uvicorn, host, port, tmp_path
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action = FileHeartbeat(file=str(tmp_path / "output.txt"))
+    action = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output.txt"))
     await add_action(client=client, action_name="foo", action=action)
 
     execute_action = ExecuteActionAsync(
         client=client, host=host, port=port, action_name="foo"
     )
     await execute_action.execute()
+    lines = None
+    with open(action.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+
+@pytest.mark.asyncio
+async def test_execute_supplied_action(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    """ execute a supplied action """
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    action = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output.txt"))
+
+    await client.execute_supplied_action(action)
+
     lines = None
     with open(action.file, "r") as fid:
         lines = fid.readlines()

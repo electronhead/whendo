@@ -11,6 +11,7 @@ class FileHeartbeat(Action):
     """
 
     file: str
+    relative_to_output_dir: bool=True
     xtra: Optional[Dict[str, Any]] = None
 
     def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
@@ -24,7 +25,8 @@ class FileHeartbeat(Action):
             ] = (
                 self.xtra
             )  # dictionaries are sorted by key. Nice to have extra information at the bottom.
-        with open(os.path.join(Dirs.output_dir(), self.file), "a") as outfile:
+        file = os.path.join(Dirs.output_dir(), self.file) if self.relative_to_output_dir else self.file
+        with open(file, "a") as outfile:
             PP.pprint(payload, stream=outfile)
             outfile.write("\n")
         return {"outcome": "file appended", "action": self.info()}

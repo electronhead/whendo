@@ -36,6 +36,11 @@ class Client(BaseModel):
     def replace_dispatcher(self, replacement: Dispatcher):
         return self.put("/dispatcher/replace", replacement)
 
+    # /execution
+
+    def execute_supplied_action(self, supplied_action: Action):
+        return self.put(f"/execution", supplied_action)
+
     # /actions
     def get_action(self, action_name: str):
         return resolve_action(self.get(f"/actions/{action_name}"))

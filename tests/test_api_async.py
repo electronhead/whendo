@@ -41,7 +41,7 @@ async def test_uvicorn_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
     output_file = str(tmp_path / "output.txt")
     xtra = {"base_url": base_url}
-    action = FileHeartbeat(file=output_file, xtra=xtra)
+    action = FileHeartbeat(relative_to_output_dir=False, file=output_file, xtra=xtra)
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action)
@@ -56,7 +56,7 @@ async def test_uvicorn_3(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await reset_dispatcher(base_url, str(tmp_path))
 
     output_file = str(tmp_path / "output.txt")
-    action = FileHeartbeat(file=output_file)
+    action = FileHeartbeat(relative_to_output_dir=False, file=output_file)
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action)
@@ -74,7 +74,7 @@ async def test_uvicorn_4(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
     output_file = str(tmp_path / "output.txt")
     xtra = {"base_url": base_url}
-    action = FileHeartbeat(file=output_file, xtra=xtra)
+    action = FileHeartbeat(relative_to_output_dir=False, file=output_file, xtra=xtra)
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action)
@@ -94,8 +94,8 @@ async def test_uvicorn_logic_action(startup_and_shutdown_uvicorn, base_url, tmp_
     """ Run two actions within one action. """
     await reset_dispatcher(base_url, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     action3 = ListAction(op_mode=ListOpMode.ALL, action_list=[action1, action2])
     scheduler = TimelyScheduler(interval=1)
 
@@ -122,8 +122,8 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """ unschedule an action. """
     await reset_dispatcher(base_url, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action1)
@@ -155,8 +155,8 @@ async def test_unschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_p
     """ unschedule an action. """
     await reset_dispatcher(base_url, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(base_url=base_url, action_name="foo1", action=action1)
@@ -178,8 +178,8 @@ async def test_unschedule_action_2(startup_and_shutdown_uvicorn, base_url, tmp_p
     """ unschedule an action. make sure both schedulers are affected."""
     await reset_dispatcher(base_url, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(base_url=base_url, action_name="foo1", action=action1)
@@ -206,8 +206,8 @@ async def test_reschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_p
     """ schedule action, run it, change it, re-run it """
     await reset_dispatcher(base_url, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action1)
@@ -237,8 +237,8 @@ async def test_unschedule_scheduler(startup_and_shutdown_uvicorn, base_url, tmp_
     """ unschedule a scheduler. """
     await reset_dispatcher(base_url, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(base_url=base_url, action_name="foo1", action=action1)
@@ -260,8 +260,8 @@ async def test_job_count(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """ test job_count """
     await reset_dispatcher(base_url, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(base_url=base_url, action_name="foo1", action=action1)
@@ -279,8 +279,8 @@ async def test_schedulers_action_count(
     """ tests scheduled action count """
     await reset_dispatcher(base_url, str(tmp_path))
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(base_url=base_url, action_name="foo1", action=action1)
@@ -298,8 +298,8 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, base_url, tmp_pa
 
     saved_dir = await get_saved_dir(base_url=base_url)
 
-    action1 = FileHeartbeat(file=str(tmp_path / "output1.txt"))
-    action2 = FileHeartbeat(file=str(tmp_path / "output2.txt"))
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action2 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output2.txt"))
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action1)
@@ -360,8 +360,38 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, base_url, tmp_pa
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
 
-# helpers
+@pytest.mark.asyncio
+async def test_execute_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    """ execute an action at a host/port """
+    await reset_dispatcher(base_url, str(tmp_path))
 
+    action = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output.txt"))
+    await add_action(base_url=base_url, action_name="foo", action=action)
+
+    await execute_action(base_url=base_url, action_name="foo")
+
+    lines = None
+    with open(action.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+
+@pytest.mark.asyncio
+async def test_execute_supplied_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    """ execute a supplied action """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output.txt"))
+    
+    await put(base_url, "/execution", action)
+
+    lines = None
+    with open(action.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+#==========================================
+# helpers
 
 async def get_action(base_url: str, action_name: str):
     """ make sure action exists and resolves properly """
@@ -370,6 +400,16 @@ async def get_action(base_url: str, action_name: str):
     retrieved_action = resolve_action(response.json())
     assert isinstance(retrieved_action, Action), str(type(retrieved_action))
     return retrieved_action
+
+
+async def execute_action(base_url: str, action_name: str):
+    """ make sure action exists and resolves properly """
+    response = await get(base_url, path=f"/actions/{action_name}")
+    assert response.status_code == 200, f"failed to get action ({action_name})"
+    retrieved_action = resolve_action(response.json())
+    assert isinstance(retrieved_action, Action), str(type(retrieved_action))
+    response = await get(base_url, path=f"/actions/{action_name}/execute")
+    assert response.status_code == 200, f"failed to execute action ({action_name})"
 
 
 async def add_action(base_url: str, action_name: str, action: Action):

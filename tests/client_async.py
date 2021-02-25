@@ -46,6 +46,12 @@ class ClientAsync(BaseModel):
     async def replace_dispatcher(self, replacement: Dispatcher):
         return await self.put("/dispatcher/replace", replacement)
 
+
+    # /execution
+    async def execute_supplied_action(self, supplied_action: Action):
+        return await self.put("/execution", supplied_action)
+
+
     # /actions
     async def get_action(self, action_name: str):
         return resolve_action(
