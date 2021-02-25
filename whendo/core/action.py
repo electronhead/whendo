@@ -41,7 +41,7 @@ class ActionPayload:
 
     @classmethod
     def action_host(cls):
-        return {"action_host": SystemInfo.get()['host']}
+        return {"action_host": SystemInfo.get()["host"]}
 
     @classmethod
     def action_time(cls):

@@ -1,6 +1,7 @@
 from whendo.core.action import Action
 from whendo.core.util import SystemInfo
 
+
 class SystemInfoAction(Action):
     """
     Return system info

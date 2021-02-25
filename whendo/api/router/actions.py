@@ -87,7 +87,6 @@ def reschedule_action(action_name: str):
         raise raised_exception(f"failed to reschedule action ({action_name})", e)
 
 
-
 @router.put("/actions/execute", status_code=status.HTTP_200_OK)
 def execute_supplied_action(action_name: str, action=Depends(resolve_action)):
     try:

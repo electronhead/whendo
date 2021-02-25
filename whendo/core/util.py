@@ -13,6 +13,7 @@ from threading import RLock
 
 # Enums
 
+
 class TimeUnit(str, Enum):
     """
     usage:
@@ -30,7 +31,9 @@ class TimeUnit(str, Enum):
 
 def ip_addrs():
     nia = psutil.net_if_addrs()
-    return dict((k,nia[k][0].address) for k in nia if nia[k][0].family == socket.AF_INET)
+    return dict(
+        (k, nia[k][0].address) for k in nia if nia[k][0].family == socket.AF_INET
+    )
 
 
 def all_visible_subclasses(klass):
@@ -161,6 +164,7 @@ class PP:
     def pprint(cls, dictionary, indent=2, stream=stdout):
         PrettyPrinter(indent=indent, stream=stream).pprint(dictionary)
 
+
 class Dirs:
     """
     This class computes directory paths for saved, output and log files. It creates the directories if absent.
@@ -225,11 +229,11 @@ class SharedRO:
 
     def data_copy(self):
         intermediate_result = self.data.copy()
-        for key,value in intermediate_result.items():
+        for key, value in intermediate_result.items():
             if isinstance(value, Callable):
                 intermediate_result[key] = value()
         return intermediate_result
-    
+
     def clear(self):
         self.data.clear()
 
@@ -314,45 +318,60 @@ class SharedRWs:
     def clear(cls):
         cls.singletons.clear()
 
+
 class SystemInfo:
     initialized = False
+
     @classmethod
-    def init(cls, host:str, port:int):
+    def init(cls, host: str, port: int):
         SharedRWs.clear()
         start = Now.dt()
-        SharedRWs.get("system_info", {
-            "host": host,
-            "port": port,
-            "start": start,
-            "current": lambda: Now.dt(),
-            "elapsed": lambda: str(Now.dt() - start),
-            "successes":0,
-            "failures": 0,
-            "cwd": os.getcwd(),
-            "login": os.getlogin(),
-            "os_version": os.uname()[3],
-            "ip_addrs": ip_addrs(),
-            "virtual_memory": lambda: dict(zip(psutil.virtual_memory()._fields, ["{:,}".format(n) for n in psutil.virtual_memory()])),
-            "load_avg": lambda: dict(zip(['1min', '5min', '15min'], psutil.getloadavg())),
-            "cpu_percent": lambda: psutil.cpu_percent()
-            })
+        SharedRWs.get(
+            "system_info",
+            {
+                "host": host,
+                "port": port,
+                "start": start,
+                "current": lambda: Now.dt(),
+                "elapsed": lambda: str(Now.dt() - start),
+                "successes": 0,
+                "failures": 0,
+                "cwd": os.getcwd(),
+                "login": os.getlogin(),
+                "os_version": os.uname()[3],
+                "ip_addrs": ip_addrs(),
+                "virtual_memory": lambda: dict(
+                    zip(
+                        psutil.virtual_memory()._fields,
+                        ["{:,}".format(n) for n in psutil.virtual_memory()],
+                    )
+                ),
+                "load_avg": lambda: dict(
+                    zip(["1min", "5min", "15min"], psutil.getloadavg())
+                ),
+                "cpu_percent": lambda: psutil.cpu_percent(),
+            },
+        )
         cls.initialized = True
-
 
     @classmethod
     def increment_successes(cls):
         if cls.initialized:
             system_info = SharedRWs.get("system_info")
-            def update(dictionary:dict):
+
+            def update(dictionary: dict):
                 dictionary["successes"] = 1 + dictionary["successes"]
+
             system_info.apply(update)
 
     @classmethod
     def increment_failures(cls):
         if cls.initialized:
             system_info = SharedRWs.get("system_info")
-            def update(dictionary:dict):
+
+            def update(dictionary: dict):
                 dictionary["failures"] = 1 + dictionary["failures"]
+
             system_info.apply(update)
 
     @classmethod

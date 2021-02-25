@@ -207,6 +207,7 @@ def test_shared_ro_1():
     dictionary["a"] = 3
     assert shared.data_copy()["a"] == 1
 
+
 def test_system_info():
     util.SystemInfo.init(host="127.0.0.4", port=8000)
     info = util.SystemInfo.get()

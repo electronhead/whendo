@@ -5,6 +5,7 @@ from whendo.core.action import Action, ActionPayload
 
 pause = 3
 
+
 def test_timely_callable(tmp_path):
     """
     This test exercises the schedule_timely_callable method.
