@@ -85,8 +85,12 @@ class ClientAsync(BaseModel):
     async def schedule_action(self, scheduler_name: str, action_name: str):
         return await self.get(f"/schedulers/{scheduler_name}/actions/{action_name}")
 
-    async def defer_action(self, scheduler_name: str, action_name: str, wait_until:DateTime):
-        return await self.post(f"/schedulers/{scheduler_name}/actions/{action_name}", wait_until)
+    async def defer_action(
+        self, scheduler_name: str, action_name: str, wait_until: DateTime
+    ):
+        return await self.post(
+            f"/schedulers/{scheduler_name}/actions/{action_name}", wait_until
+        )
 
     async def get_scheduler(self, scheduler_name: str):
         return resolve_scheduler(

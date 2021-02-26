@@ -16,11 +16,16 @@ def get_scheduled_action_count():
     except Exception as e:
         raise raised_exception(f"failed to retrieve the scheduled action count", e)
 
+
 @router.get("/schedulers/deferred_action_count", status_code=status.HTTP_200_OK)
 def get_deferred_action_count():
     try:
         return return_success(
-            {"deferred_action_count": get_dispatcher(router).get_deferred_action_count()}
+            {
+                "deferred_action_count": get_dispatcher(
+                    router
+                ).get_deferred_action_count()
+            }
         )
     except Exception as e:
         raise raised_exception(f"failed to retrieve the deferred action count", e)
@@ -44,14 +49,15 @@ def clear_deferred_actions():
         raise raised_exception("failed to clear deferred actions", e)
 
 
-
 @router.post(
     "/schedulers/{scheduler_name}/actions/{action_name}", status_code=status.HTTP_200_OK
 )
-def defer_action(scheduler_name: str, action_name: str, wait_until:util.DateTime):
+def defer_action(scheduler_name: str, action_name: str, wait_until: util.DateTime):
     try:
         get_dispatcher(router).defer_action(
-            scheduler_name=scheduler_name, action_name=action_name, wait_until=wait_until.date_time
+            scheduler_name=scheduler_name,
+            action_name=action_name,
+            wait_until=wait_until.date_time,
         )
         return return_success(
             f"action ({action_name}) under ({scheduler_name}) was deferred until ({wait_until})"
@@ -77,6 +83,7 @@ def schedule_action(scheduler_name: str, action_name: str):
         raise raised_exception(
             f"failed to schedule ({scheduler_name}) action ({action_name})", e
         )
+
 
 @router.get("/schedulers/{scheduler_name}", status_code=status.HTTP_200_OK)
 def get_scheduler(scheduler_name: str):

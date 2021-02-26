@@ -30,19 +30,15 @@ class Dispatcher(BaseModel):
     up, Dispatch loads the last saved version.
     """
 
-    actions: Dict[str,Action] = {}
-    schedulers: Dict[str,Scheduler] = {}
-    schedulers_actions: Dict[str,List[str]] = {}
-    deferred_schedulers_actions: Dict[str,Dict[str,List[str]]] = {}
+    actions: Dict[str, Action] = {}
+    schedulers: Dict[str, Scheduler] = {}
+    schedulers_actions: Dict[str, List[str]] = {}
+    deferred_schedulers_actions: Dict[str, Dict[str, List[str]]] = {}
     saved_dir: Optional[str] = None
-
 
     # not treated as a model attrs
     _continuous: Continuous = PrivateAttr(default_factory=Continuous.get)
     _continuous_for_out_of_band: Continuous = PrivateAttr(default_factory=Continuous)
-    
-
-
 
     # jobs and continuous object
     def get_continuous(self):
@@ -89,7 +85,9 @@ class Dispatcher(BaseModel):
     def initialize(self):
         Lok.reset()
         self._continuous_for_out_of_band.clear()
-        self._continuous_for_out_of_band.every(5).seconds.do(self.check_for_deferred_actions)
+        self._continuous_for_out_of_band.every(5).seconds.do(
+            self.check_for_deferred_actions
+        )
         self._continuous_for_out_of_band.run_continuously()
 
     def pprint(self):
@@ -168,7 +166,9 @@ class Dispatcher(BaseModel):
                 self.actions = replacement.get_actions()
                 self.schedulers = replacement.get_schedulers()
                 self.schedulers_actions = replacement.get_schedulers_actions()
-                self.deferred_schedulers_actions = replacement.get_deferred_schedulers_actions()
+                self.deferred_schedulers_actions = (
+                    replacement.get_deferred_schedulers_actions()
+                )
                 self.save_current()
 
         typed_replace_all(replacement)
@@ -346,37 +346,53 @@ class Dispatcher(BaseModel):
         with Lok.lock:
             result = 0
             for schedulers_actions in self.deferred_schedulers_actions.values():
-                result += sum(len(action_array) for action_array in schedulers_actions.values()
-            )
+                result += sum(
+                    len(action_array) for action_array in schedulers_actions.values()
+                )
             return result
-    
+
     # deferred scheduling
 
-    def defer_action(self, scheduler_name:str, action_name:str, wait_until:datetime):
+    def defer_action(self, scheduler_name: str, action_name: str, wait_until: datetime):
         """
         This method defers the start of scheduling an action. The data structure is a dictionary
         with a datetime as the key and a schedulers_actions style dictionary as the value.
         """
         with Lok.lock:
-            assert scheduler_name in self.get_schedulers(), f"scheduler ({scheduler_name}) does not exist"
-            assert action_name in self.get_actions(), f"action ({action_name}) does not exist"
-            wait_until_str = dt_to_str(wait_until) # needs to be a str key because of Dispatcher json serialization and deserialization
+            assert (
+                scheduler_name in self.get_schedulers()
+            ), f"scheduler ({scheduler_name}) does not exist"
+            assert (
+                action_name in self.get_actions()
+            ), f"action ({action_name}) does not exist"
+            wait_until_str = dt_to_str(
+                wait_until
+            )  # needs to be a str key because of Dispatcher json serialization and deserialization
             if wait_until_str not in self.deferred_schedulers_actions:
-                self.deferred_schedulers_actions[wait_until_str] = {} # initialize the key's value
-            schedulers_actions = self.deferred_schedulers_actions[wait_until_str] # same structure as schedulers_actions
+                self.deferred_schedulers_actions[
+                    wait_until_str
+                ] = {}  # initialize the key's value
+            schedulers_actions = self.deferred_schedulers_actions[
+                wait_until_str
+            ]  # same structure as schedulers_actions
             if scheduler_name not in schedulers_actions:
-                schedulers_actions[scheduler_name] = [] # initialize list of Actions
+                schedulers_actions[scheduler_name] = []  # initialize list of Actions
             deferred_actions = schedulers_actions[scheduler_name]
-            assert action_name not in deferred_actions, f"({action_name}) already scheduled using ({scheduler_name})"
+            assert (
+                action_name not in deferred_actions
+            ), f"({action_name}) already scheduled using ({scheduler_name})"
             deferred_actions.append(action_name)
             self.save_current()
+
     def get_deferred_actions(self):
         with Lok.lock:
             return self.deferred_actions
+
     def clear_all_deferred_actions(self):
         with Lok.lock:
             self.deferred_schedulers_actions.clear()
             self.save_current()
+
     def check_for_deferred_actions(self):
         """
         This gets run as a job in the out-of-band Continuous instance.
@@ -391,15 +407,23 @@ class Dispatcher(BaseModel):
             for wait_until_str in self.deferred_schedulers_actions:
                 wait_until = str_to_dt(wait_until_str)
                 if wait_until < now:
-                    schedulers_actions = self.deferred_schedulers_actions[wait_until_str]
+                    schedulers_actions = self.deferred_schedulers_actions[
+                        wait_until_str
+                    ]
                     for scheduler_name in schedulers_actions:
                         for action_name in schedulers_actions[scheduler_name]:
                             try:
-                                self.schedule_action(scheduler_name=scheduler_name, action_name=action_name)
+                                self.schedule_action(
+                                    scheduler_name=scheduler_name,
+                                    action_name=action_name,
+                                )
                             except Exception as exception:
-                                logger.error(f"failed to schedule deferred action ({action_name}) under ({scheduler_name})", exception)
+                                logger.error(
+                                    f"failed to schedule deferred action ({action_name}) under ({scheduler_name})",
+                                    exception,
+                                )
                     to_remove.append(wait_until_str)
-            for wait_until_str in to_remove: # modify outside the previous for-loop
+            for wait_until_str in to_remove:  # modify outside the previous for-loop
                 self.deferred_schedulers_actions.pop(wait_until_str)
             self.save_current()
 
@@ -433,7 +457,7 @@ class Dispatcher(BaseModel):
                 actions=actions,
                 schedulers=schedulers,
                 schedulers_actions=schedulers_actions,
-                deferred_schedulers_actions=deferred_schedulers_actions
+                deferred_schedulers_actions=deferred_schedulers_actions,
             )
 
 

@@ -437,6 +437,7 @@ async def test_execute_supplied_action(
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
+
 @pytest.mark.asyncio
 async def test_deferred_action(startup_and_shutdown_uvicorn, host, port, tmp_path):
     """
@@ -445,7 +446,9 @@ async def test_deferred_action(startup_and_shutdown_uvicorn, host, port, tmp_pat
 
     client = ClientAsync(host=host, port=port)
 
-    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    action1 = FileHeartbeat(
+        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+    )
     scheduler = TimelyScheduler(interval=1)
 
     await add_action(client=client, action_name="foo", action=action1)
@@ -458,7 +461,7 @@ async def test_deferred_action(startup_and_shutdown_uvicorn, host, port, tmp_pat
         client=client,
         action_name="foo",
         scheduler_name="bar",
-        wait_until=DateTime(date_time=Now.dt() + timedelta(seconds=0))
+        wait_until=DateTime(date_time=Now.dt() + timedelta(seconds=0)),
     )
 
     await assert_deferred_action_count(client=client, n=1)
@@ -474,6 +477,7 @@ async def test_deferred_action(startup_and_shutdown_uvicorn, host, port, tmp_pat
     with open(action1.file, "r") as fid:
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
 
 # helpers
 
@@ -557,7 +561,9 @@ async def schedule_action(client: ClientAsync, scheduler_name: str, action_name:
     ), f"failed to schedule action ({action_name}) using scheduler ({scheduler_name})"
 
 
-async def defer_action(client: ClientAsync, scheduler_name: str, action_name: str, wait_until:DateTime):
+async def defer_action(
+    client: ClientAsync, scheduler_name: str, action_name: str, wait_until: DateTime
+):
     """ schedule an action """
     response = await client.defer_action(
         scheduler_name=scheduler_name, action_name=action_name, wait_until=wait_until

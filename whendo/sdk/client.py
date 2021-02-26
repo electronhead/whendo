@@ -74,8 +74,10 @@ class Client(BaseModel):
     def schedule_action(self, scheduler_name: str, action_name: str):
         return self.get(f"/schedulers/{scheduler_name}/actions/{action_name}")
 
-    def defer_action(self, scheduler_name: str, action_name: str, wait_until:DateTime):
-        return self.post(f"/schedulers/{scheduler_name}/actions/{action_name}", wait_until)
+    def defer_action(self, scheduler_name: str, action_name: str, wait_until: DateTime):
+        return self.post(
+            f"/schedulers/{scheduler_name}/actions/{action_name}", wait_until
+        )
 
     def get_scheduler(self, scheduler_name: str):
         return resolve_scheduler(self.get(f"/schedulers/{scheduler_name}"))
@@ -98,7 +100,7 @@ class Client(BaseModel):
     def execute_scheduler_actions(self, scheduler_name: str):
         return self.get(f"/schedulers/{scheduler_name}/execute")
 
-    def clear_deferred_actions(self, scheduler_name:str, action_name:str):
+    def clear_deferred_actions(self, scheduler_name: str, action_name: str):
         return self.get(f"/schedulers/clear_deferred_actions")
 
     # /jobs

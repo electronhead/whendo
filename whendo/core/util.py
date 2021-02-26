@@ -28,10 +28,12 @@ class TimeUnit(str, Enum):
 
 # functions
 
-def dt_to_str(dt:datetime) -> str:
+
+def dt_to_str(dt: datetime) -> str:
     return dt.strftime("%Y.%m.%d:%H.%M.%S")
 
-def str_to_dt(dts:str) -> datetime:
+
+def str_to_dt(dts: str) -> datetime:
     return datetime.strptime(dts, "%Y.%m.%d:%H.%M.%S")
 
 
@@ -49,6 +51,7 @@ def all_visible_subclasses(klass):
     """
     Returns all reachable subclasses of the supplied class, presumably a BaseModel subclass.
     """
+
     def helper(klas, result):
         subklases = klas.__subclasses__()
         if len(subklases) > 0:
@@ -145,6 +148,7 @@ class Now:
     """
     Class methods compute string, datetime and time versions of the current time.
     """
+
     @classmethod
     def s(cls):
         now = cls.dt()
@@ -402,8 +406,10 @@ class SystemInfo:
 
 # BaseModel subclasses
 
+
 class FilePathe(BaseModel):
     path: str
+
 
 class DateTime(BaseModel):
     date_time: datetime
