@@ -1,4 +1,5 @@
 from fastapi import APIRouter, status, Depends
+from typing import Optional
 from whendo.api.shared import return_success, raised_exception, get_dispatcher
 from whendo.core.resolver import resolve_scheduler
 import whendo.core.util as util
@@ -15,6 +16,15 @@ def get_scheduled_action_count():
     except Exception as e:
         raise raised_exception(f"failed to retrieve the scheduled action count", e)
 
+@router.get("/schedulers/deferred_action_count", status_code=status.HTTP_200_OK)
+def get_deferred_action_count():
+    try:
+        return return_success(
+            {"deferred_action_count": get_dispatcher(router).get_deferred_action_count()}
+        )
+    except Exception as e:
+        raise raised_exception(f"failed to retrieve the deferred action count", e)
+
 
 @router.get("/schedulers/reschedule_all", status_code=status.HTTP_200_OK)
 def reschedule_all_schedulers():
@@ -23,6 +33,33 @@ def reschedule_all_schedulers():
         return return_success("all schedulers were successfully unscheduled")
     except Exception as e:
         raise raised_exception("failed to unschedule all schedulers", e)
+
+
+@router.get("/schedulers/clear_deferred_actions", status_code=status.HTTP_200_OK)
+def clear_deferred_actions():
+    try:
+        get_dispatcher(router).clear_deferred_actions()
+        return return_success("deferred actions were cleared")
+    except Exception as e:
+        raise raised_exception("failed to clear deferred actions", e)
+
+
+
+@router.post(
+    "/schedulers/{scheduler_name}/actions/{action_name}", status_code=status.HTTP_200_OK
+)
+def defer_action(scheduler_name: str, action_name: str, wait_until:util.DateTime):
+    try:
+        get_dispatcher(router).defer_action(
+            scheduler_name=scheduler_name, action_name=action_name, wait_until=wait_until.date_time
+        )
+        return return_success(
+            f"action ({action_name}) under ({scheduler_name}) was deferred until ({wait_until})"
+        )
+    except Exception as e:
+        raise raised_exception(
+            f"failed to defer action ({action_name}) under ({scheduler_name})", e
+        )
 
 
 @router.get(
@@ -40,7 +77,6 @@ def schedule_action(scheduler_name: str, action_name: str):
         raise raised_exception(
             f"failed to schedule ({scheduler_name}) action ({action_name})", e
         )
-
 
 @router.get("/schedulers/{scheduler_name}", status_code=status.HTTP_200_OK)
 def get_scheduler(scheduler_name: str):

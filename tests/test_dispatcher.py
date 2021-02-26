@@ -1,6 +1,7 @@
 import pytest
 import time
 import json
+import whendo.core.util as util
 from whendo.core.dispatcher import Dispatcher
 from .fixtures import friends
 
@@ -263,3 +264,26 @@ def test_saved_dir_2(tmp_path):
     saved_dir = str(tmp_path)
     dispatcher = Dispatcher(saved_dir=saved_dir)
     assert dispatcher.get_saved_dir() == saved_dir
+
+def test_deferred_action(friends):
+    """
+    Want to observe the scheduling move from deferred state to ready state.
+    """
+    dispatcher, scheduler, action = friends()
+    dispatcher.add_action('foo', action)
+    dispatcher.add_scheduler('bar', scheduler)
+
+    assert 0 == dispatcher.get_deferred_action_count()
+    assert 0 == dispatcher.get_scheduled_action_count()
+
+    dispatcher.defer_action(scheduler_name='bar', action_name='foo', wait_until=util.Now.dt())
+
+    # deferred state -- can run jobs and actions will _not_ be executed
+    assert 1 == dispatcher.get_deferred_action_count()
+    assert 0 == dispatcher.get_scheduled_action_count()
+
+    time.sleep(6) # the out-of-band job runs every five seconds
+
+    # ready state -- can run jobs and actions will be executed
+    assert 0 == dispatcher.get_deferred_action_count()
+    assert 1 == dispatcher.get_scheduled_action_count()

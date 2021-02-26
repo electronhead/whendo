@@ -28,8 +28,17 @@ class TimeUnit(str, Enum):
 
 # functions
 
+def dt_to_str(dt:datetime) -> str:
+    return dt.strftime("%Y.%m.%d:%H.%M.%S")
+
+def str_to_dt(dts:str) -> datetime:
+    return datetime.strptime(dts, "%Y.%m.%d:%H.%M.%S")
+
 
 def ip_addrs():
+    """
+    Returns AF_INET addresses for local computer
+    """
     nia = psutil.net_if_addrs()
     return dict(
         (k, nia[k][0].address) for k in nia if nia[k][0].family == socket.AF_INET
@@ -37,6 +46,9 @@ def ip_addrs():
 
 
 def all_visible_subclasses(klass):
+    """
+    Returns all reachable subclasses of the supplied class, presumably a BaseModel subclass.
+    """
     def helper(klas, result):
         subklases = klas.__subclasses__()
         if len(subklases) > 0:
@@ -50,14 +62,24 @@ def all_visible_subclasses(klass):
 
 
 def key_strings_from_dict(dictionary: Dict[str, Any]):
+    """
+    Returns the set of keys from a dictionary.
+    """
     return set(x for x in dictionary)
 
 
 def key_strings_from_class(klass):
+    """
+    Returns the set of visible fields from a class, presumably a BaseModel subclass.
+    """
     return set(x for x in klass.__fields__.keys())
 
 
 def find_class(klass, dictionary: Dict[str, Any]):
+    """
+    Given a dictionary, find the best-fit class among the subclasses
+    of the supplied class.
+    """
     dictionary_keys = key_strings_from_dict(dictionary)
     classes = all_visible_subclasses(klass)
     classes.add(klass)  # the top class might not be abstract
@@ -120,6 +142,9 @@ def object_info(obj):
 
 
 class Now:
+    """
+    Class methods compute string, datetime and time versions of the current time.
+    """
     @classmethod
     def s(cls):
         now = cls.dt()
@@ -202,10 +227,6 @@ class Dirs:
         if not os.path.exists(assured_dir):
             os.makedirs(assured_dir)
         return assured_dir
-
-
-class FilePathe(BaseModel):
-    path: str
 
 
 class SharedRO:
@@ -377,3 +398,12 @@ class SystemInfo:
     @classmethod
     def get(cls):
         return SharedRWs.get("system_info").data_copy()
+
+
+# BaseModel subclasses
+
+class FilePathe(BaseModel):
+    path: str
+
+class DateTime(BaseModel):
+    date_time: datetime

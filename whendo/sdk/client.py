@@ -1,9 +1,10 @@
 from pydantic import BaseModel
 import requests
+from typing import Optional
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
-from whendo.core.util import FilePathe
+from whendo.core.util import FilePathe, DateTime
 from whendo.core.dispatcher import Dispatcher
 
 
@@ -67,8 +68,14 @@ class Client(BaseModel):
     def scheduled_action_count(self):
         return self.get("/schedulers/action_count")
 
+    def deferred_action_count(self):
+        return self.get("/schedulers/deferred_action_count")
+
     def schedule_action(self, scheduler_name: str, action_name: str):
         return self.get(f"/schedulers/{scheduler_name}/actions/{action_name}")
+
+    def defer_action(self, scheduler_name: str, action_name: str, wait_until:DateTime):
+        return self.post(f"/schedulers/{scheduler_name}/actions/{action_name}", wait_until)
 
     def get_scheduler(self, scheduler_name: str):
         return resolve_scheduler(self.get(f"/schedulers/{scheduler_name}"))
@@ -90,6 +97,9 @@ class Client(BaseModel):
 
     def execute_scheduler_actions(self, scheduler_name: str):
         return self.get(f"/schedulers/{scheduler_name}/execute")
+
+    def clear_deferred_actions(self, scheduler_name:str, action_name:str):
+        return self.get(f"/schedulers/clear_deferred_actions")
 
     # /jobs
     def run_jobs(self):

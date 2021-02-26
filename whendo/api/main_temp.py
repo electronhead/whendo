@@ -21,6 +21,7 @@ async def root():
 
 dispatcher_instance = Dispatcher()
 dispatcher_instance.set_continuous(Continuous())
+dispatcher_instance.initialize()
 
 app.include_router(set_dispatcher(actions.router, dispatcher_instance))
 app.include_router(set_dispatcher(schedulers.router, dispatcher_instance))

@@ -22,6 +22,7 @@ def friends(tmp_path):
         output_file = str(tmp_path / "output.txt")
         dispatcher = Dispatcher(saved_dir=saved_dir)
         dispatcher.set_continuous(Continuous())
+        dispatcher.initialize()
         action = FileHeartbeat(file=output_file)
         scheduler = TimelyScheduler(interval=1)
 

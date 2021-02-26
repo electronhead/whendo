@@ -6,6 +6,7 @@ This class and the fixture, startup_and_shutdown_uvicorn, rely on asynchronous p
 """
 import time
 import pytest
+from datetime import timedelta
 from pydantic import BaseModel
 from httpx import AsyncClient
 from whendo.core.action import Action
@@ -14,7 +15,7 @@ from whendo.core.actions.logic_action import ListAction, ListOpMode
 from whendo.core.actions.http_action import ExecuteAction
 from whendo.core.scheduler import TimelyScheduler, Scheduler
 from whendo.core.dispatcher import Dispatcher
-from whendo.core.util import FilePathe, resolve_instance
+from whendo.core.util import FilePathe, resolve_instance, DateTime, Now
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
 from .fixtures import port, host, startup_and_shutdown_uvicorn
 from .client_async import ClientAsync
@@ -436,6 +437,43 @@ async def test_execute_supplied_action(
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
+@pytest.mark.asyncio
+async def test_deferred_action(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    """
+    Want to observe the scheduling move from deferred state to ready state.
+    """
+
+    client = ClientAsync(host=host, port=port)
+
+    action1 = FileHeartbeat(relative_to_output_dir=False, file=str(tmp_path / "output1.txt"))
+    scheduler = TimelyScheduler(interval=1)
+
+    await add_action(client=client, action_name="foo", action=action1)
+    await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
+
+    await assert_deferred_action_count(client=client, n=0)
+    await assert_scheduled_action_count(client=client, n=0)
+
+    await defer_action(
+        client=client,
+        action_name="foo",
+        scheduler_name="bar",
+        wait_until=DateTime(date_time=Now.dt() + timedelta(seconds=0))
+    )
+
+    await assert_deferred_action_count(client=client, n=1)
+    await assert_scheduled_action_count(client=client, n=0)
+
+    time.sleep(6)
+
+    await assert_deferred_action_count(client=client, n=0)
+    await assert_scheduled_action_count(client=client, n=1)
+
+    await run_and_stop_jobs(client=client, pause=2)
+    lines = None
+    with open(action1.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
 # helpers
 
@@ -519,6 +557,16 @@ async def schedule_action(client: ClientAsync, scheduler_name: str, action_name:
     ), f"failed to schedule action ({action_name}) using scheduler ({scheduler_name})"
 
 
+async def defer_action(client: ClientAsync, scheduler_name: str, action_name: str, wait_until:DateTime):
+    """ schedule an action """
+    response = await client.defer_action(
+        scheduler_name=scheduler_name, action_name=action_name, wait_until=wait_until
+    )
+    assert (
+        response.status_code == 200
+    ), f"failed to schedule action ({action_name}) using scheduler ({scheduler_name})"
+
+
 async def load_dispatcher(client: ClientAsync):
     """ return the saved dispatcher """
     retrieved_dispatcher = await client.load_dispatcher()
@@ -582,6 +630,13 @@ async def assert_scheduled_action_count(client: ClientAsync, n: int):
     assert response.status_code == 200, "failed to retrieve job count"
     action_count = response.json()["action_count"]
     assert action_count == n, f"expected an action count of ({n})"
+
+
+async def assert_deferred_action_count(client: ClientAsync, n: int):
+    response = await client.deferred_action_count()
+    assert response.status_code == 200, "failed to retrieve deferred action count"
+    deferred_action_count = response.json()["deferred_action_count"]
+    assert deferred_action_count == n, f"expected a deferred action count of ({n})"
 
 
 async def run_and_stop_jobs(client: ClientAsync, pause: int):
