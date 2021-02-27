@@ -384,10 +384,6 @@ class Dispatcher(BaseModel):
             deferred_actions.append(action_name)
             self.save_current()
 
-    def get_deferred_actions(self):
-        with Lok.lock:
-            return self.deferred_actions
-
     def clear_all_deferred_actions(self):
         with Lok.lock:
             self.deferred_schedulers_actions.clear()
