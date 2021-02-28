@@ -445,7 +445,7 @@ class Dispatcher(BaseModel):
             expire_on_str = dt_to_str(expire_on)
             if expire_on_str not in self.expired_schedulers_actions:
                 # initialize the key's value
-                self.deferred_schedulers_actions[expire_on_str] = {}
+                self.expired_schedulers_actions[expire_on_str] = {}
             # same structure as schedulers_actions
             schedulers_actions = self.expired_schedulers_actions[expire_on_str]  
             if scheduler_name not in schedulers_actions:
@@ -477,7 +477,7 @@ class Dispatcher(BaseModel):
                     for scheduler_name in schedulers_actions:
                         for action_name in schedulers_actions[scheduler_name]:
                             try:
-                                self.unscheduler_scheduler_action(
+                                self.unschedule_scheduler_action(
                                     scheduler_name=scheduler_name,
                                     action_name=action_name,
                                 )

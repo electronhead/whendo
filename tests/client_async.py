@@ -133,7 +133,6 @@ class ClientAsync(BaseModel):
 
     async def expired_action_count(self):
         return await self.get("/schedulers/expired_action_count")
-        )
 
     # /jobs
     async def run_jobs(self):

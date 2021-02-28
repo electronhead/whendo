@@ -131,14 +131,14 @@ def expire_action(scheduler_name: str, action_name: str, expire_on: util.DateTim
         get_dispatcher(router).expire_action(
             scheduler_name=scheduler_name,
             action_name=action_name,
-            wait_until= expire_on.date_time,
+            expire_on= expire_on.date_time,
         )
         return return_success(
             f"action ({action_name}) under ({scheduler_name}) will expire ({expire_on})"
         )
     except Exception as e:
         raise raised_exception(
-            f"failed to defer action ({action_name}) under ({scheduler_name})", e
+            f"failed to expire action ({action_name}) under ({scheduler_name})", e
         )
 
 
