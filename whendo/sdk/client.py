@@ -65,19 +65,9 @@ class Client(BaseModel):
         return self.get(f"/actions/{action_name}/reschedule")
 
     # /schedulers
-    def scheduled_action_count(self):
-        return self.get("/schedulers/action_count")
-
-    def deferred_action_count(self):
-        return self.get("/schedulers/deferred_action_count")
 
     def schedule_action(self, scheduler_name: str, action_name: str):
         return self.get(f"/schedulers/{scheduler_name}/actions/{action_name}")
-
-    def defer_action(self, scheduler_name: str, action_name: str, wait_until: DateTime):
-        return self.post(
-            f"/schedulers/{scheduler_name}/actions/{action_name}", wait_until
-        )
 
     def get_scheduler(self, scheduler_name: str):
         return resolve_scheduler(self.get(f"/schedulers/{scheduler_name}"))
@@ -93,6 +83,9 @@ class Client(BaseModel):
 
     def unschedule_scheduler(self, scheduler_name: str):
         return self.get(f"/schedulers/{scheduler_name}/unschedule")
+    
+    def unschedule_scheduler_action(self, scheduler_name: str, action_name: str):
+        return self.get(f"/schedulers/{scheduler_name}/actions/{action_name}/unschedule")
 
     def reschedule_all_schedulers(self):
         return self.get(f"/schedulers/reschedule_all")
@@ -100,8 +93,31 @@ class Client(BaseModel):
     def execute_scheduler_actions(self, scheduler_name: str):
         return self.get(f"/schedulers/{scheduler_name}/execute")
 
-    def clear_deferred_actions(self, scheduler_name: str, action_name: str):
+    def scheduled_action_count(self):
+        return self.get("/schedulers/action_count")
+
+    # deferrals and expirations
+    def defer_action(self, scheduler_name: str, action_name: str, wait_until: DateTime):
+        return self.post(
+            f"/schedulers/{scheduler_name}/actions/{action_name}/defer", wait_until
+        )
+
+    def clear_deferred_actions(self):
         return self.get(f"/schedulers/clear_deferred_actions")
+
+    def deferred_action_count(self):
+        return self.get("/schedulers/deferred_action_count")
+
+    def expire_action(self, scheduler_name: str, action_name: str, expire_on: DateTime):
+        return self.post(
+            f"/schedulers/{scheduler_name}/actions/{action_name}/expire", expire_on
+        )
+
+    def clear_expired_actions(self):
+        return self.get(f"/schedulers/clear_expired_actions")
+
+    def expired_action_count(self):
+        return self.get("/schedulers/expired_action_count")
 
     # /jobs
     def run_jobs(self):

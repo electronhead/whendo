@@ -590,12 +590,25 @@ async def defer_action(
     """ defer an action """
     response = await post(
         base_url=base_url,
-        path=f"/schedulers/{scheduler_name}/actions/{action_name}",
+        path=f"/schedulers/{scheduler_name}/actions/{action_name}/defer",
         data=wait_until,
     )
     assert (
         response.status_code == 200
     ), f"failed to defer action ({action_name}) using scheduler ({scheduler_name})"
+
+async def expire_action(
+    base_url: str, scheduler_name: str, action_name: str, wait_until: DateTime
+):
+    """ expire an action """
+    response = await post(
+        base_url=base_url,
+        path=f"/schedulers/{scheduler_name}/actions/{action_name}/expire",
+        data=wait_until,
+    )
+    assert (
+        response.status_code == 200
+    ), f"failed to expire action ({action_name}) using scheduler ({scheduler_name})"
 
 
 async def load_dispatcher(base_url: str):

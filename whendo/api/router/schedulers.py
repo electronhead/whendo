@@ -31,6 +31,20 @@ def get_deferred_action_count():
         raise raised_exception(f"failed to retrieve the deferred action count", e)
 
 
+@router.get("/schedulers/expired_action_count", status_code=status.HTTP_200_OK)
+def get_expired_action_count():
+    try:
+        return return_success(
+            {
+                "expired_action_count": get_dispatcher(
+                    router
+                ).get_expired_action_count()
+            }
+        )
+    except Exception as e:
+        raise raised_exception(f"failed to retrieve the deferred action count", e)
+
+
 @router.get("/schedulers/reschedule_all", status_code=status.HTTP_200_OK)
 def reschedule_all_schedulers():
     try:
@@ -43,29 +57,19 @@ def reschedule_all_schedulers():
 @router.get("/schedulers/clear_deferred_actions", status_code=status.HTTP_200_OK)
 def clear_deferred_actions():
     try:
-        get_dispatcher(router).clear_deferred_actions()
+        get_dispatcher(router).clear_all_deferred_actions()
         return return_success("deferred actions were cleared")
     except Exception as e:
         raise raised_exception("failed to clear deferred actions", e)
 
 
-@router.post(
-    "/schedulers/{scheduler_name}/actions/{action_name}", status_code=status.HTTP_200_OK
-)
-def defer_action(scheduler_name: str, action_name: str, wait_until: util.DateTime):
+@router.get("/schedulers/clear_expired_actions", status_code=status.HTTP_200_OK)
+def clear_expired_actions():
     try:
-        get_dispatcher(router).defer_action(
-            scheduler_name=scheduler_name,
-            action_name=action_name,
-            wait_until=wait_until.date_time,
-        )
-        return return_success(
-            f"action ({action_name}) under ({scheduler_name}) was deferred until ({wait_until})"
-        )
+        get_dispatcher(router).clear_all_expired_actions()
+        return return_success("expired actions were cleared")
     except Exception as e:
-        raise raised_exception(
-            f"failed to defer action ({action_name}) under ({scheduler_name})", e
-        )
+        raise raised_exception("failed to clear expired actions", e)
 
 
 @router.get(
@@ -82,6 +86,59 @@ def schedule_action(scheduler_name: str, action_name: str):
     except Exception as e:
         raise raised_exception(
             f"failed to schedule ({scheduler_name}) action ({action_name})", e
+        )
+
+@router.get(
+    "/schedulers/{scheduler_name}/actions/{action_name}/unschedule", status_code=status.HTTP_200_OK
+)
+def unschedule_scheduler_action(scheduler_name: str, action_name: str):
+    try:
+        get_dispatcher(router).unschedule_scheduler_action(
+            scheduler_name=scheduler_name, action_name=action_name
+        )
+        return return_success(
+            f"action ({action_name}) was successfully unscheduled ({scheduler_name})"
+        )
+    except Exception as e:
+        raise raised_exception(
+            f"failed to unschedule ({scheduler_name}) action ({action_name})", e
+        )
+
+
+@router.post(
+    "/schedulers/{scheduler_name}/actions/{action_name}/defer", status_code=status.HTTP_200_OK
+)
+def defer_action(scheduler_name: str, action_name: str, wait_until: util.DateTime):
+    try:
+        get_dispatcher(router).defer_action(
+            scheduler_name=scheduler_name,
+            action_name=action_name,
+            wait_until=wait_until.date_time,
+        )
+        return return_success(
+            f"action ({action_name}) under ({scheduler_name}) was deferred until ({wait_until})"
+        )
+    except Exception as e:
+        raise raised_exception(
+            f"failed to defer action ({action_name}) under ({scheduler_name})", e
+        )
+
+@router.post(
+    "/schedulers/{scheduler_name}/actions/{action_name}/expire", status_code=status.HTTP_200_OK
+)
+def expire_action(scheduler_name: str, action_name: str, expire_on: util.DateTime):
+    try:
+        get_dispatcher(router).expire_action(
+            scheduler_name=scheduler_name,
+            action_name=action_name,
+            wait_until= expire_on.date_time,
+        )
+        return return_success(
+            f"action ({action_name}) under ({scheduler_name}) will expire ({expire_on})"
+        )
+    except Exception as e:
+        raise raised_exception(
+            f"failed to defer action ({action_name}) under ({scheduler_name})", e
         )
 
 

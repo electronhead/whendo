@@ -76,21 +76,9 @@ class ClientAsync(BaseModel):
         return await self.get(f"/actions/{action_name}/unschedule")
 
     # /schedulers
-    async def scheduled_action_count(self):
-        return await self.get("/schedulers/action_count")
-
-    async def deferred_action_count(self):
-        return await self.get("/schedulers/deferred_action_count")
 
     async def schedule_action(self, scheduler_name: str, action_name: str):
         return await self.get(f"/schedulers/{scheduler_name}/actions/{action_name}")
-
-    async def defer_action(
-        self, scheduler_name: str, action_name: str, wait_until: DateTime
-    ):
-        return await self.post(
-            f"/schedulers/{scheduler_name}/actions/{action_name}", wait_until
-        )
 
     async def get_scheduler(self, scheduler_name: str):
         return resolve_scheduler(
@@ -115,6 +103,37 @@ class ClientAsync(BaseModel):
 
     async def execute_scheduler_actions(self, scheduler_name: str):
         return await self.get(f"/schedulers/{scheduler_name}/execute")
+
+    async def scheduled_action_count(self):
+        return await self.get("/schedulers/action_count")
+
+    # deferrals and expirations
+    async def defer_action(
+        self, scheduler_name: str, action_name: str, wait_until: DateTime
+    ):
+        return await self.post(
+            f"/schedulers/{scheduler_name}/actions/{action_name}/defer", wait_until
+        )
+
+    async def clear_deferred_actions(self):
+        return await self.get(f"/schedulers/clear_deferred_actions")
+
+    async def deferred_action_count(self):
+        return await self.get("/schedulers/deferred_action_count")
+
+    async def expire_action(
+        self, scheduler_name: str, action_name: str, expire_on: DateTime
+    ):
+        return await self.post(
+            f"/schedulers/{scheduler_name}/actions/{action_name}/expire", expire_on
+        )
+
+    async def clear_expired_actions(self):
+        return await self.get(f"/schedulers/clear_expired_actions")
+
+    async def expired_action_count(self):
+        return await self.get("/schedulers/expired_action_count")
+        )
 
     # /jobs
     async def run_jobs(self):

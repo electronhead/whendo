@@ -9,13 +9,12 @@ job scheduling mechanism of the schedule library (refer to the 'continuous' modu
 from pydantic import BaseModel, PrivateAttr
 from threading import RLock
 from typing import Dict, List
-import pickle
 import json
 import os
 import logging
 from datetime import datetime
 from typing import Optional, Dict, Any
-from whendo.core.util import PP, Dirs, Output, DateTime, Now, str_to_dt, dt_to_str
+from whendo.core.util import PP, Dirs, DateTime, Now, str_to_dt, dt_to_str
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
 from whendo.core.continuous import Continuous
@@ -34,6 +33,7 @@ class Dispatcher(BaseModel):
     schedulers: Dict[str, Scheduler] = {}
     schedulers_actions: Dict[str, List[str]] = {}
     deferred_schedulers_actions: Dict[str, Dict[str, List[str]]] = {}
+    expired_schedulers_actions: Dict[str, Dict[str, List[str]]] = {}
     saved_dir: Optional[str] = None
 
     # not treated as a model attrs
@@ -82,12 +82,19 @@ class Dispatcher(BaseModel):
         with Lok.lock:
             return self.deferred_schedulers_actions
 
+    def get_expired_schedulers_actions(self):
+        with Lok.lock:
+            return self.expired_schedulers_actions
+
+    def get_saved_dir(self):
+        return self.saved_dir
+
+    # other internal dispatcher operations
     def initialize(self):
         Lok.reset()
         self._continuous_for_out_of_band.clear()
-        self._continuous_for_out_of_band.every(5).seconds.do(
-            self.check_for_deferred_actions
-        )
+        self._continuous_for_out_of_band.every(2).to(5).seconds.do(self.check_for_deferred_actions).tag('deferred')
+        self._continuous_for_out_of_band.every(2).to(5).seconds.do(self.check_for_expired_actions).tag('expired')
         self._continuous_for_out_of_band.run_continuously()
 
     def pprint(self):
@@ -115,9 +122,6 @@ class Dispatcher(BaseModel):
             if self.saved_dir:
                 with open(self.saved_dir + name + ".json", "w") as outfile:
                     json.dump(self.json(), outfile, indent=2)
-
-    def get_saved_dir(self):
-        return self.saved_dir
 
     def set_saved_dir(self, saved_dir: str):
         with Lok.lock:
@@ -287,6 +291,19 @@ class Dispatcher(BaseModel):
                         action_names.remove(action_name)
             self.save_current()
 
+    def unschedule_scheduler_action(self, scheduler_name:str, action_name: str):
+        with Lok.lock:
+            assert (
+                scheduler_name in self.schedulers
+            ), f"scheduler ({scheduler_name}) does not exist"
+            assert action_name in self.actions, f"action ({action_name}) does not exist"
+            tag = self.scheduler_tag(scheduler_name, action_name)
+            self._continuous.clear(tag)
+            action_names = self.schedulers_actions[scheduler_name]
+            if action_name in action_names:
+                action_names.remove(action_name)
+                self.save_current()
+
     def reschedule_action(self, action_name: str):
         with Lok.lock:
             assert action_name in self.actions, f"action ({action_name}) does not exist"
@@ -340,53 +357,29 @@ class Dispatcher(BaseModel):
                 len(action_array) for action_array in self.schedulers_actions.values()
             )
 
-    def get_deferred_action_count(self):
-        # returns the total number of actions in the deferred actions dictionary (a dictionary
-        # of dictionaries)
-        with Lok.lock:
-            result = 0
-            for schedulers_actions in self.deferred_schedulers_actions.values():
-                result += sum(
-                    len(action_array) for action_array in schedulers_actions.values()
-                )
-            return result
-
-    # deferred scheduling
-
+    # defer scheduler/action
     def defer_action(self, scheduler_name: str, action_name: str, wait_until: datetime):
         """
         This method defers the start of scheduling an action. The data structure is a dictionary
         with a datetime as the key and a schedulers_actions style dictionary as the value.
         """
         with Lok.lock:
-            assert (
-                scheduler_name in self.get_schedulers()
-            ), f"scheduler ({scheduler_name}) does not exist"
-            assert (
-                action_name in self.get_actions()
-            ), f"action ({action_name}) does not exist"
-            wait_until_str = dt_to_str(
-                wait_until
-            )  # needs to be a str key because of Dispatcher json serialization and deserialization
+            assert scheduler_name in self.get_schedulers(), f"scheduler ({scheduler_name}) does not exist"
+            assert action_name in self.get_actions(), f"action ({action_name}) does not exist"
+            # needs to be a str key because of Dispatcher json serialization and deserialization
+            wait_until_str = dt_to_str(wait_until)  
             if wait_until_str not in self.deferred_schedulers_actions:
-                self.deferred_schedulers_actions[
-                    wait_until_str
-                ] = {}  # initialize the key's value
-            schedulers_actions = self.deferred_schedulers_actions[
-                wait_until_str
-            ]  # same structure as schedulers_actions
+                # initialize the key's value
+                self.deferred_schedulers_actions[wait_until_str] = {}
+            # same structure as schedulers_actions
+            schedulers_actions = self.deferred_schedulers_actions[wait_until_str]  
             if scheduler_name not in schedulers_actions:
                 schedulers_actions[scheduler_name] = []  # initialize list of Actions
             deferred_actions = schedulers_actions[scheduler_name]
             assert (
                 action_name not in deferred_actions
-            ), f"({action_name}) already scheduled using ({scheduler_name})"
+            ), f"({action_name}) already scheduled using ({scheduler_name}) as of ({wait_until_str})"
             deferred_actions.append(action_name)
-            self.save_current()
-
-    def clear_all_deferred_actions(self):
-        with Lok.lock:
-            self.deferred_schedulers_actions.clear()
             self.save_current()
 
     def check_for_deferred_actions(self):
@@ -415,12 +408,104 @@ class Dispatcher(BaseModel):
                                 )
                             except Exception as exception:
                                 logger.error(
-                                    f"failed to schedule deferred action ({action_name}) under ({scheduler_name})",
+                                    f"failed to schedule deferred action ({action_name}) under ({scheduler_name}) as of ({wait_until_str})",
                                     exception,
                                 )
                     to_remove.append(wait_until_str)
             for wait_until_str in to_remove:  # modify outside the previous for-loop
                 self.deferred_schedulers_actions.pop(wait_until_str)
+            self.save_current()
+
+    def get_deferred_action_count(self):
+        # returns the total number of actions in the deferred actions dictionary (a dictionary
+        # of dictionaries)
+        with Lok.lock:
+            result = 0
+            for schedulers_actions in self.deferred_schedulers_actions.values():
+                result += sum(
+                    len(action_array) for action_array in schedulers_actions.values()
+                )
+            return result
+
+    def clear_all_deferred_actions(self):
+        with Lok.lock:
+            self.deferred_schedulers_actions.clear()
+            self.save_current()
+
+    # expire scheduler/action
+    def expire_action(self, scheduler_name: str, action_name: str, expire_on: datetime):
+        """
+        This method expires an action with scheduler. The data structure is a dictionary
+        with a datetime as the key and a schedulers_actions style dictionary as the value.
+        """
+        with Lok.lock:
+            assert scheduler_name in self.get_schedulers(), f"scheduler ({scheduler_name}) does not exist"
+            assert action_name in self.get_actions(), f"action ({action_name}) does not exist"
+            # needs to be a str key because of Dispatcher json serialization and deserialization
+            expire_on_str = dt_to_str(expire_on)
+            if expire_on_str not in self.expired_schedulers_actions:
+                # initialize the key's value
+                self.deferred_schedulers_actions[expire_on_str] = {}
+            # same structure as schedulers_actions
+            schedulers_actions = self.expired_schedulers_actions[expire_on_str]  
+            if scheduler_name not in schedulers_actions:
+                schedulers_actions[scheduler_name] = []  # initialize list of Actions
+            expired_actions = schedulers_actions[scheduler_name]
+            assert (
+                action_name not in expired_actions
+            ), f"({action_name}) already scheduled for expiration under ({scheduler_name}) as of ({expire_on_str})"
+            expired_actions.append(action_name)
+            self.save_current()
+
+    def check_for_expired_actions(self):
+        """
+        This gets run as a job in the out-of-band Continuous instance.
+
+        It looks for expired actions whose dates are later than the current
+        time and unschedules them within the context of the associated scheduler.
+        See the expire_action and initialize methods for more details.
+        """
+        with Lok.lock:
+            now = Now.dt()
+            to_remove = []
+            for expire_on_str in self.expired_schedulers_actions:
+                expire_on = str_to_dt(expire_on_str)
+                if expire_on < now:
+                    schedulers_actions = self.expired_schedulers_actions[
+                        expire_on_str
+                    ]
+                    for scheduler_name in schedulers_actions:
+                        for action_name in schedulers_actions[scheduler_name]:
+                            try:
+                                self.unscheduler_scheduler_action(
+                                    scheduler_name=scheduler_name,
+                                    action_name=action_name,
+                                )
+                            except Exception as exception:
+                                logger.error(
+                                    f"failed to unschedule action ({action_name}) under ({scheduler_name}) as of ({expire_on_str})",
+                                    exception,
+                                )
+                    to_remove.append(expire_on_str)
+            for expire_on_str in to_remove:  # modify outside the previous for-loop
+                self.expired_schedulers_actions.pop(expire_on_str)
+            self.save_current()
+
+
+    def get_expired_action_count(self):
+        # returns the total number of actions in the deferred actions dictionary (a dictionary
+        # of dictionaries)
+        with Lok.lock:
+            result = 0
+            for schedulers_actions in self.expired_schedulers_actions.values():
+                result += sum(
+                    len(action_array) for action_array in schedulers_actions.values()
+                )
+            return result
+
+    def clear_all_expired_actions(self):
+        with Lok.lock:
+            self.expired_schedulers_actions.clear()
             self.save_current()
 
     # utility
