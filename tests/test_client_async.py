@@ -13,7 +13,7 @@ from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.actions.logic_action import ListAction, ListOpMode
 from whendo.core.actions.http_action import ExecuteAction
-from whendo.core.scheduler import TimelyScheduler, Scheduler
+from whendo.core.scheduler import TimelyScheduler, Scheduler, Immediately
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.util import FilePathe, resolve_instance, DateTime, Now
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
@@ -516,6 +516,44 @@ async def test_expire_action(startup_and_shutdown_uvicorn, host, port, tmp_path)
     await assert_expired_action_count(client=client, n=0)
     await assert_scheduled_action_count(client=client, n=0)
 
+
+@pytest.mark.asyncio
+async def test_immediately(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    """
+    Want to observe the file was written to and that schedulers_actions was not
+    affected.
+    """
+
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    action = FileHeartbeat(
+        relative_to_output_dir=False, file=str(tmp_path / "output.txt")
+    )
+    scheduler = Immediately()
+
+    await add_action(client=client, action_name="foo", action=action)
+    await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
+
+    await assert_scheduled_action_count(client=client, n=0)
+
+    await defer_action(
+        client=client,
+        action_name="foo",
+        scheduler_name="bar",
+        wait_until=DateTime(date_time=Now.dt() + timedelta(seconds=1)),
+    )
+
+    await assert_scheduled_action_count(client=client, n=0)
+
+    time.sleep(6)
+
+    await assert_scheduled_action_count(client=client, n=0)
+
+    lines = None
+    with open(action.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
 # helpers
 

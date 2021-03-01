@@ -12,7 +12,7 @@ from datetime import timedelta
 from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.actions.logic_action import ListAction, ListOpMode
-from whendo.core.scheduler import TimelyScheduler, Scheduler
+from whendo.core.scheduler import TimelyScheduler, Scheduler, Immediately
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.util import FilePathe, resolve_instance, Output, DateTime, Now
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
@@ -437,7 +437,7 @@ async def test_execute_supplied_action(
 @pytest.mark.asyncio
 async def test_defer_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """
-    Want to observe [1] the scheduling move from deferred state to ready state and
+    Want to observe [1] the scheduling moved from deferred state to ready state and
     [2] the scheduled action having an effect.
     """
 
@@ -478,7 +478,7 @@ async def test_defer_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
 @pytest.mark.asyncio
 async def test_expire_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """
-    Want to observe [1] the scheduling move from deferred state to ready state and
+    Want to observe [1] the scheduling moved from deferred state to ready state and
     [2] the scheduled action having an effect.
     """
 
@@ -512,6 +512,43 @@ async def test_expire_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await assert_scheduled_action_count(base_url=base_url, n=0)
 
 
+@pytest.mark.asyncio
+async def test_immediately(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    """
+    Want to observe the file was written to and that schedulers_actions was not
+    affected.
+    """
+
+    await reset_dispatcher(base_url, str(tmp_path))
+    action = FileHeartbeat(
+        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+    )
+    scheduler = Immediately()
+
+    await add_action(base_url=base_url, action_name="foo", action=action)
+    await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
+
+    await assert_scheduled_action_count(base_url=base_url, n=0)
+
+    await defer_action(
+        base_url=base_url,
+        action_name="foo",
+        scheduler_name="bar",
+        wait_until=DateTime(date_time=Now.dt() + timedelta(seconds=1)),
+    )
+
+    await assert_deferred_action_count(base_url=base_url, n=1)
+    await assert_scheduled_action_count(base_url=base_url, n=0)
+
+    time.sleep(6)
+
+    await assert_deferred_action_count(base_url=base_url, n=0)
+    await assert_scheduled_action_count(base_url=base_url, n=0)
+
+    lines = None
+    with open(action.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
 # ==========================================
 # helpers

@@ -276,8 +276,9 @@ class Dispatcher(BaseModel):
             action = self.actions.get(action_name)
             tag = self.scheduler_tag(scheduler_name, action_name)
             scheduler.schedule_action(tag, action, self._continuous)
-            self.schedulers_actions[scheduler_name].append(action_name)
-            self.save_current()
+            if scheduler.joins_schedulers_actions():
+                self.schedulers_actions[scheduler_name].append(action_name)
+                self.save_current()
 
     def unschedule_action(self, action_name: str):
         with Lok.lock:

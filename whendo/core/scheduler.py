@@ -78,6 +78,9 @@ class Scheduler(BaseModel):
     def schedule_action(self, tag: str, action: Action, continuous: Continuous):
         pass
 
+    def joins_schedulers_actions(self):
+        return True
+
     def during_period(self, tag: str, action: Action):
         """
         is_in_period_wrapper below takes (start) and (stop) and returns a 1-arg function that compares (start)
@@ -211,3 +214,22 @@ class RandomlyScheduler(Scheduler):
             low=self.low,
             high=self.high,
         )
+
+class Immediately(Scheduler):
+    immediately:str="immediately"
+
+    def schedule_action(self, tag: str, action: Action, continuous: Continuous):
+        """
+        Wrapping ensures that the execution of the action participates in logging
+        in the same manner as actions that are executed in the Continuous job
+        system.
+        """
+        wrapped_callable = self.wrap(
+            thunk=lambda: action.execute(tag=tag, scheduler_info=self.info()),
+            tag=tag,
+            action_json=action.json(),
+            scheduler_json=self.json())
+        wrapped_callable()
+        
+    def joins_schedulers_actions(self):
+        return False

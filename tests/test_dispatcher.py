@@ -3,6 +3,8 @@ import time
 import json
 import datetime
 import whendo.core.util as util
+from whendo.core.action import Action
+from whendo.core.scheduler import Immediately
 from whendo.core.dispatcher import Dispatcher
 from .fixtures import friends
 
@@ -321,3 +323,31 @@ def test_expire_action(friends):
 
     assert 0 == dispatcher.get_expired_action_count()
     assert 0 == dispatcher.get_scheduled_action_count()
+
+
+
+def test_immediately(friends):
+    """
+    Want to observe that action get executed immediately and that schedulers_actions
+    is not impacted.
+    """
+
+    dispatcher, scheduler, action = friends()
+
+    class TestAction(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, scheduler_info: dict = None):
+            self.fleas += 1
+            return "BLING"
+    test_action = TestAction()
+
+    assert dispatcher.get_scheduled_action_count() == 0
+    assert test_action.fleas == 0
+    
+    dispatcher.add_action("foo", test_action)
+    dispatcher.add_scheduler("imm", Immediately())
+    dispatcher.schedule_action(scheduler_name="imm", action_name="foo")
+
+    assert dispatcher.get_scheduled_action_count() == 0
+    assert test_action.fleas == 1
