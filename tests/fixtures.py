@@ -6,7 +6,7 @@ import random
 import pytest
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.actions.file_action import FileHeartbeat
-from whendo.core.scheduler import TimelyScheduler
+from whendo.core.scheduler import Timely
 from whendo.core.continuous import Continuous
 from whendo.api import main_temp
 from .uvicorn_server import UvicornTestServer
@@ -24,7 +24,7 @@ def friends(tmp_path):
         dispatcher.set_continuous(Continuous())
         dispatcher.initialize()
         action = FileHeartbeat(file=output_file)
-        scheduler = TimelyScheduler(interval=1)
+        scheduler = Timely(interval=1)
 
         return dispatcher, scheduler, action
 

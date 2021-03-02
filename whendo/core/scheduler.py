@@ -157,7 +157,7 @@ class Scheduler(BaseModel):
         return object_info(self)
 
 
-class TimelyScheduler(Scheduler):
+class Timely(Scheduler):
     """
     This scheduler executes Actions every [interval] days, hours, minutes, seconds at a
     time within the time unit (hour, minute, second).
@@ -191,7 +191,7 @@ class TimelyScheduler(Scheduler):
         )
 
 
-class RandomlyScheduler(Scheduler):
+class Randomly(Scheduler):
     """
     This scheduler randomly executes Actions every [low] to [high] days, hours, minutes, or seconds.
 
@@ -215,8 +215,9 @@ class RandomlyScheduler(Scheduler):
             high=self.high,
         )
 
+
 class Immediately(Scheduler):
-    immediately:str="immediately"
+    immediately: str = "immediately"
 
     def schedule_action(self, tag: str, action: Action, continuous: Continuous):
         """
@@ -228,8 +229,9 @@ class Immediately(Scheduler):
             thunk=lambda: action.execute(tag=tag, scheduler_info=self.info()),
             tag=tag,
             action_json=action.json(),
-            scheduler_json=self.json())
+            scheduler_json=self.json(),
+        )
         wrapped_callable()
-        
+
     def joins_schedulers_actions(self):
         return False

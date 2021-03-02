@@ -14,7 +14,7 @@ whendo stores its files in {home}/.whendo. What follows in a script that illustr
 from datetime import time
 import time as thyme
 from whendo.sdk.client import Client
-from whendo.core.scheduler import TimelyScheduler, RandomlyScheduler
+from whendo.core.scheduler import Timely, Randomly
 from whendo.core.actions.gpio_action import TogglePin, SetPin, Cleanup
 from whendo.core.util import TimeUnit
 
@@ -30,8 +30,8 @@ gpio_cleanup = Cleanup()
 # create schedulers that executes an action every second from 18:00 to 8:00.
 # Start/stop specify intervals 24 hours or less. The random one executes
 # randomly from a period 2 to 5 seconds from the previous execution.
-timely_secondly = TimelyScheduler(interval=1, start=time(18,0,0), stop=time(8,0,0))
-randomly_secondly = RandomlyScheduler(interval=1, start=time(18,0,0), stop=time(6,0,0), low=2, high=5, time_unit=TimeUnit.second)
+timely_secondly = Timely(interval=1, start=time(18,0,0), stop=time(8,0,0))
+randomly_secondly = Randomly(interval=1, start=time(18,0,0), stop=time(6,0,0), low=2, high=5, time_unit=TimeUnit.second)
 
 # SDK
 # A client could be any reachable pi with whendo running on it

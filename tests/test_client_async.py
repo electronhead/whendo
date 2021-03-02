@@ -13,7 +13,7 @@ from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.actions.logic_action import ListAction, ListOpMode
 from whendo.core.actions.http_action import ExecuteAction
-from whendo.core.scheduler import TimelyScheduler, Scheduler, Immediately
+from whendo.core.scheduler import Timely, Scheduler, Immediately
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.util import FilePathe, resolve_instance, DateTime, Now
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
@@ -31,7 +31,7 @@ async def test_client_1(startup_and_shutdown_uvicorn, host, port, tmp_path):
 
     output_file = str(tmp_path / "output.txt")
     action = FileHeartbeat(relative_to_output_dir=False, file=output_file)
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action)
     await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
@@ -47,7 +47,7 @@ async def test_client_2(startup_and_shutdown_uvicorn, host, port, tmp_path):
 
     output_file = str(tmp_path / "output.txt")
     action = FileHeartbeat(relative_to_output_dir=False, file=output_file)
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action)
     await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
@@ -65,7 +65,7 @@ async def test_client_3(startup_and_shutdown_uvicorn, host, port, tmp_path):
 
     output_file = str(tmp_path / "output.txt")
     action = FileHeartbeat(relative_to_output_dir=False, file=output_file)
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action)
     await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
@@ -93,7 +93,7 @@ async def test_client_logic_action(startup_and_shutdown_uvicorn, host, port, tmp
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
     action3 = ListAction(op_mode=ListOpMode.ALL, action_list=[action1, action2])
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action3)
     await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
@@ -125,7 +125,7 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, host, port, tmp_path):
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action1)
     await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
@@ -164,7 +164,7 @@ async def test_unschedule_action_1(startup_and_shutdown_uvicorn, host, port, tmp
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo1", action=action1)
     await add_action(client=client, action_name="foo2", action=action2)
@@ -192,7 +192,7 @@ async def test_unschedule_action_2(startup_and_shutdown_uvicorn, host, port, tmp
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo1", action=action1)
     await add_action(client=client, action_name="foo2", action=action2)
@@ -225,7 +225,7 @@ async def test_reschedule_action_1(startup_and_shutdown_uvicorn, host, port, tmp
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action1)
     await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
@@ -261,7 +261,7 @@ async def test_unschedule_scheduler(startup_and_shutdown_uvicorn, host, port, tm
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo1", action=action1)
     await add_action(client=client, action_name="foo2", action=action2)
@@ -289,7 +289,7 @@ async def test_job_count(startup_and_shutdown_uvicorn, host, port, tmp_path):
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo1", action=action1)
     await add_action(client=client, action_name="foo2", action=action2)
@@ -313,7 +313,7 @@ async def test_schedulers_action_count(
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo1", action=action1)
     await add_action(client=client, action_name="foo2", action=action2)
@@ -337,7 +337,7 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, host, port, tmp_
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action1)
     await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
@@ -450,7 +450,7 @@ async def test_defer_action(startup_and_shutdown_uvicorn, host, port, tmp_path):
     action = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action)
     await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
@@ -492,7 +492,7 @@ async def test_expire_action(startup_and_shutdown_uvicorn, host, port, tmp_path)
     action = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action)
     await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
@@ -554,6 +554,7 @@ async def test_immediately(startup_and_shutdown_uvicorn, host, port, tmp_path):
     with open(action.file, "r") as fid:
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
 
 # helpers
 

@@ -35,11 +35,7 @@ def get_deferred_action_count():
 def get_expired_action_count():
     try:
         return return_success(
-            {
-                "expired_action_count": get_dispatcher(
-                    router
-                ).get_expired_action_count()
-            }
+            {"expired_action_count": get_dispatcher(router).get_expired_action_count()}
         )
     except Exception as e:
         raise raised_exception(f"failed to retrieve the deferred action count", e)
@@ -88,8 +84,10 @@ def schedule_action(scheduler_name: str, action_name: str):
             f"failed to schedule ({scheduler_name}) action ({action_name})", e
         )
 
+
 @router.get(
-    "/schedulers/{scheduler_name}/actions/{action_name}/unschedule", status_code=status.HTTP_200_OK
+    "/schedulers/{scheduler_name}/actions/{action_name}/unschedule",
+    status_code=status.HTTP_200_OK,
 )
 def unschedule_scheduler_action(scheduler_name: str, action_name: str):
     try:
@@ -106,7 +104,8 @@ def unschedule_scheduler_action(scheduler_name: str, action_name: str):
 
 
 @router.post(
-    "/schedulers/{scheduler_name}/actions/{action_name}/defer", status_code=status.HTTP_200_OK
+    "/schedulers/{scheduler_name}/actions/{action_name}/defer",
+    status_code=status.HTTP_200_OK,
 )
 def defer_action(scheduler_name: str, action_name: str, wait_until: util.DateTime):
     try:
@@ -123,15 +122,17 @@ def defer_action(scheduler_name: str, action_name: str, wait_until: util.DateTim
             f"failed to defer action ({action_name}) under ({scheduler_name})", e
         )
 
+
 @router.post(
-    "/schedulers/{scheduler_name}/actions/{action_name}/expire", status_code=status.HTTP_200_OK
+    "/schedulers/{scheduler_name}/actions/{action_name}/expire",
+    status_code=status.HTTP_200_OK,
 )
 def expire_action(scheduler_name: str, action_name: str, expire_on: util.DateTime):
     try:
         get_dispatcher(router).expire_action(
             scheduler_name=scheduler_name,
             action_name=action_name,
-            expire_on= expire_on.date_time,
+            expire_on=expire_on.date_time,
         )
         return return_success(
             f"action ({action_name}) under ({scheduler_name}) will expire ({expire_on})"

@@ -37,11 +37,11 @@ file_heartbeat = file_x.FileHeartbeat(file=f"{output_dir}gpio_beat.txt")
 define the schedulers
 """
 morning, evening = time(6, 0, 0), time(18, 0, 0)
-daily_often = sched_x.TimelyScheduler(start=morning, stop=evening, interval=1)
-nightly_often = sched_x.TimelyScheduler(start=evening, stop=morning, interval=1)
-randomly_often = sched_x.RandomlyScheduler(time_unit=TimeUnit.second, low=2, high=5)
-timely_at_00_sec = sched_x.TimelyScheduler(interval=1, second=00)
-timely_at_30_sec = sched_x.TimelyScheduler(interval=1, second=30)
+daily_often = sched_x.Timely(start=morning, stop=evening, interval=1)
+nightly_often = sched_x.Timely(start=evening, stop=morning, interval=1)
+randomly_often = sched_x.Randomly(time_unit=TimeUnit.second, low=2, high=5)
+timely_at_00_sec = sched_x.Timely(interval=1, second=00)
+timely_at_30_sec = sched_x.Timely(interval=1, second=30)
 
 """
 add actions to the 'client' dispatcher

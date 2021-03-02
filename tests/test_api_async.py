@@ -12,7 +12,7 @@ from datetime import timedelta
 from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.actions.logic_action import ListAction, ListOpMode
-from whendo.core.scheduler import TimelyScheduler, Scheduler, Immediately
+from whendo.core.scheduler import Timely, Scheduler, Immediately
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.util import FilePathe, resolve_instance, Output, DateTime, Now
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
@@ -43,7 +43,7 @@ async def test_uvicorn_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
     output_file = str(tmp_path / "output.txt")
     xtra = {"base_url": base_url}
     action = FileHeartbeat(relative_to_output_dir=False, file=output_file, xtra=xtra)
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action)
     await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
@@ -58,7 +58,7 @@ async def test_uvicorn_3(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
     output_file = str(tmp_path / "output.txt")
     action = FileHeartbeat(relative_to_output_dir=False, file=output_file)
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action)
     await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
@@ -76,7 +76,7 @@ async def test_uvicorn_4(startup_and_shutdown_uvicorn, base_url, tmp_path):
     output_file = str(tmp_path / "output.txt")
     xtra = {"base_url": base_url}
     action = FileHeartbeat(relative_to_output_dir=False, file=output_file, xtra=xtra)
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action)
     await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
@@ -102,7 +102,7 @@ async def test_uvicorn_logic_action(startup_and_shutdown_uvicorn, base_url, tmp_
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
     action3 = ListAction(op_mode=ListOpMode.ALL, action_list=[action1, action2])
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action3)
     await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
@@ -133,7 +133,7 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action1)
     await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
@@ -170,7 +170,7 @@ async def test_unschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_p
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo1", action=action1)
     await add_action(base_url=base_url, action_name="foo2", action=action2)
@@ -197,7 +197,7 @@ async def test_unschedule_action_2(startup_and_shutdown_uvicorn, base_url, tmp_p
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo1", action=action1)
     await add_action(base_url=base_url, action_name="foo2", action=action2)
@@ -229,7 +229,7 @@ async def test_reschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_p
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action1)
     await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
@@ -264,7 +264,7 @@ async def test_unschedule_scheduler(startup_and_shutdown_uvicorn, base_url, tmp_
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo1", action=action1)
     await add_action(base_url=base_url, action_name="foo2", action=action2)
@@ -291,7 +291,7 @@ async def test_job_count(startup_and_shutdown_uvicorn, base_url, tmp_path):
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo1", action=action1)
     await add_action(base_url=base_url, action_name="foo2", action=action2)
@@ -314,7 +314,7 @@ async def test_schedulers_action_count(
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo1", action=action1)
     await add_action(base_url=base_url, action_name="foo2", action=action2)
@@ -337,7 +337,7 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, base_url, tmp_pa
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action1)
     await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
@@ -445,7 +445,7 @@ async def test_defer_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
     action1 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action1)
     await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
@@ -486,12 +486,11 @@ async def test_expire_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
     action1 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    scheduler = TimelyScheduler(interval=1)
+    scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action1)
     await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
     await schedule_action(base_url=base_url, action_name="foo", scheduler_name="bar")
-
 
     await assert_expired_action_count(base_url=base_url, n=0)
     await assert_scheduled_action_count(base_url=base_url, n=1)
@@ -549,6 +548,7 @@ async def test_immediately(startup_and_shutdown_uvicorn, base_url, tmp_path):
     with open(action.file, "r") as fid:
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
 
 # ==========================================
 # helpers
@@ -666,11 +666,12 @@ async def defer_action(
     response = await post(
         base_url=base_url,
         path=f"/schedulers/{scheduler_name}/actions/{action_name}/defer",
-        data=wait_until
+        data=wait_until,
     )
     assert (
         response.status_code == 200
     ), f"failed to defer action ({action_name}) using scheduler ({scheduler_name})"
+
 
 async def expire_action(
     base_url: str, scheduler_name: str, action_name: str, expire_on: DateTime
@@ -679,7 +680,7 @@ async def expire_action(
     response = await post(
         base_url=base_url,
         path=f"/schedulers/{scheduler_name}/actions/{action_name}/expire",
-        data=expire_on
+        data=expire_on,
     )
     assert (
         response.status_code == 200

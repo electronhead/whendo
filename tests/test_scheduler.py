@@ -33,29 +33,33 @@ def test_during_period():
     else:
         assert daytime_callable() is sched.DoNothing.result and nighttime_callable()
 
+
 def test_wrap():
     """
     Want to observe that the action's execute method was invoked.
     """
+
     class TestScheduler(sched.Scheduler):
-        def schedule_action(self, tag: str, action: Action, continuous:Continuous=Continuous()):
+        def schedule_action(
+            self, tag: str, action: Action, continuous: Continuous = Continuous()
+        ):
             wrapped_callable = self.wrap(
                 thunk=lambda: action.execute(tag=tag, scheduler_info=self.info()),
                 tag=tag,
                 action_json=action.json(),
-                scheduler_json=self.json())
+                scheduler_json=self.json(),
+            )
             wrapped_callable()
-    
+
     class TestAction(Action):
         fleas: int = 0
+
         def execute(self, tag: str = None, scheduler_info: dict = None):
             self.fleas += 1
-    
+
     scheduler = TestScheduler()
     test_action = TestAction()
 
     assert test_action.fleas == 0
     scheduler.schedule_action(tag="blee", action=test_action)
     assert test_action.fleas == 1
-
-

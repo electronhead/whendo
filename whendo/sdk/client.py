@@ -83,9 +83,11 @@ class Client(BaseModel):
 
     def unschedule_scheduler(self, scheduler_name: str):
         return self.get(f"/schedulers/{scheduler_name}/unschedule")
-    
+
     def unschedule_scheduler_action(self, scheduler_name: str, action_name: str):
-        return self.get(f"/schedulers/{scheduler_name}/actions/{action_name}/unschedule")
+        return self.get(
+            f"/schedulers/{scheduler_name}/actions/{action_name}/unschedule"
+        )
 
     def reschedule_all_schedulers(self):
         return self.get(f"/schedulers/reschedule_all")

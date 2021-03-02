@@ -295,7 +295,6 @@ def test_defer_action(friends):
     assert 1 == dispatcher.get_scheduled_action_count()
 
 
-
 def test_expire_action(friends):
     """
     Want to observe the scheduling move from deferred state to ready state.
@@ -313,7 +312,9 @@ def test_expire_action(friends):
     assert 1 == dispatcher.get_scheduled_action_count()
 
     dispatcher.expire_action(
-        scheduler_name="bar", action_name="foo", expire_on=util.Now.dt() + datetime.timedelta(seconds=1)
+        scheduler_name="bar",
+        action_name="foo",
+        expire_on=util.Now.dt() + datetime.timedelta(seconds=1),
     )
 
     assert 1 == dispatcher.get_expired_action_count()
@@ -323,7 +324,6 @@ def test_expire_action(friends):
 
     assert 0 == dispatcher.get_expired_action_count()
     assert 0 == dispatcher.get_scheduled_action_count()
-
 
 
 def test_immediately(friends):
@@ -340,11 +340,12 @@ def test_immediately(friends):
         def execute(self, tag: str = None, scheduler_info: dict = None):
             self.fleas += 1
             return "BLING"
+
     test_action = TestAction()
 
     assert dispatcher.get_scheduled_action_count() == 0
     assert test_action.fleas == 0
-    
+
     dispatcher.add_action("foo", test_action)
     dispatcher.add_scheduler("imm", Immediately())
     dispatcher.schedule_action(scheduler_name="imm", action_name="foo")
