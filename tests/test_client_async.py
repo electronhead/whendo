@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from httpx import AsyncClient
 from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
-from whendo.core.actions.logic_action import ListAction, ListOpMode
+from whendo.core.actions.logic_action import All
 from whendo.core.actions.http_action import ExecuteAction
 from whendo.core.scheduler import Timely, Scheduler, Immediately
 from whendo.core.dispatcher import Dispatcher
@@ -92,7 +92,7 @@ async def test_client_logic_action(startup_and_shutdown_uvicorn, host, port, tmp
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    action3 = ListAction(op_mode=ListOpMode.ALL, action_list=[action1, action2])
+    action3 = All(action_list=[action1, action2])
     scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action3)

@@ -2,30 +2,30 @@ from typing import List, Dict, Any, Optional
 from enum import Enum
 import json
 from whendo.core.action import Action
-from whendo.core.resolver import resolve_action
 
 
-class ExceptionAction(Action):
+class Failure(Action):
     """ acts like False """
 
-    exception_tag_field: str = "excepted"
+    logic_failure:str="failure"
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
         raise Exception("purposely unsuccessful execution", self.json())
 
 
-class SuccessAction(Action):
+class Success(Action):
     """ acts like True """
 
-    success_tag_field: str = "successful"
+    logic_success:str="success"
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
         return {"outcome": "purposely successful execution", "action": self.info()}
 
 
-class NotAction(Action):
+class Not(Action):
     """ acts like negation """
 
+    logic_not:str="not"
     operand: Action
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
@@ -49,19 +49,20 @@ class NotAction(Action):
             )
 
 
+
+
 class ListOpMode(str, Enum):
     ALL = "all"
     OR = "or"
     AND = "and"
-
-
+    
 class ListAction(Action):
     """
     executes actions based on:
 
         ListOpMode.ALL:   executes all, irrespective of individual outcomes
-        ListOpMode.OR:    executes until the first successful action
-        ListOpMode.AND:   executes until the first exception
+        ListOpMode.OR:    executes until the first successful action (no exception)
+        ListOpMode.AND:   executes until the first exception (failure)
 
     """
 
@@ -104,20 +105,51 @@ class ListAction(Action):
                 "processing_info": processing_info,
             }
 
+class All(ListAction):
+    """
+    executes all actions
+    """
 
-class IfElseAction(Action):
+    logic_all:str="all"
+    op_mode:ListOpMode=ListOpMode.ALL
+    def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
+        return super().execute(tag=tag, scheduler_info=scheduler_info)
+
+class Or(ListAction):
+    """
+    executes actions until first success
+    """
+
+    logic_or:str="or"
+    op_mode:ListOpMode=ListOpMode.OR
+    def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
+        return super().execute(tag=tag, scheduler_info=scheduler_info)
+
+class And(ListAction):
+    """
+    executes actions until first failure
+    """
+
+    logic_and:str="and"
+    op_mode:ListOpMode=ListOpMode.AND
+    def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
+        return super().execute(tag=tag, scheduler_info=scheduler_info)
+
+
+
+
+class IfElse(Action):
     """
     executes actions based on:
 
-        if test_action is successful, executes if_actions as if they were a
-            ListAction using the provided ListOpMode
-        otherwise executes the else_action
+        if test_action is successful, executes if_action
+        otherwise executes else_action
 
     """
 
-    op_mode: ListOpMode
+    logic_if_else:str="if_else"
     test_action: Action
-    if_actions: List[Action]
+    if_action: Action
     else_action: Action
     exception_on_no_success: bool = False
 
@@ -154,23 +186,21 @@ class IfElseAction(Action):
         else:
             success_count += 1
             successful_actions.append(self.test_action.dict())
-            (
-                processing_count,
-                success_count,
-                failure_count,
-                successful_actions,
-                exception_actions,
-            ) = process_action_list(
-                tag=tag,
-                scheduler_info=scheduler_info,
-                op_mode=self.op_mode,
-                action_list=self.if_actions,
-                processing_count=processing_count,
-                success_count=success_count,
-                exception_count=exception_count,
-                successful_actions=successful_actions,
-                exception_actions=exception_actions,
-            )
+
+            try:
+                if_result = self.if_action.execute(
+                    tag=tag, scheduler_info=scheduler_info
+                )
+            except Exception as exception:
+                if_result = exception
+            processing_count += 1
+            if isinstance(if_result, Exception):
+                exception_count += 1
+                exception_actions.append(self.if_action.dict())
+            else:
+                success_count += 1
+                successful_actions.append(self.if_action.dict())
+
         processing_info = {
             "else_test": else_test,
             "processing_count": processing_count,
@@ -191,6 +221,7 @@ class IfElseAction(Action):
                 "action": self.info(),
                 "processing_info": processing_info,
             }
+
 
 
 def process_action_list(

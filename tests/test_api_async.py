@@ -11,7 +11,7 @@ from httpx import AsyncClient
 from datetime import timedelta
 from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
-from whendo.core.actions.logic_action import ListAction, ListOpMode
+from whendo.core.actions.logic_action import All
 from whendo.core.scheduler import Timely, Scheduler, Immediately
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.util import FilePathe, resolve_instance, Output, DateTime, Now
@@ -101,7 +101,7 @@ async def test_uvicorn_logic_action(startup_and_shutdown_uvicorn, base_url, tmp_
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    action3 = ListAction(op_mode=ListOpMode.ALL, action_list=[action1, action2])
+    action3 = All(action_list=[action1, action2])
     scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action3)
