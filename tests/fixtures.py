@@ -2,7 +2,6 @@
 pytest fixtures for unit testing
 """
 
-import random
 import pytest
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.actions.file_action import FileHeartbeat
@@ -32,9 +31,9 @@ def friends(tmp_path):
 
 
 @pytest.fixture
-def port():
-    """ returns a random port number in case the unit test system runs test in parallel """
-    return random.randint(5001, 7999)
+def port(unused_tcp_port):
+    """ returns an unused tcp port """
+    return unused_tcp_port
 
 
 @pytest.fixture
