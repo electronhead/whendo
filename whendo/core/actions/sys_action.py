@@ -1,13 +1,25 @@
+import time
 from whendo.core.action import Action
-from whendo.core.util import SystemInfo
+import whendo.core.util as util
 
 
-class SystemInfoAction(Action):
+class SysInfo(Action):
     """
     Return system info
     """
 
-    system_info = "system_info"
+    sys_info = "sys_info"
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
-        return SystemInfo.get()
+        return util.SystemInfo.get()
+
+
+class Pause(Action):
+    """
+    Sleep for supplied int seconds.
+    """
+
+    seconds: int = 1
+
+    def execute(self, tag: str = None, scheduler_info: dict = None):
+        return time.sleep(self.seconds)

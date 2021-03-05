@@ -133,13 +133,25 @@ class Continuous(Scheduler):
             )  # :05 on a minute boundary
 
         if time_unit == TimeUnit.day:
-            self.every(interval).day.at(clock_time).do(callable).tag(tag)
+            if interval != 1:
+                self.every(interval).days.at(clock_time).do(callable).tag(tag)
+            else:
+                self.every(interval).day.at(clock_time).do(callable).tag(tag)
         elif time_unit == TimeUnit.hour:
-            self.every(interval).hour.at(clock_time).do(callable).tag(tag)
+            if interval != 1:
+                self.every(interval).hours.at(clock_time).do(callable).tag(tag)
+            else:
+                self.every(interval).hour.at(clock_time).do(callable).tag(tag)
         elif time_unit == TimeUnit.minute:
-            self.every(interval).minute.at(clock_time).do(callable).tag(tag)
+            if interval != 1:
+                self.every(interval).minutes.at(clock_time).do(callable).tag(tag)
+            else:
+                self.every(interval).minute.at(clock_time).do(callable).tag(tag)
         elif time_unit == TimeUnit.second:
-            self.every(interval).second.do(callable).tag(tag)
+            if interval != 1:
+                self.every(interval).seconds.do(callable).tag(tag)
+            else:
+                self.every(interval).second.at(clock_time).do(callable).tag(tag)
 
     def schedule_random_callable(
         self, tag: str, callable: Callable, time_unit: TimeUnit, low: int, high: int
