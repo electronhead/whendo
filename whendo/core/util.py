@@ -1,7 +1,7 @@
 try:
-    import psutil as psutil
+    from psutil import virtual_memory, net_if_addrs, cpu_percent, getloadavg
 except:
-    import whendo.core.mockpsutil as psutil
+    from .mockpsutil import virtual_memory, net_if_addrs, cpu_percent, getloadavg
 
 from enum import Enum
 from pprint import PrettyPrinter
@@ -45,7 +45,7 @@ def ip_addrs():
     """
     Returns AF_INET addresses for local computer
     """
-    nia = psutil.net_if_addrs()
+    nia = net_if_addrs()
     return dict(
         (k, nia[k][0].address) for k in nia if nia[k][0].family == socket.AF_INET
     )
@@ -371,14 +371,14 @@ class SystemInfo:
                 "ip_addrs": ip_addrs(),
                 "virtual_memory": lambda: dict(
                     zip(
-                        psutil.virtual_memory()._fields,
-                        ["{:,}".format(n) for n in psutil.virtual_memory()],
+                        virtual_memory()._fields,
+                        ["{:,}".format(n) for n in virtual_memory()],
                     )
                 ),
                 "load_avg": lambda: dict(
-                    zip(["1min", "5min", "15min"], psutil.getloadavg())
+                    zip(["1min", "5min", "15min"], getloadavg())
                 ),
-                "cpu_percent": lambda: psutil.cpu_percent(),
+                "cpu_percent": lambda: cpu_percent(),
             },
         )
         cls.initialized = True

@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import Dict, Any
-from whendo.core.util import PP, SystemInfo, Now, object_info
+from .util import SystemInfo, Now, object_info
 
 
 class Action(BaseModel):
