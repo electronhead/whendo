@@ -1,7 +1,11 @@
+try:
+    import psutil as psutil
+except:
+    import whendo.core.mockpsutil as psutil
+
 from enum import Enum
 from pprint import PrettyPrinter
 from sys import stdout
-import psutil
 import socket
 from datetime import datetime, timedelta
 from typing import Callable

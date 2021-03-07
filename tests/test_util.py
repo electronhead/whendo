@@ -209,12 +209,12 @@ def test_shared_ro_1():
 
 
 def test_system_info():
-    util.SystemInfo.init(host="127.0.0.4", port=8000)
+    util.SystemInfo.init(host="127.0.0.4", port=8002)
     info = util.SystemInfo.get()
     assert "host" in info
     assert info["host"] == "127.0.0.4"
     assert "port" in info
-    assert info["port"] == 8000
+    assert info["port"] == 8002
     assert "start" in info
     assert "cwd" in info
     assert "login" in info
@@ -222,3 +222,5 @@ def test_system_info():
     assert "successes" in info
     assert "failures" in info
     assert "elapsed" in info
+    assert "virtual_memory" in info
+
