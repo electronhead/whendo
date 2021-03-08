@@ -7,7 +7,7 @@ from whendo.core.action import Action
 class Failure(Action):
     """ acts like False """
 
-    logic_failure:str="failure"
+    logic_failure: str = "failure"
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
         raise Exception("purposely unsuccessful execution", self.json())
@@ -16,7 +16,7 @@ class Failure(Action):
 class Success(Action):
     """ acts like True """
 
-    logic_success:str="success"
+    logic_success: str = "success"
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
         return {"outcome": "purposely successful execution", "action": self.info()}
@@ -25,7 +25,7 @@ class Success(Action):
 class Not(Action):
     """ acts like negation """
 
-    logic_not:str="not"
+    logic_not: str = "not"
     operand: Action
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
@@ -49,13 +49,12 @@ class Not(Action):
             )
 
 
-
-
 class ListOpMode(str, Enum):
     ALL = "all"
     OR = "or"
     AND = "and"
-    
+
+
 class ListAction(Action):
     """
     executes actions based on:
@@ -105,37 +104,41 @@ class ListAction(Action):
                 "processing_info": processing_info,
             }
 
+
 class All(ListAction):
     """
     executes all actions
     """
 
-    logic_all:str="all"
-    op_mode:ListOpMode=ListOpMode.ALL
+    logic_all: str = "all"
+    op_mode: ListOpMode = ListOpMode.ALL
+
     def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
         return super().execute(tag=tag, scheduler_info=scheduler_info)
+
 
 class Or(ListAction):
     """
     executes actions until first success
     """
 
-    logic_or:str="or"
-    op_mode:ListOpMode=ListOpMode.OR
+    logic_or: str = "or"
+    op_mode: ListOpMode = ListOpMode.OR
+
     def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
         return super().execute(tag=tag, scheduler_info=scheduler_info)
+
 
 class And(ListAction):
     """
     executes actions until first failure
     """
 
-    logic_and:str="and"
-    op_mode:ListOpMode=ListOpMode.AND
+    logic_and: str = "and"
+    op_mode: ListOpMode = ListOpMode.AND
+
     def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
         return super().execute(tag=tag, scheduler_info=scheduler_info)
-
-
 
 
 class IfElse(Action):
@@ -147,7 +150,7 @@ class IfElse(Action):
 
     """
 
-    logic_if_else:str="if_else"
+    logic_if_else: str = "if_else"
     test_action: Action
     if_action: Action
     else_action: Action
@@ -221,7 +224,6 @@ class IfElse(Action):
                 "action": self.info(),
                 "processing_info": processing_info,
             }
-
 
 
 def process_action_list(

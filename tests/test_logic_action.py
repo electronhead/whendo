@@ -214,7 +214,7 @@ def test_if_else_action_or_2():
         test_action=Action1(),
         else_action=Action2(),
         if_action=Action3(),
-        exception_on_no_success=False
+        exception_on_no_success=False,
     )
     result = if_else_action.execute()
     assert dictionary["value"] == Action3
@@ -241,7 +241,7 @@ def test_if_else_action_else_1():
         test_action=Action1(),
         else_action=Action2(),
         if_action=Action3(),
-        exception_on_no_success=False
+        exception_on_no_success=False,
     )
     result = if_else_action.execute()
     assert dictionary["value"] == Action2

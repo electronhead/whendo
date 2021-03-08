@@ -15,17 +15,23 @@ from collections import namedtuple
 
 
 def net_if_addrs():
-    named_tuple = namedtuple('snicaddr', ['family', 'address', 'netmask', 'broadcast', 'ptp'])
-    snicaddr = named_tuple(AddressFamily.AF_INET, '0.0.0.0', '255.0.0.0', '127.0.0.1', None)
-    return {'unknown': [snicaddr]}
+    named_tuple = namedtuple(
+        "snicaddr", ["family", "address", "netmask", "broadcast", "ptp"]
+    )
+    snicaddr = named_tuple(
+        AddressFamily.AF_INET, "0.0.0.0", "255.0.0.0", "127.0.0.1", None
+    )
+    return {"unknown": [snicaddr]}
 
 
 def virtual_memory():
-    svmem = namedtuple('svmem', ['unknown'])
+    svmem = namedtuple("svmem", ["unknown"])
     return svmem(0.0)
+
 
 def getloadavg():
     return [0.0, 0.0, 0.0]
+
 
 def cpu_percent():
     return 0.0

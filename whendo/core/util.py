@@ -375,9 +375,7 @@ class SystemInfo:
                         ["{:,}".format(n) for n in virtual_memory()],
                     )
                 ),
-                "load_avg": lambda: dict(
-                    zip(["1min", "5min", "15min"], getloadavg())
-                ),
+                "load_avg": lambda: dict(zip(["1min", "5min", "15min"], getloadavg())),
                 "cpu_percent": lambda: cpu_percent(),
             },
         )

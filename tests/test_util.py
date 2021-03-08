@@ -223,4 +223,3 @@ def test_system_info():
     assert "failures" in info
     assert "elapsed" in info
     assert "virtual_memory" in info
-
