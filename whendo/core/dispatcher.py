@@ -12,13 +12,14 @@ from typing import Dict, List
 import json
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from whendo.core.util import PP, Dirs, DateTime, Now, str_to_dt, dt_to_str
-from whendo.core.action import Action
-from whendo.core.scheduler import Scheduler
-from whendo.core.continuous import Continuous
-from whendo.core.resolver import resolve_action, resolve_scheduler
+from .util import PP, Dirs, DateTime, Now, str_to_dt, dt_to_str
+from .action import Action
+from .program import Program
+from .scheduler import Scheduler, Immediately
+from .continuous import Continuous
+from .resolver import resolve_action, resolve_scheduler, resolve_program
 
 logger = logging.getLogger(__name__)
 
@@ -31,6 +32,7 @@ class Dispatcher(BaseModel):
 
     actions: Dict[str, Action] = {}
     schedulers: Dict[str, Scheduler] = {}
+    programs: Dict[str, Program] = {}
     schedulers_actions: Dict[str, List[str]] = {}
     deferred_schedulers_actions: Dict[str, Dict[str, List[str]]] = {}
     expired_schedulers_actions: Dict[str, Dict[str, List[str]]] = {}
@@ -73,6 +75,10 @@ class Dispatcher(BaseModel):
     def get_schedulers(self):
         with Lok.lock:
             return self.schedulers
+
+    def get_programs(self):
+        with Lok.lock:
+            return self.programs
 
     def get_schedulers_actions(self):
         with Lok.lock:
@@ -267,6 +273,100 @@ class Dispatcher(BaseModel):
             for action_name in self.schedulers_actions.get(scheduler_name, []):
                 result.append(self.get_action(action_name).execute())
             return result
+
+    # programs
+    def get_program(self, program_name: str):
+        with Lok.lock:
+            return self.programs.get(program_name, None)
+
+    def add_program(self, program_name: str, program: Program):
+        with Lok.lock:
+            assert (
+                not program_name in self.programs
+            ), f"program ({program_name}) already exists"
+            self.check_program(program)
+            self.programs[program_name] = program
+            self.save_current()
+
+    def set_program(self, program_name: str, program: Program):
+        with Lok.lock:
+            assert (
+                program_name in self.programs
+            ), f"program ({program_name}) does not exist"
+            self.check_program(program)
+            self.programs[program_name] = program
+            self.save_current()
+
+    def delete_program(self, program_name: str):
+        with Lok.lock:
+            assert (
+                program_name in self.programs
+            ), f"program ({program_name}) does not exist"
+            self.programs.pop(program_name)
+            self.save_current()
+
+    def check_program(self, program: Program):
+        error_msgs = []
+
+        # check action names
+        action_names = set(
+            (
+                x
+                for x in [program.prologue_name, program.epilogue_name]
+                if x != "NOT_APPLICABLE"
+            )
+        )
+        for scheduler_name in program.body:
+            action_names.update(program.body[scheduler_name])
+        missing_actions = action_names - set(self.actions.keys())
+        if len(missing_actions) > 0:
+            error_msgs.append(f"actions missing: ({missing_actions})")
+
+        # check scheduler names
+        scheduler_names = {"immediately"}
+        scheduler_names.update(set(program.body.keys()))
+        missing_schedulers = scheduler_names - set(self.schedulers.keys())
+        if len(missing_schedulers) > 0:
+            error_msgs.append(f"schedulers missing: ({missing_schedulers})")
+
+        # make sure "immediately" Scheduler is the right one
+        if "immediately" not in missing_schedulers:
+            immediately = self.get_scheduler("immediately")
+            if immediately != Immediately():
+                error_msgs.append("Immediately scheduler missing")
+
+        if len(error_msgs) > 0:
+            raise ValueError(", ".join(error_msgs))
+
+    def schedule_program(self, program_name: str, start: datetime, stop: datetime):
+        """
+        This method invokes the named programs 'schedule' method, updating the deferral
+        and expiration queues. See Program.schedule(..) for more details.
+        """
+        with Lok.lock:
+            assert (
+                program_name in self.get_programs()
+            ), f"program ({program_name}) does not exist"
+
+            program = self.get_program(program_name)
+            self.check_program(program)
+
+            if program.prologue_name != "NOT_APPLICABLE":
+                self.defer_action("immediately", program.prologue_name, start)
+
+            if len(program.body) > 0:
+                timedelta_offset = timedelta(seconds=program.offset_seconds)
+                start_plus = start + timedelta_offset
+                stop_minus = stop - timedelta_offset
+                for scheduler_name in program.body:
+                    for action_name in program.body[scheduler_name]:
+                        self.defer_action(scheduler_name, action_name, start_plus)
+                        self.expire_action(scheduler_name, action_name, stop_minus)
+
+            if program.epilogue_name != "NOT_APPLICABLE":
+                self.defer_action("immediately", program.epilogue_name, stop)
+
+            self.save_current()
 
     # scheduling
     def schedule_action(self, scheduler_name: str, action_name: str):
@@ -534,8 +634,10 @@ class Dispatcher(BaseModel):
             saved_dir = dictionary["saved_dir"]
             actions = dictionary["actions"]
             schedulers = dictionary["schedulers"]
+            programs = dictionary["programs"]
             schedulers_actions = dictionary["schedulers_actions"]
             deferred_schedulers_actions = dictionary["deferred_schedulers_actions"]
+            expired_schedulers_actions = dictionary["expired_schedulers_actions"]
             # replace key's value for each key...
             for action_name in actions:
                 actions[action_name] = resolve_action(actions[action_name])
@@ -543,12 +645,16 @@ class Dispatcher(BaseModel):
                 schedulers[scheduler_name] = resolve_scheduler(
                     schedulers[scheduler_name]
                 )
+            for program_name in programs:
+                programs[program_name] = resolve_program(programs[program_name])
             return Dispatcher(
                 saved_dir=saved_dir,
                 actions=actions,
                 schedulers=schedulers,
+                programs=programs,
                 schedulers_actions=schedulers_actions,
                 deferred_schedulers_actions=deferred_schedulers_actions,
+                expired_schedulers_actions=expired_schedulers_actions,
             )
 
 

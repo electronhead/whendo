@@ -7,6 +7,7 @@ from enum import Enum
 from pprint import PrettyPrinter
 from sys import stdout
 import socket
+import requests
 from datetime import datetime, timedelta
 from typing import Callable
 import os
@@ -415,3 +416,62 @@ class FilePathe(BaseModel):
 
 class DateTime(BaseModel):
     date_time: datetime
+
+
+class DateTime2(BaseModel):
+    dt1: datetime
+    dt2: datetime
+
+
+class Http(BaseModel):
+    """
+    Http objects make it easier to send requests to other hosts/ports.
+
+    Includes signatures with BaseModel as well as json string arguments.
+    """
+
+    host: str = "127.0.0.1"
+    port: int = 8000
+
+    def get(self, path: str, data=None):
+        response = requests.get(self.cmd(path), data)
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def put(self, path: str, data: BaseModel):
+        response = requests.put(self.cmd(path), data.json())
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def post(self, path: str, data: BaseModel):
+        response = requests.post(self.cmd(path), data.json())
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def patch(self, path: str, data: BaseModel):
+        response = requests.post(self.cmd(path), data.json())
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def put_json(self, path: str, json: str):
+        response = requests.put(self.cmd(path), json)
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def post_json(self, path: str, json: str):
+        response = requests.post(self.cmd(path), json)
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def patch_json(self, path: str, json: str):
+        response = requests.post(self.cmd(path), json)
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def delete(self, path: str):
+        response = requests.delete(self.cmd(path))
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def cmd(self, path: str):
+        return f"http://{self.host}:{self.port}{path}"

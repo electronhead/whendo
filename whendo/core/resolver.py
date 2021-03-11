@@ -4,6 +4,7 @@ These functions resolve dispatcher element instances from supplied dictionaries.
 from pydantic import ValidationError
 from .action import Action
 from .scheduler import Scheduler
+from .program import Program
 from .util import FilePathe, resolve_instance
 
 
@@ -16,6 +17,12 @@ def resolve_action(dictionary: dict, check_for_found_class: bool = True):
 def resolve_scheduler(dictionary: dict, check_for_found_class: bool = True):
     return resolve_instance(
         Scheduler, dictionary, check_for_found_class=check_for_found_class
+    )
+
+
+def resolve_program(dictionary: dict, check_for_found_class: bool = True):
+    return resolve_instance(
+        Program, dictionary, check_for_found_class=check_for_found_class
     )
 
 

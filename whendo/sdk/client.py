@@ -1,162 +1,158 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 import requests
 from typing import Optional
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
-from whendo.core.util import FilePathe, DateTime
+from whendo.core.util import FilePathe, DateTime, Http
 from whendo.core.dispatcher import Dispatcher
+
+default_host = "127.0.0.1"
+default_port = 8000
 
 
 class Client(BaseModel):
-    host: str = "127.0.0.1"
-    port: int = 8000
+    host: str = default_host
+    port: int = default_port
+    client_used: bool = False
+
+    # hidden private field
+    _http: Http = PrivateAttr(default_factory=Http)
+
+    def http(self):
+        """
+        Cache the Http object.
+        """
+        if not self.client_used:
+            self._http = Http(host=self.host, post=self.port)
+            self.client_used = True
+        return self._http
 
     # /dispatcher
     def load_dispatcher(self):
-        return Dispatcher.resolve(self.get(f"/dispatcher/load"))
+        return Dispatcher.resolve(self.http().get(f"/dispatcher/load"))
 
     def save_dispatcher(self):
-        return self.get("/dispatcher/save")
+        return self.http().get("/dispatcher/save")
 
     def clear_dispatcher(self):
-        return self.get("/dispatcher/clear")
+        return self.http().get("/dispatcher/clear")
 
     def load_dispatcher_from_name(self, name: str):
-        return Dispatcher.resolve(self.get(f"/dispatcher/load_from_name/{name}"))
+        return Dispatcher.resolve(self.http().get(f"/dispatcher/load_from_name/{name}"))
 
     def save_data_to_name(self, name: str):
-        return self.get(f"/dispatcher/save_to_name/{name}")
+        return self.http().get(f"/dispatcher/save_to_name/{name}")
 
     def get_saved_dir(self):
-        return resolve_file_pathe(self.get("/dispatcher/saved_dir"))
+        return resolve_file_pathe(self.http().get("/dispatcher/saved_dir"))
 
     def set_saved_dir(self, saved_dir: FilePathe):
-        return self.put("/dispatcher/saved_dir", saved_dir)
+        return self.http().put("/dispatcher/saved_dir", saved_dir)
 
     def replace_dispatcher(self, replacement: Dispatcher):
-        return self.put("/dispatcher/replace", replacement)
+        return self.http().put("/dispatcher/replace", replacement)
 
     # /execution
 
     def execute_supplied_action(self, supplied_action: Action):
-        return self.put(f"/execution", supplied_action)
+        return self.http().put(f"/execution", supplied_action)
 
     # /actions
     def get_action(self, action_name: str):
-        return resolve_action(self.get(f"/actions/{action_name}"))
+        return resolve_action(self.http().get(f"/actions/{action_name}"))
 
     def add_action(self, action_name: str, action: Action):
-        return self.post(f"/actions/{action_name}", action)
+        return self.http().post(f"/actions/{action_name}", action)
 
     def set_action(self, action_name: str, action: Action):
-        return self.put(f"/actions/{action_name}", action)
+        return self.http().put(f"/actions/{action_name}", action)
 
     def delete_action(self, action_name: str):
-        return self.delete(f"/actions/{action_name}")
+        return self.http().delete(f"/actions/{action_name}")
 
     def execute_action(self, action_name: str):
-        return self.get(f"/actions/{action_name}/execute")
+        return self.http().get(f"/actions/{action_name}/execute")
 
     def unschedule_action(self, action_name: str):
-        return self.get(f"/actions/{action_name}/unschedule")
+        return self.http().get(f"/actions/{action_name}/unschedule")
 
     def reschedule_action(self, action_name: str):
-        return self.get(f"/actions/{action_name}/reschedule")
+        return self.http().get(f"/actions/{action_name}/reschedule")
 
     # /schedulers
 
     def schedule_action(self, scheduler_name: str, action_name: str):
-        return self.get(f"/schedulers/{scheduler_name}/actions/{action_name}")
+        return (
+            self.http()
+            .http()
+            .get(f"/schedulers/{scheduler_name}/actions/{action_name}")
+        )
 
     def get_scheduler(self, scheduler_name: str):
-        return resolve_scheduler(self.get(f"/schedulers/{scheduler_name}"))
+        return resolve_scheduler(self.http().get(f"/schedulers/{scheduler_name}"))
 
     def add_scheduler(self, scheduler_name: str, scheduler: Scheduler):
-        return self.post(f"/schedulers/{scheduler_name}", scheduler)
+        return self.http().post(f"/schedulers/{scheduler_name}", scheduler)
 
     def set_scheduler(self, scheduler_name: str, scheduler: Scheduler):
-        return self.put(f"/schedulers/{scheduler_name}", scheduler)
+        return self.http().put(f"/schedulers/{scheduler_name}", scheduler)
 
     def delete_scheduler(self, scheduler_name: str):
-        return self.delete(f"/schedulers/{scheduler_name}")
+        return self.http().delete(f"/schedulers/{scheduler_name}")
 
     def unschedule_scheduler(self, scheduler_name: str):
-        return self.get(f"/schedulers/{scheduler_name}/unschedule")
+        return self.http().get(f"/schedulers/{scheduler_name}/unschedule")
 
     def unschedule_scheduler_action(self, scheduler_name: str, action_name: str):
-        return self.get(
+        return self.http().get(
             f"/schedulers/{scheduler_name}/actions/{action_name}/unschedule"
         )
 
     def reschedule_all_schedulers(self):
-        return self.get(f"/schedulers/reschedule_all")
+        return self.http().get(f"/schedulers/reschedule_all")
 
     def execute_scheduler_actions(self, scheduler_name: str):
-        return self.get(f"/schedulers/{scheduler_name}/execute")
+        return self.http().get(f"/schedulers/{scheduler_name}/execute")
 
     def scheduled_action_count(self):
-        return self.get("/schedulers/action_count")
+        return self.http().get("/schedulers/action_count")
 
     # deferrals and expirations
     def defer_action(self, scheduler_name: str, action_name: str, wait_until: DateTime):
-        return self.post(
+        return self.http().post(
             f"/schedulers/{scheduler_name}/actions/{action_name}/defer", wait_until
         )
 
     def clear_deferred_actions(self):
-        return self.get(f"/schedulers/clear_deferred_actions")
+        return self.http().get(f"/schedulers/clear_deferred_actions")
 
     def deferred_action_count(self):
-        return self.get("/schedulers/deferred_action_count")
+        return self.http().get("/schedulers/deferred_action_count")
 
     def expire_action(self, scheduler_name: str, action_name: str, expire_on: DateTime):
-        return self.post(
+        return self.http().post(
             f"/schedulers/{scheduler_name}/actions/{action_name}/expire", expire_on
         )
 
     def clear_expired_actions(self):
-        return self.get(f"/schedulers/clear_expired_actions")
+        return self.http().get(f"/schedulers/clear_expired_actions")
 
     def expired_action_count(self):
-        return self.get("/schedulers/expired_action_count")
+        return self.http().get("/schedulers/expired_action_count")
 
     # /jobs
     def run_jobs(self):
-        return self.get(f"/jobs/run")
+        return self.http().get(f"/jobs/run")
 
     def stop_jobs(self):
-        return self.get(f"/jobs/stop")
+        return self.http().get(f"/jobs/stop")
 
     def jobs_are_running(self):
-        return self.get(f"/jobs/are_running")
+        return self.http().get(f"/jobs/are_running")
 
     def job_count(self):
-        return self.get(f"/jobs/count")
+        return self.http().get(f"/jobs/count")
 
     def clear_jobs(self):
-        return self.get(f"/jobs/clear")
-
-    # verbs
-    def get(self, path: str, data=None):
-        response = requests.get(self.cmd(path), data)
-        assert response.status_code == 200, response.text
-        return response.json()
-
-    def put(self, path: str, data: BaseModel):
-        response = requests.put(self.cmd(path), data.json())
-        assert response.status_code == 200, response.text
-        return response.json()
-
-    def post(self, path: str, data: BaseModel):
-        response = requests.post(self.cmd(path), data.json())
-        assert response.status_code == 200, response.text
-        return response.json()
-
-    def delete(self, path: str):
-        response = requests.delete(self.cmd(path))
-        assert response.status_code == 200, response.text
-        return response.json()
-
-    def cmd(self, path: str):
-        return f"http://{self.host}:{self.port}{path}"
+        return self.http().get(f"/jobs/clear")
