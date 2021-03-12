@@ -3,9 +3,15 @@ import requests
 from typing import Optional
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
-from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
-from whendo.core.util import FilePathe, DateTime, Http
+from whendo.core.resolver import (
+    resolve_action,
+    resolve_scheduler,
+    resolve_file_pathe,
+    resolve_program,
+)
+from whendo.core.util import FilePathe, DateTime, Http, DateTime2
 from whendo.core.dispatcher import Dispatcher
+from whendo.core.program import Program
 
 default_host = "127.0.0.1"
 default_port = 8000
@@ -83,11 +89,7 @@ class Client(BaseModel):
     # /schedulers
 
     def schedule_action(self, scheduler_name: str, action_name: str):
-        return (
-            self.http()
-            .http()
-            .get(f"/schedulers/{scheduler_name}/actions/{action_name}")
-        )
+        return self.http().get(f"/schedulers/{scheduler_name}/actions/{action_name}")
 
     def get_scheduler(self, scheduler_name: str):
         return resolve_scheduler(self.http().get(f"/schedulers/{scheduler_name}"))
@@ -117,6 +119,22 @@ class Client(BaseModel):
 
     def scheduled_action_count(self):
         return self.http().get("/schedulers/action_count")
+
+    # programs
+    def get_program(self, program_name: str):
+        return resolve_program(self.http().get(f"/actions/{program_name}"))
+
+    def add_program(self, program_name: str, program: Program):
+        return self.http().post(f"/programs/{program_name}", program)
+
+    def set_program(self, program_name: str, program: Program):
+        return self.http().put(f"/programs/{program_name}", program)
+
+    def delete_program(self, program_name: str):
+        return self.http().delete(f"/programs/{program_name}")
+
+    def schedule_program(self, program_name: str, datetime2: DateTime2):
+        return self.http().post(f"/programs/{program_name}/schedule", datetime2)
 
     # deferrals and expirations
     def defer_action(self, scheduler_name: str, action_name: str, wait_until: DateTime):

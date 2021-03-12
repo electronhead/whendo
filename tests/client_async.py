@@ -122,6 +122,12 @@ class ClientAsync(BaseModel):
     async def add_program(self, program_name: str, program: Program):
         return await self.post(f"/programs/{program_name}", program)
 
+    async def set_program(self, program_name: str, program: Program):
+        return await self.put(f"/programs/{program_name}", program)
+
+    async def delete_program(self, program_name: str):
+        return await self.delete(f"/programs/{program_name}")
+
     async def schedule_program(self, program_name: str, datetime2: DateTime2):
         return await self.post(f"/programs/{program_name}/schedule", datetime2)
 
