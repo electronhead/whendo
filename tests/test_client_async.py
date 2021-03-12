@@ -15,7 +15,8 @@ from whendo.core.actions.logic_action import All
 from whendo.core.actions.http_action import ExecuteAction
 from whendo.core.scheduler import Timely, Scheduler, Immediately
 from whendo.core.dispatcher import Dispatcher
-from whendo.core.util import FilePathe, resolve_instance, DateTime, Now
+from whendo.core.program import Program
+from whendo.core.util import FilePathe, resolve_instance, DateTime, Now, Http, DateTime2
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
 from .fixtures import port, host, startup_and_shutdown_uvicorn
 from .client_async import ClientAsync
@@ -407,11 +408,8 @@ async def test_execute_action(startup_and_shutdown_uvicorn, host, port, tmp_path
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
     await add_action(client=client, action_name="foo", action=action)
+    await execute_action(client, "foo")
 
-    execute_action = ExecuteActionAsync(
-        client=client, host=host, port=port, action_name="foo"
-    )
-    await execute_action.execute()
     lines = None
     with open(action.file, "r") as fid:
         lines = fid.readlines()
@@ -556,7 +554,81 @@ async def test_immediately(startup_and_shutdown_uvicorn, host, port, tmp_path):
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
 
+@pytest.mark.asyncio
+async def test_program(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    action1 = FileHeartbeat(
+        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+    )
+    action2 = FileHeartbeat(
+        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+    )
+    action3 = FileHeartbeat(
+        relative_to_output_dir=False, file=str(tmp_path / "output3.txt")
+    )
+    scheduler = Timely(interval=1)
+    immediately = Immediately()
+
+    await add_action(client=client, action_name="foo1", action=action1)
+    await add_action(client=client, action_name="foo2", action=action2)
+    await add_action(client=client, action_name="foo3", action=action3)
+    await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
+    await add_scheduler(
+        client=client, scheduler_name="immediately", scheduler=immediately
+    )
+
+    program = Program().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
+    await add_program(client=client, program_name="baz", program=program)
+    start = Now().dt()
+    stop = start + timedelta(seconds=4)
+    datetime2 = DateTime2(dt1=start, dt2=stop)
+    await schedule_program(client=client, program_name="baz", datetime2=datetime2)
+
+    # action1,2,3 doing their things
+    await run_and_stop_jobs(client=client, pause=6)
+    lines = None
+    with open(action1.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    lines = None
+    with open(action2.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    lines = None
+    with open(action3.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+
 # helpers
+
+
+async def get_program(client: ClientAsync, program_name: str):
+    """ add a program and confirm """
+    response = await client.get_program(program_name=program_name)
+    assert response.status_code == 200, f"failed to put program ({program_name})"
+    retrieved_program = await client.get_program(program_name=program_name)
+    assert isinstance(retrieved_program, Program), str(type(retrieved_program))
+
+
+async def add_program(client: ClientAsync, program_name: str, program: Program):
+    """ add a program and confirm """
+    response = await client.add_program(program_name=program_name, program=program)
+    assert response.status_code == 200, f"failed to put program ({program_name})"
+    retrieved_program = await client.get_program(program_name=program_name)
+    assert isinstance(retrieved_program, Program), str(type(retrieved_program))
+
+
+async def schedule_program(
+    client: ClientAsync, program_name: str, datetime2: DateTime2
+):
+    """ schedule an program """
+    response = await client.schedule_program(
+        program_name=program_name, datetime2=datetime2
+    )
+    assert response.status_code == 200, f"failed to schedule program ({program_name})"
 
 
 async def get_action(client: ClientAsync, action_name: str):
@@ -585,6 +657,11 @@ async def set_action(client: ClientAsync, action_name: str, action: Action):
 async def unschedule_action(client: ClientAsync, action_name: str):
     response = await client.unschedule_action(action_name=action_name)
     assert response.status_code == 200, f"failed to unschedule action ({action_name})"
+
+
+async def execute_action(client: ClientAsync, action_name: str):
+    response = await client.execute_action(action_name=action_name)
+    assert response.status_code == 200, f"failed to execute action ({action_name})"
 
 
 async def reschedule_action(client: ClientAsync, action_name: str):
@@ -747,14 +824,3 @@ async def run_and_stop_jobs(client: ClientAsync, pause: int):
     time.sleep(pause)
     response = await client.stop_jobs()
     assert response.status_code == 200, "failed to stop jobs"
-
-
-class ExecuteActionAsync(ExecuteAction):
-    """
-    Execute an action at host:port.
-    """
-
-    client: ClientAsync
-
-    async def execute(self, tag: str = None, scheduler_info: dict = None):
-        await self.client.execute_action(self.action_name)

@@ -42,7 +42,7 @@ class Program(BaseModel):
     prologue_name: str = "NOT_APPLICABLE"
     epilogue_name: str = "NOT_APPLICABLE"
     body: Dict[str, List[str]] = {}
-    offset_seconds: int = 5
+    offset_seconds: int = 0
 
     def body_element(self, scheduler_name: str, action_name: str):
         if scheduler_name not in self.body:

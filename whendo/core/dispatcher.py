@@ -99,10 +99,10 @@ class Dispatcher(BaseModel):
     def initialize(self):
         Lok.reset()
         self._continuous_for_out_of_band.clear()
-        self._continuous_for_out_of_band.every(2).to(5).seconds.do(
+        self._continuous_for_out_of_band.every(1).second.do(
             self.check_for_deferred_actions
         ).tag("deferred")
-        self._continuous_for_out_of_band.every(2).to(5).seconds.do(
+        self._continuous_for_out_of_band.every(1).second.do(
             self.check_for_expired_actions
         ).tag("expired")
         self._continuous_for_out_of_band.run_continuously()
@@ -150,9 +150,15 @@ class Dispatcher(BaseModel):
             schedulers_copy = self.schedulers.copy()
             for scheduler_name in schedulers_copy:
                 self.delete_scheduler(scheduler_name)
+
             actions_copy = self.actions.copy()
             for action_name in actions_copy:
                 self.delete_action(action_name)
+
+            programs_copy = self.programs.copy()
+            for program_name in programs_copy:
+                self.delete_program(program_name)
+
             self.schedulers_actions.clear()
             self.deferred_schedulers_actions.clear()
             if should_save:
@@ -340,8 +346,8 @@ class Dispatcher(BaseModel):
 
     def schedule_program(self, program_name: str, start: datetime, stop: datetime):
         """
-        This method invokes the named programs 'schedule' method, updating the deferral
-        and expiration queues. See Program.schedule(..) for more details.
+        This method utilizes the named Program's innards and schedules actions
+        specified therein.
         """
         with Lok.lock:
             assert (

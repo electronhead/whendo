@@ -2,10 +2,10 @@ from fastapi import APIRouter, status, Depends
 from whendo.api.shared import return_success, raised_exception, get_dispatcher
 from whendo.core.resolver import resolve_action
 
-router = APIRouter(prefix="", tags=["Actions"])
+router = APIRouter(prefix="/actions", tags=["Actions"])
 
 
-@router.get("/actions/{action_name}", status_code=status.HTTP_200_OK)
+@router.get("/{action_name}", status_code=status.HTTP_200_OK)
 def get_action(action_name: str):
     try:
         action = get_dispatcher(router).get_action(action_name=action_name)
@@ -14,7 +14,7 @@ def get_action(action_name: str):
         raise raised_exception(f"failed to retrieve the action ({action_name})", e)
 
 
-@router.post("/actions/{action_name}", status_code=status.HTTP_200_OK)
+@router.post("/{action_name}", status_code=status.HTTP_200_OK)
 def add_action(action_name: str, action=Depends(resolve_action)):
     try:
         assert action, f"couldn't resolve class for action ({action_name})"
@@ -24,7 +24,7 @@ def add_action(action_name: str, action=Depends(resolve_action)):
         raise raised_exception(f"failed to add action ({action_name})", e)
 
 
-@router.put("/actions/{action_name}", status_code=status.HTTP_200_OK)
+@router.put("/{action_name}", status_code=status.HTTP_200_OK)
 def set_action(action_name: str, action=Depends(resolve_action)):
     try:
         assert action, f"couldn't resolve class for action ({action_name})"
@@ -34,7 +34,7 @@ def set_action(action_name: str, action=Depends(resolve_action)):
         raise raised_exception(f"failed to update action ({action_name})", e)
 
 
-@router.delete("/actions/{action_name}", status_code=status.HTTP_200_OK)
+@router.delete("/{action_name}", status_code=status.HTTP_200_OK)
 def delete_action(action_name: str):
     try:
         get_dispatcher(router).delete_action(action_name=action_name)
@@ -43,7 +43,7 @@ def delete_action(action_name: str):
         raise raised_exception(f"failed to delete action ({action_name})", e)
 
 
-@router.get("/actions/{action_name}/execute", status_code=status.HTTP_200_OK)
+@router.get("/{action_name}/execute", status_code=status.HTTP_200_OK)
 def execute_action(action_name: str):
     """
     Two potential types of exceptions below. One resulting from the actual execute_action call and
@@ -69,7 +69,7 @@ def execute_action(action_name: str):
         raise exception
 
 
-@router.get("/actions/{action_name}/unschedule", status_code=status.HTTP_200_OK)
+@router.get("/{action_name}/unschedule", status_code=status.HTTP_200_OK)
 def unschedule_action(action_name: str):
     try:
         get_dispatcher(router).unschedule_action(action_name=action_name)
@@ -78,7 +78,7 @@ def unschedule_action(action_name: str):
         raise raised_exception(f"failed to unschedule action ({action_name})", e)
 
 
-@router.get("/actions/{action_name}/reschedule", status_code=status.HTTP_200_OK)
+@router.get("/{action_name}/reschedule", status_code=status.HTTP_200_OK)
 def reschedule_action(action_name: str):
     try:
         get_dispatcher(router).reschedule_action(action_name=action_name)
@@ -87,7 +87,7 @@ def reschedule_action(action_name: str):
         raise raised_exception(f"failed to reschedule action ({action_name})", e)
 
 
-@router.put("/actions/execute", status_code=status.HTTP_200_OK)
+@router.put("/execute", status_code=status.HTTP_200_OK)
 def execute_supplied_action(action_name: str, action=Depends(resolve_action)):
     try:
         assert action, f"couldn't resolve class for action ({action})"

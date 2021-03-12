@@ -2,9 +2,15 @@ from pydantic import BaseModel
 from httpx import AsyncClient
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
-from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
-from whendo.core.util import FilePathe, DateTime
+from whendo.core.resolver import (
+    resolve_action,
+    resolve_scheduler,
+    resolve_file_pathe,
+    resolve_program,
+)
+from whendo.core.util import FilePathe, DateTime, DateTime2
 from whendo.core.dispatcher import Dispatcher
+from whendo.core.program import Program
 
 
 class ClientAsync(BaseModel):
@@ -76,7 +82,6 @@ class ClientAsync(BaseModel):
         return await self.get(f"/actions/{action_name}/unschedule")
 
     # /schedulers
-
     async def schedule_action(self, scheduler_name: str, action_name: str):
         return await self.get(f"/schedulers/{scheduler_name}/actions/{action_name}")
 
@@ -106,6 +111,19 @@ class ClientAsync(BaseModel):
 
     async def scheduled_action_count(self):
         return await self.get("/schedulers/action_count")
+
+    # programs
+    async def get_program(self, program_name: str):
+        return resolve_program(
+            await self.get_as_json(f"/programs/{program_name}"),
+            check_for_found_class=False,
+        )
+
+    async def add_program(self, program_name: str, program: Program):
+        return await self.post(f"/programs/{program_name}", program)
+
+    async def schedule_program(self, program_name: str, datetime2: DateTime2):
+        return await self.post(f"/programs/{program_name}/schedule", datetime2)
 
     # deferrals and expirations
     async def defer_action(

@@ -2,6 +2,7 @@ import requests
 from typing import Optional, Dict, Any
 from whendo.core.action import Action
 from whendo.sdk.client import Client
+from whendo.core.util import Http
 
 
 class SendPayload(Action):
@@ -29,4 +30,6 @@ class ExecuteAction(Action):
     action_name: str
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
-        return Client(host=self.host, port=self.port).execute_action(self.action_name)
+        return Http(host=self.host, port=self.port).get(
+            f"/actions/{self.action_name}/execute"
+        )

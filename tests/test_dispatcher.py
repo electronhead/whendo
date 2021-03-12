@@ -1,11 +1,13 @@
 import pytest
 import time
 import json
-import datetime
+from datetime import timedelta
 import whendo.core.util as util
 from whendo.core.action import Action
+from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.scheduler import Immediately
 from whendo.core.dispatcher import Dispatcher
+from whendo.core.program import Program
 from .fixtures import friends
 
 pause = 2
@@ -314,7 +316,7 @@ def test_expire_action(friends):
     dispatcher.expire_action(
         scheduler_name="bar",
         action_name="foo",
-        expire_on=util.Now.dt() + datetime.timedelta(seconds=1),
+        expire_on=util.Now.dt() + timedelta(seconds=1),
     )
 
     assert 1 == dispatcher.get_expired_action_count()
@@ -352,3 +354,57 @@ def test_immediately(friends):
 
     assert dispatcher.get_scheduled_action_count() == 0
     assert test_action.fleas == 1
+
+
+def test_program(friends):
+    """
+    Want to observe that a Program's actions are executed.
+    """
+
+    dispatcher, scheduler, action = friends()
+
+    class TestAction1(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, scheduler_info: dict = None):
+            self.fleas += 1
+            return "BLING"
+
+    class TestAction2(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, scheduler_info: dict = None):
+            self.fleas += 1
+            return "BLING"
+
+    class TestAction3(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, scheduler_info: dict = None):
+            self.fleas += 1
+            return "BLING"
+
+    action1 = TestAction1()
+    action2 = TestAction2()
+    action3 = TestAction3()
+
+    dispatcher.add_action("foo1", action1)
+    dispatcher.add_action("foo2", action2)
+    dispatcher.add_action("foo3", action3)
+    dispatcher.add_scheduler("bar", scheduler)
+    dispatcher.add_scheduler("immediately", Immediately())
+
+    program = Program().prologue("foo1").body_element("bar", "foo2").epilogue("foo3")
+    dispatcher.add_program("baz", program)
+    start = util.Now().dt()
+    stop = start + timedelta(seconds=5)
+
+    dispatcher.run_jobs()
+    dispatcher.schedule_program("baz", start, stop)
+    assert action1.fleas == 0
+    time.sleep(1)
+    assert action1.fleas == 1
+    time.sleep(4)
+    assert action2.fleas >= 2
+    time.sleep(2)
+    assert action3.fleas == 1

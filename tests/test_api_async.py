@@ -8,14 +8,27 @@ import time
 import pytest
 from pydantic import BaseModel
 from httpx import AsyncClient
-from datetime import timedelta
+from datetime import timedelta, datetime
 from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.actions.logic_action import All
 from whendo.core.scheduler import Timely, Scheduler, Immediately
 from whendo.core.dispatcher import Dispatcher
-from whendo.core.util import FilePathe, resolve_instance, Output, DateTime, Now
-from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
+from whendo.core.program import Program
+from whendo.core.util import (
+    FilePathe,
+    resolve_instance,
+    Output,
+    DateTime,
+    Now,
+    DateTime2,
+)
+from whendo.core.resolver import (
+    resolve_action,
+    resolve_scheduler,
+    resolve_file_pathe,
+    resolve_program,
+)
 from .fixtures import port, host, startup_and_shutdown_uvicorn, base_url
 import logging
 
@@ -550,6 +563,54 @@ async def test_immediately(startup_and_shutdown_uvicorn, base_url, tmp_path):
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
 
+@pytest.mark.asyncio
+async def test_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action1 = FileHeartbeat(
+        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+    )
+    action2 = FileHeartbeat(
+        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+    )
+    action3 = FileHeartbeat(
+        relative_to_output_dir=False, file=str(tmp_path / "output3.txt")
+    )
+    scheduler = Timely(interval=1)
+    immediately = Immediately()
+
+    await add_action(base_url=base_url, action_name="foo1", action=action1)
+    await add_action(base_url=base_url, action_name="foo2", action=action2)
+    await add_action(base_url=base_url, action_name="foo3", action=action3)
+    await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
+    await add_scheduler(
+        base_url=base_url, scheduler_name="immediately", scheduler=immediately
+    )
+
+    program = Program().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
+    await add_program(base_url=base_url, program_name="baz", program=program)
+    start = Now().dt()
+    stop = start + timedelta(seconds=4)
+    await schedule_program(
+        base_url=base_url, program_name="baz", start=start, stop=stop
+    )
+
+    # action1,2,3 doing their things
+    await run_and_stop_jobs(base_url=base_url, pause=6)
+    lines = None
+    with open(action1.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    lines = None
+    with open(action2.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    lines = None
+    with open(action3.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+
 # ==========================================
 # helpers
 
@@ -657,6 +718,50 @@ async def schedule_action(base_url: str, scheduler_name: str, action_name: str):
     assert (
         response.status_code == 200
     ), f"failed to schedule action ({action_name}) using scheduler ({scheduler_name})"
+
+
+async def get_program(base_url: str, program_name: str):
+    """ make sure program exists and resolves properly """
+    response = await get(base_url, path=f"/programs/{program_name}")
+    assert response.status_code == 200, f"failed to get program ({program_name})"
+    retrieved_program = resolve_program(response.json())
+    assert isinstance(retrieved_program, Program), str(type(retrieved_program))
+    return retrieved_program
+
+
+async def add_program(base_url: str, program_name: str, program: Action):
+    """ add a program and confirm """
+    response = await post(
+        base_url=base_url, path=f"/programs/{program_name}", data=program
+    )
+    assert response.status_code == 200, f"failed to put program ({program_name})"
+    response = await get(base_url, path=f"/programs/{program_name}")
+    assert response.status_code == 200, f"failed to get program ({program_name})"
+    retrieved_program = resolve_program(response.json())
+    assert isinstance(retrieved_program, Program), str(type(retrieved_program))
+
+
+async def set_program(base_url: str, program_name: str, program: Action):
+    """ set a program and confirm """
+    response = await put(
+        base_url=base_url, path=f"/programs/{program_name}", data=program
+    )
+    assert response.status_code == 200, f"failed to put program ({program_name})"
+    response = await get(base_url, path=f"/programs/{program_name}")
+    assert response.status_code == 200, f"failed to get program ({program_name})"
+    retrieved_program = resolve_program(response.json())
+    assert isinstance(retrieved_program, Program), str(type(retrieved_program))
+
+
+async def schedule_program(
+    base_url: str, program_name: str, start: datetime, stop: datetime
+):
+    """ schedule a program """
+    datetime2 = DateTime2(dt1=start, dt2=stop)
+    response = await post(
+        base_url=base_url, path=f"/programs/{program_name}/schedule", data=datetime2
+    )
+    assert response.status_code == 200, f"failed to schedule program ({program_name})"
 
 
 async def defer_action(

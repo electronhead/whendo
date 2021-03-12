@@ -8,7 +8,7 @@ is different from main.py.
 from fastapi import FastAPI
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.continuous import Continuous
-from whendo.api.router import actions, schedulers, dispatcher, jobs, execution
+from whendo.api.router import actions, schedulers, dispatcher, jobs, execution, programs
 from whendo.api.shared import set_dispatcher
 
 app = FastAPI()
@@ -28,3 +28,4 @@ app.include_router(set_dispatcher(schedulers.router, dispatcher_instance))
 app.include_router(set_dispatcher(dispatcher.router, dispatcher_instance))
 app.include_router(set_dispatcher(jobs.router, dispatcher_instance))
 app.include_router(set_dispatcher(execution.router, dispatcher_instance))
+app.include_router(set_dispatcher(programs.router, dispatcher_instance))

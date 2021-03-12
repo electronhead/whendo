@@ -4,10 +4,10 @@ from whendo.api.shared import return_success, raised_exception, get_dispatcher
 from whendo.core.resolver import resolve_scheduler
 import whendo.core.util as util
 
-router = APIRouter(prefix="", tags=["Schedulers"])
+router = APIRouter(prefix="/schedulers", tags=["Schedulers"])
 
 
-@router.get("/schedulers/action_count", status_code=status.HTTP_200_OK)
+@router.get("/action_count", status_code=status.HTTP_200_OK)
 def get_scheduled_action_count():
     try:
         return return_success(
@@ -17,7 +17,7 @@ def get_scheduled_action_count():
         raise raised_exception(f"failed to retrieve the scheduled action count", e)
 
 
-@router.get("/schedulers/deferred_action_count", status_code=status.HTTP_200_OK)
+@router.get("/deferred_action_count", status_code=status.HTTP_200_OK)
 def get_deferred_action_count():
     try:
         return return_success(
@@ -31,7 +31,7 @@ def get_deferred_action_count():
         raise raised_exception(f"failed to retrieve the deferred action count", e)
 
 
-@router.get("/schedulers/expired_action_count", status_code=status.HTTP_200_OK)
+@router.get("/expired_action_count", status_code=status.HTTP_200_OK)
 def get_expired_action_count():
     try:
         return return_success(
@@ -41,7 +41,7 @@ def get_expired_action_count():
         raise raised_exception(f"failed to retrieve the deferred action count", e)
 
 
-@router.get("/schedulers/reschedule_all", status_code=status.HTTP_200_OK)
+@router.get("/reschedule_all", status_code=status.HTTP_200_OK)
 def reschedule_all_schedulers():
     try:
         get_dispatcher(router).reschedule_all_schedulers()
@@ -50,7 +50,7 @@ def reschedule_all_schedulers():
         raise raised_exception("failed to unschedule all schedulers", e)
 
 
-@router.get("/schedulers/clear_deferred_actions", status_code=status.HTTP_200_OK)
+@router.get("/clear_deferred_actions", status_code=status.HTTP_200_OK)
 def clear_deferred_actions():
     try:
         get_dispatcher(router).clear_all_deferred_actions()
@@ -59,7 +59,7 @@ def clear_deferred_actions():
         raise raised_exception("failed to clear deferred actions", e)
 
 
-@router.get("/schedulers/clear_expired_actions", status_code=status.HTTP_200_OK)
+@router.get("/clear_expired_actions", status_code=status.HTTP_200_OK)
 def clear_expired_actions():
     try:
         get_dispatcher(router).clear_all_expired_actions()
@@ -68,9 +68,7 @@ def clear_expired_actions():
         raise raised_exception("failed to clear expired actions", e)
 
 
-@router.get(
-    "/schedulers/{scheduler_name}/actions/{action_name}", status_code=status.HTTP_200_OK
-)
+@router.get("/{scheduler_name}/actions/{action_name}", status_code=status.HTTP_200_OK)
 def schedule_action(scheduler_name: str, action_name: str):
     try:
         get_dispatcher(router).schedule_action(
@@ -86,7 +84,7 @@ def schedule_action(scheduler_name: str, action_name: str):
 
 
 @router.get(
-    "/schedulers/{scheduler_name}/actions/{action_name}/unschedule",
+    "/{scheduler_name}/actions/{action_name}/unschedule",
     status_code=status.HTTP_200_OK,
 )
 def unschedule_scheduler_action(scheduler_name: str, action_name: str):
@@ -104,7 +102,7 @@ def unschedule_scheduler_action(scheduler_name: str, action_name: str):
 
 
 @router.post(
-    "/schedulers/{scheduler_name}/actions/{action_name}/defer",
+    "/{scheduler_name}/actions/{action_name}/defer",
     status_code=status.HTTP_200_OK,
 )
 def defer_action(scheduler_name: str, action_name: str, wait_until: util.DateTime):
@@ -124,7 +122,7 @@ def defer_action(scheduler_name: str, action_name: str, wait_until: util.DateTim
 
 
 @router.post(
-    "/schedulers/{scheduler_name}/actions/{action_name}/expire",
+    "/{scheduler_name}/actions/{action_name}/expire",
     status_code=status.HTTP_200_OK,
 )
 def expire_action(scheduler_name: str, action_name: str, expire_on: util.DateTime):
@@ -143,7 +141,7 @@ def expire_action(scheduler_name: str, action_name: str, expire_on: util.DateTim
         )
 
 
-@router.get("/schedulers/{scheduler_name}", status_code=status.HTTP_200_OK)
+@router.get("/{scheduler_name}", status_code=status.HTTP_200_OK)
 def get_scheduler(scheduler_name: str):
     try:
         scheduler = get_dispatcher(router).get_scheduler(scheduler_name=scheduler_name)
@@ -154,7 +152,7 @@ def get_scheduler(scheduler_name: str):
         )
 
 
-@router.post("/schedulers/{scheduler_name}", status_code=status.HTTP_200_OK)
+@router.post("/{scheduler_name}", status_code=status.HTTP_200_OK)
 def add_scheduler(scheduler_name: str, scheduler=Depends(resolve_scheduler)):
     try:
         assert scheduler, f"couldn't resolve class for scheduler ({scheduler_name})"
@@ -166,7 +164,7 @@ def add_scheduler(scheduler_name: str, scheduler=Depends(resolve_scheduler)):
         raise raised_exception(f"failed to add scheduler ({scheduler_name})", e)
 
 
-@router.put("/schedulers/{scheduler_name}", status_code=status.HTTP_200_OK)
+@router.put("/{scheduler_name}", status_code=status.HTTP_200_OK)
 def set_scheduler(scheduler_name: str, scheduler=Depends(resolve_scheduler)):
     try:
         assert scheduler, f"couldn't resolve class for scheduler ({scheduler_name})"
@@ -178,7 +176,7 @@ def set_scheduler(scheduler_name: str, scheduler=Depends(resolve_scheduler)):
         raise raised_exception(f"failed to update scheduler ({scheduler_name})", e)
 
 
-@router.delete("/schedulers/{scheduler_name}", status_code=status.HTTP_200_OK)
+@router.delete("/{scheduler_name}", status_code=status.HTTP_200_OK)
 def delete_scheduler(scheduler_name: str):
     try:
         get_dispatcher(router).delete_scheduler(scheduler_name=scheduler_name)
@@ -187,7 +185,7 @@ def delete_scheduler(scheduler_name: str):
         raise raised_exception(f"failed to delete scheduler ({scheduler_name})", e)
 
 
-@router.get("/schedulers/{scheduler_name}/execute", status_code=status.HTTP_200_OK)
+@router.get("/{scheduler_name}/execute", status_code=status.HTTP_200_OK)
 def execute_scheduler_actions(scheduler_name: str):
     try:
         result = get_dispatcher(router).execute_scheduler_actions(
@@ -205,7 +203,7 @@ def execute_scheduler_actions(scheduler_name: str):
         )
 
 
-@router.get("/schedulers/{scheduler_name}/unschedule", status_code=status.HTTP_200_OK)
+@router.get("/{scheduler_name}/unschedule", status_code=status.HTTP_200_OK)
 def unschedule_scheduler(scheduler_name: str):
     try:
         get_dispatcher(router).unschedule_scheduler(scheduler_name=scheduler_name)
@@ -216,7 +214,7 @@ def unschedule_scheduler(scheduler_name: str):
         raise raised_exception(f"failed to unschedule scheduler ({scheduler_name})", e)
 
 
-@router.get("/schedulers/{scheduler_name}/reschedule", status_code=status.HTTP_200_OK)
+@router.get("/{scheduler_name}/reschedule", status_code=status.HTTP_200_OK)
 def reschedule_scheduler(scheduler_name: str):
     try:
         get_dispatcher(router).reschedule_scheduler(scheduler_name=scheduler_name)
