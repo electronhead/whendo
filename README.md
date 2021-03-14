@@ -12,7 +12,6 @@ whendo let's you define actions, test them individually, and schedule them to be
     pydantic >= 1.7.3
     schedule >= 1.0.0
     requests >= 2.25.1
-    Mock.GPIO >= 0.1.8
 
 ## Computers tested (so far):
 

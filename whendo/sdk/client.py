@@ -63,7 +63,7 @@ class Client(BaseModel):
         return self.http().put("/dispatcher/replace", replacement)
 
     def describe_all(self):
-        return self.http().put("/dispatcher/describe_all")
+        return self.http().get("/dispatcher/describe_all")
 
     # /execution
 
