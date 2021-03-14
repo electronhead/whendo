@@ -44,6 +44,14 @@ def delete_program(program_name: str):
         raise raised_exception(f"failed to delete program ({program_name})", e)
 
 
+@router.get("/{program_name}/describe", status_code=status.HTTP_200_OK)
+def describe_program(program_name: str):
+    try:
+        return get_dispatcher(router).describe_program(program_name=program_name)
+    except Exception as e:
+        raise raised_exception(f"failed to describe program ({program_name})", e)
+
+
 @router.post("/{program_name}/schedule", status_code=status.HTTP_200_OK)
 def schedule_program(program_name: str, datetime2: DateTime2):
     try:

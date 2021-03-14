@@ -3,6 +3,7 @@ try:
 except:
     from .mockpsutil import virtual_memory, net_if_addrs, cpu_percent, getloadavg
 
+import logging
 from enum import Enum
 from pprint import PrettyPrinter
 from sys import stdout
@@ -15,6 +16,8 @@ from pathlib import Path
 from pydantic import BaseModel
 from typing import List, Dict, Any
 from threading import RLock
+
+logger = logging.getLogger(__name__)
 
 # Enums
 

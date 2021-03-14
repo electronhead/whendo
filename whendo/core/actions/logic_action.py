@@ -1,13 +1,20 @@
 from typing import List, Dict, Any, Optional
 from enum import Enum
 import json
+import logging
 from whendo.core.action import Action
+
+
+logger = logging.getLogger(__name__)
 
 
 class Failure(Action):
     """ acts like False """
 
     logic_failure: str = "failure"
+
+    def description(self):
+        return f"This action always fails. It serves a role similar to the bool, False."
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
         raise Exception("purposely unsuccessful execution", self.json())
@@ -18,6 +25,11 @@ class Success(Action):
 
     logic_success: str = "success"
 
+    def description(self):
+        return (
+            f"This action always succeeds. It serves a role similar to the bool, True."
+        )
+
     def execute(self, tag: str = None, scheduler_info: dict = None):
         return {"outcome": "purposely successful execution", "action": self.info()}
 
@@ -27,6 +39,9 @@ class Not(Action):
 
     logic_not: str = "not"
     operand: Action
+
+    def description(self):
+        return f"If the operand ({self.operand}) fails, Not succeeds, otherwise fails (throwing an Exception). It serves a role similar to logical negation."
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
         operand_result = None
@@ -63,6 +78,8 @@ class ListAction(Action):
         ListOpMode.OR:    executes until the first successful action (no exception)
         ListOpMode.AND:   executes until the first exception (failure)
 
+    Intended to be abstract class; not intended to be instantiated. Its subclasses,
+    All, Or, and And, should be used instead.
     """
 
     op_mode: ListOpMode
@@ -113,6 +130,11 @@ class All(ListAction):
     logic_all: str = "all"
     op_mode: ListOpMode = ListOpMode.ALL
 
+    def description(self):
+        return (
+            f"This action executes all of these actions in order: ({self.action_list})."
+        )
+
     def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
         return super().execute(tag=tag, scheduler_info=scheduler_info)
 
@@ -125,6 +147,9 @@ class Or(ListAction):
     logic_or: str = "or"
     op_mode: ListOpMode = ListOpMode.OR
 
+    def description(self):
+        return f"This action executes all of these actions in order until the first success: ({self.action_list}). It serves a role similar to logical or."
+
     def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
         return super().execute(tag=tag, scheduler_info=scheduler_info)
 
@@ -136,6 +161,9 @@ class And(ListAction):
 
     logic_and: str = "and"
     op_mode: ListOpMode = ListOpMode.AND
+
+    def description(self):
+        return f"This action executes all of these actions in order until the first failure: ({self.action_list}). It serves a role similar to logical and."
 
     def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
         return super().execute(tag=tag, scheduler_info=scheduler_info)
@@ -155,6 +183,9 @@ class IfElse(Action):
     if_action: Action
     else_action: Action
     exception_on_no_success: bool = False
+
+    def description(self):
+        return f"If  action ({self.test_action}) succeeds, then IfElse executes ({self.if_action}), otherwise executes ({self.else_action})"
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
         try:

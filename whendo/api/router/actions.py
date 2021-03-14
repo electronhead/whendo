@@ -43,6 +43,14 @@ def delete_action(action_name: str):
         raise raised_exception(f"failed to delete action ({action_name})", e)
 
 
+@router.get("/{action_name}/describe", status_code=status.HTTP_200_OK)
+def describe_action(action_name: str):
+    try:
+        return get_dispatcher(router).describe_action(action_name=action_name)
+    except Exception as e:
+        raise raised_exception(f"failed to describe action ({action_name})", e)
+
+
 @router.get("/{action_name}/execute", status_code=status.HTTP_200_OK)
 def execute_action(action_name: str):
     """

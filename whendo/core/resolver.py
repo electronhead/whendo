@@ -1,11 +1,15 @@
 """
 These functions resolve dispatcher element instances from supplied dictionaries.
 """
+import logging
 from pydantic import ValidationError
 from .action import Action
 from .scheduler import Scheduler
 from .program import Program
 from .util import FilePathe, resolve_instance
+
+
+logger = logging.getLogger(__name__)
 
 
 def resolve_action(dictionary: dict, check_for_found_class: bool = True):

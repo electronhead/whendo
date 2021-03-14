@@ -1,5 +1,8 @@
+import logging
 from pydantic import BaseModel
 from whendo.sdk.client import Client
+
+logger = logging.getLogger(__name__)
 
 
 class Workbench(BaseModel):

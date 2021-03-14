@@ -1,7 +1,7 @@
 import time
 from whendo.core.continuous import Continuous
 from whendo.core.util import TimeUnit, PP
-from whendo.core.action import Action, ActionPayload
+from whendo.core.action import Action
 
 pause = 3
 

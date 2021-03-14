@@ -5,7 +5,7 @@ pytest fixtures for unit testing
 import pytest
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.actions.file_action import FileHeartbeat
-from whendo.core.scheduler import Timely
+from whendo.core.schedulers.cont_scheduler import Timely
 from whendo.core.continuous import Continuous
 from whendo.api import main_temp
 from .uvicorn_server import UvicornTestServer

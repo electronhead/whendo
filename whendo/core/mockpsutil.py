@@ -12,6 +12,10 @@ library.
 
 from socket import AddressFamily
 from collections import namedtuple
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 def net_if_addrs():

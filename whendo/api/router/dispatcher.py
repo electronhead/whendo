@@ -25,6 +25,14 @@ def replace(replacement=Depends(Dispatcher.resolve)):
         raise raised_exception(f"failed to replace dispatcher", e)
 
 
+@router.get("/describe_all", status_code=status.HTTP_200_OK)
+def describe_all():
+    try:
+        return get_dispatcher(router).describe_all()
+    except Exception as e:
+        raise raised_exception(f"failed to describe all dispatcher objects", e)
+
+
 @router.get("/load", status_code=status.HTTP_200_OK)
 def load():
     try:

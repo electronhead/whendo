@@ -1,5 +1,6 @@
 from pydantic import BaseModel, PrivateAttr
 import requests
+import logging
 from typing import Optional
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
@@ -15,6 +16,8 @@ from whendo.core.program import Program
 
 default_host = "127.0.0.1"
 default_port = 8000
+
+logger = logging.getLogger(__name__)
 
 
 class Client(BaseModel):
@@ -59,6 +62,9 @@ class Client(BaseModel):
     def replace_dispatcher(self, replacement: Dispatcher):
         return self.http().put("/dispatcher/replace", replacement)
 
+    def describe_all(self):
+        return self.http().put("/dispatcher/describe_all")
+
     # /execution
 
     def execute_supplied_action(self, supplied_action: Action):
@@ -67,6 +73,9 @@ class Client(BaseModel):
     # /actions
     def get_action(self, action_name: str):
         return resolve_action(self.http().get(f"/actions/{action_name}"))
+
+    def describe_action(self, action_name: str):
+        return self.http().get(f"/actions/{action_name}/describe")
 
     def add_action(self, action_name: str, action: Action):
         return self.http().post(f"/actions/{action_name}", action)
@@ -93,6 +102,9 @@ class Client(BaseModel):
 
     def get_scheduler(self, scheduler_name: str):
         return resolve_scheduler(self.http().get(f"/schedulers/{scheduler_name}"))
+
+    def describe_scheduler(self, scheduler_name: str):
+        return self.http().get(f"/schedulers/{scheduler_name}/describe")
 
     def add_scheduler(self, scheduler_name: str, scheduler: Scheduler):
         return self.http().post(f"/schedulers/{scheduler_name}", scheduler)
@@ -122,7 +134,10 @@ class Client(BaseModel):
 
     # programs
     def get_program(self, program_name: str):
-        return resolve_program(self.http().get(f"/actions/{program_name}"))
+        return resolve_program(self.http().get(f"/programs/{program_name}"))
+
+    def describe_program(self, program_name: str):
+        return self.http().get(f"/programs/{program_name}/describe")
 
     def add_program(self, program_name: str, program: Program):
         return self.http().post(f"/programs/{program_name}", program)

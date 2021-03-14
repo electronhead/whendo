@@ -2,10 +2,8 @@ from datetime import time
 from pydantic import BaseModel
 from typing import Dict, Optional
 from collections.abc import Callable
-from threading import RLock
 import logging
-import random
-from whendo.core.util import TimeUnit, Now, object_info, SystemInfo
+from whendo.core.util import Now, object_info, SystemInfo
 from whendo.core.action import Action
 from whendo.core.continuous import Continuous
 
@@ -156,82 +154,8 @@ class Scheduler(BaseModel):
     def info(self):
         return object_info(self)
 
-
-class Timely(Scheduler):
-    """
-    This scheduler executes Actions every [interval] days, hours, minutes, seconds at a
-    time within the time unit (hour, minute, second).
-
-    The time unit is determined by the values of the hour, minute, and second
-    fields.
-
-    If hour is specified, the time unit is set to day. [17:00:00]
-    If minute is specified, the time unit is set to hour. [:15:00]
-    If second is specified, the time unit is set to minute. [:15]
-    Otherwise the time unit is set to second.
-
-    For example, for hour=None, minute=15, second=None, interval=2, the system will
-    execute the action every 2 hours at 15 minutes past the hour.
-    """
-
-    interval: int
-    hour: Optional[int] = None
-    minute: Optional[int] = None
-    second: Optional[int] = None
-
-    def schedule_action(self, tag: str, action: Action, continuous: Continuous):
-        callable = self.during_period(tag=tag, action=action)
-        continuous.schedule_timely_callable(
-            tag=tag,
-            callable=callable,
-            interval=self.interval,
-            hour=self.hour,
-            minute=self.minute,
-            second=self.second,
-        )
-
-
-class Randomly(Scheduler):
-    """
-    This scheduler randomly executes Actions every [low] to [high] days, hours, minutes, or seconds.
-
-    The time unit is supplied at instance creation.
-
-    For example, for low=30, hight=90 and time_unit=second, the system will again execute the action
-    randomly every 30 to 90 seconds after each execution.
-    """
-
-    time_unit: TimeUnit = TimeUnit.second
-    low: int
-    high: int
-
-    def schedule_action(self, tag: str, action: Action, continuous: Continuous):
-        callable = self.during_period(tag=tag, action=action)
-        continuous.schedule_random_callable(
-            tag=tag,
-            callable=callable,
-            time_unit=self.time_unit,
-            low=self.low,
-            high=self.high,
-        )
-
-
-class Immediately(Scheduler):
-    immediately: str = "immediately"
-
-    def schedule_action(self, tag: str, action: Action, continuous: Continuous):
-        """
-        Wrapping ensures that the execution of the action participates in logging
-        in the same manner as actions that are executed in the Continuous job
-        system.
-        """
-        wrapped_callable = self.wrap(
-            thunk=lambda: action.execute(tag=tag, scheduler_info=self.info()),
-            tag=tag,
-            action_json=action.json(),
-            scheduler_json=self.json(),
-        )
-        wrapped_callable()
-
-    def joins_schedulers_actions(self):
-        return False
+    def description(self):
+        if (self.start is not None) and (self.stop is not None):
+            return f"All between {self.start} and {self.stop}."
+        else:
+            return ""

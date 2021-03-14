@@ -5,7 +5,7 @@ from datetime import timedelta
 import whendo.core.util as util
 from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
-from whendo.core.scheduler import Immediately
+from whendo.core.schedulers.cont_scheduler import Immediately
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 from .fixtures import friends

@@ -1,5 +1,9 @@
 from typing import List, Dict
+import logging
 from pydantic import BaseModel
+
+
+logger = logging.getLogger(__name__)
 
 
 class Program(BaseModel):
@@ -12,7 +16,7 @@ class Program(BaseModel):
     Dispatcher, which also has references to the Program class itself,
     leading to mutual recursion. This may require re-factoring the
     Dispatcher code to eliminate the recursion. In the meantime, the
-    current implementation avoids mutual recursion, and offers enough
+    current implementation avoids mutual recursion and offers enough
     functionality. When other combinations of Schedulers and Actions
     seem worthwhile, this recursion issue can be revisited at that time.
 
@@ -43,6 +47,9 @@ class Program(BaseModel):
     epilogue_name: str = "NOT_APPLICABLE"
     body: Dict[str, List[str]] = {}
     offset_seconds: int = 0
+
+    def description(self):
+        return f"This program starts with action ({self.prologue_name}) and ends with ({self.epilogue_name}) with scheduled actions ({self.body}) in between."
 
     def body_element(self, scheduler_name: str, action_name: str):
         if scheduler_name not in self.body:

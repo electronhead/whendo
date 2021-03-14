@@ -6,7 +6,10 @@ try:
 except:
     import Mock.GPIO as GPIO
 
+import logging
 from whendo.core.action import Action
+
+logger = logging.getLogger(__name__)
 
 
 class SetPin(Action):
@@ -16,6 +19,9 @@ class SetPin(Action):
 
     pin: int
     on: bool
+
+    def description(self):
+        return f"This action sets pin ({self.pin}) output to ({'GPIO.HIGH' if self.on else 'GPIO.LOW'})."
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
         GPIO.setmode(GPIO.BCM)
@@ -32,6 +38,9 @@ class TogglePin(Action):
 
     pin: int
 
+    def description(self):
+        return f"This action sets pin ({self.pin}) output to GPIO.HIGH if GPIO.input is GPIO.LOW else GPIO.LOW."
+
     def execute(self, tag: str = None, scheduler_info: dict = None):
         GPIO.setmode(GPIO.BCM)
         GPIO.setwarnings(False)
@@ -41,12 +50,15 @@ class TogglePin(Action):
         return result
 
 
-class Cleanup(Action):
+class CleanupPins(Action):
     """
     Clean up the pins. See the docs for GPIO.cleanup().
     """
 
-    cleanup: str = "cleanup"
+    cleanup_pins: str = "cleanup_pins"
+
+    def description(self):
+        return f"This action executes GPIO.cleanup."
 
     def execute(self, tag: str = None, scheduler_info: dict = None):
         GPIO.cleanup()

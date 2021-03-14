@@ -17,7 +17,7 @@ from typing import Optional, Dict, Any
 from .util import PP, Dirs, DateTime, Now, str_to_dt, dt_to_str
 from .action import Action
 from .program import Program
-from .scheduler import Scheduler, Immediately
+from .scheduler import Scheduler
 from .continuous import Continuous
 from .resolver import resolve_action, resolve_scheduler, resolve_program
 
@@ -143,7 +143,7 @@ class Dispatcher(BaseModel):
 
     def clear_all(self, should_save: bool = True):
         """
-        Removes all actions and schedulers and ceases their involvement
+        Removes all actions and schedulers and programs and terminates their involvement
         with job processing.
         """
         with Lok.lock:
@@ -193,11 +193,42 @@ class Dispatcher(BaseModel):
 
         typed_replace_all(replacement)
 
+    def describe_all(self):
+        """
+        Returns descriptions of all actions, schedulers and programs.
+        """
+        result = {}
+
+        stuff = self.actions.copy()
+        for name in stuff:
+            stuff[name] = stuff[name].description()
+        result["actions"] = stuff
+
+        stuff = self.schedulers.copy()
+        for name in stuff:
+            stuff[name] = stuff[name].description()
+        result["schedulers"] = stuff
+
+        stuff = self.programs.copy()
+        for name in stuff:
+            stuff[name] = stuff[name].description()
+        result["programs"] = stuff
+
+        return result
+
     # actions
     def get_action(self, action_name: str):
         with Lok.lock:
-            # assert action_name in self.actions, f"action ({action_name}) does not exist"
             return self.actions.get(action_name, None)
+
+    def describe_action(self, action_name: str):
+        with Lok.lock:
+            action = self.get_action(action_name)
+            return (
+                action.description()
+                if action
+                else f"action ({action_name}) does not exist."
+            )
 
     def add_action(self, action_name: str, action: Action):
         with Lok.lock:
@@ -238,6 +269,15 @@ class Dispatcher(BaseModel):
     def get_scheduler(self, scheduler_name: str):
         with Lok.lock:
             return self.schedulers.get(scheduler_name, None)
+
+    def describe_scheduler(self, scheduler_name: str):
+        with Lok.lock:
+            scheduler = self.get_scheduler(scheduler_name)
+            return (
+                scheduler.description()
+                if scheduler
+                else f"scheduler ({scheduler_name}) does not exist."
+            )
 
     def add_scheduler(self, scheduler_name: str, scheduler: Scheduler):
         with Lok.lock:
@@ -284,6 +324,15 @@ class Dispatcher(BaseModel):
     def get_program(self, program_name: str):
         with Lok.lock:
             return self.programs.get(program_name, None)
+
+    def describe_program(self, program_name: str):
+        with Lok.lock:
+            program = self.get_program(program_name)
+            return (
+                program.description()
+                if program
+                else f"program ({program_name}) does not exist."
+            )
 
     def add_program(self, program_name: str, program: Program):
         with Lok.lock:
@@ -334,12 +383,6 @@ class Dispatcher(BaseModel):
         missing_schedulers = scheduler_names - set(self.schedulers.keys())
         if len(missing_schedulers) > 0:
             error_msgs.append(f"schedulers missing: ({missing_schedulers})")
-
-        # make sure "immediately" Scheduler is the right one
-        if "immediately" not in missing_schedulers:
-            immediately = self.get_scheduler("immediately")
-            if immediately != Immediately():
-                error_msgs.append("Immediately scheduler missing")
 
         if len(error_msgs) > 0:
             raise ValueError(", ".join(error_msgs))

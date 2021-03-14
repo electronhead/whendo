@@ -12,7 +12,8 @@ from datetime import timedelta, datetime
 from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.actions.logic_action import All
-from whendo.core.scheduler import Timely, Scheduler, Immediately
+from whendo.core.scheduler import Scheduler
+from whendo.core.schedulers.cont_scheduler import Timely, Immediately
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 from whendo.core.util import (

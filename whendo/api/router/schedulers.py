@@ -185,6 +185,14 @@ def delete_scheduler(scheduler_name: str):
         raise raised_exception(f"failed to delete scheduler ({scheduler_name})", e)
 
 
+@router.get("/{scheduler_name}/describe", status_code=status.HTTP_200_OK)
+def describe_scheduler(scheduler_name: str):
+    try:
+        return get_dispatcher(router).describe_scheduler(scheduler_name=scheduler_name)
+    except Exception as e:
+        raise raised_exception(f"failed to describe scheduler ({scheduler_name})", e)
+
+
 @router.get("/{scheduler_name}/execute", status_code=status.HTTP_200_OK)
 def execute_scheduler_actions(scheduler_name: str):
     try:
