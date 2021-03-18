@@ -188,6 +188,9 @@ class Dispatcher(BaseModel):
                 self.deferred_scheduled_actions = (
                     replacement.get_deferred_scheduled_actions()
                 )
+                self.expiring_scheduled_actions = (
+                    replacement.get_expiring_scheduled_actions()
+                )
                 self.save_current()
 
         typed_replace_all(replacement)

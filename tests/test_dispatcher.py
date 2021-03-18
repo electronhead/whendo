@@ -65,6 +65,7 @@ def test_reschedule_action(friends):
 
     assert action.flea_count > 0
 
+
 def test_reschedule_action_2(friends, tmp_path):
     """
     Tests unscheduling and then rescheduling an action.
@@ -403,8 +404,9 @@ def test_program(friends):
 @pytest.fixture
 def friends(tmp_path):
     """ returns a tuple of useful test objects """
+
     class FleaCount(Action):
-        flea_count:int = 0
+        flea_count: int = 0
 
         def execute(self, tag: str = None, scheduler_info: dict = None):
             self.flea_count += 1
