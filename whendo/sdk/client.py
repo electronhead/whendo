@@ -126,7 +126,7 @@ class Client(BaseModel):
     def reschedule_all_schedulers(self):
         return self.http().get(f"/schedulers/reschedule_all")
 
-    def execute_scheduler_actions(self, scheduler_name: str):
+    def execute_scheduled_actions(self, scheduler_name: str):
         return self.http().get(f"/schedulers/{scheduler_name}/execute")
 
     def scheduled_action_count(self):
@@ -168,11 +168,11 @@ class Client(BaseModel):
             f"/schedulers/{scheduler_name}/actions/{action_name}/expire", expire_on
         )
 
-    def clear_expired_actions(self):
-        return self.http().get(f"/schedulers/clear_expired_actions")
+    def clear_expiring_actions(self):
+        return self.http().get(f"/schedulers/clear_expiring_actions")
 
-    def expired_action_count(self):
-        return self.http().get("/schedulers/expired_action_count")
+    def expiring_action_count(self):
+        return self.http().get("/schedulers/expiring_action_count")
 
     # /jobs
     def run_jobs(self):

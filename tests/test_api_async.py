@@ -395,8 +395,8 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, base_url, tmp_pa
     dispatcher = await load_dispatcher(base_url=base_url)
     assert "flea" in dispatcher.get_actions()
     assert "bath" in dispatcher.get_schedulers()
-    assert "bath" in dispatcher.get_schedulers_actions()
-    assert "flea" in dispatcher.get_schedulers_actions()["bath"]
+    assert "bath" in dispatcher.get_scheduled_actions()
+    assert "flea" in dispatcher.get_scheduled_actions()["bath"]
 
     # add the job
     await assert_scheduled_action_count(base_url=base_url, n=1)
@@ -506,7 +506,7 @@ async def test_expire_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
     await schedule_action(base_url=base_url, action_name="foo", scheduler_name="bar")
 
-    await assert_expired_action_count(base_url=base_url, n=0)
+    await assert_expiring_action_count(base_url=base_url, n=0)
     await assert_scheduled_action_count(base_url=base_url, n=1)
 
     await expire_action(
@@ -516,12 +516,12 @@ async def test_expire_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
         expire_on=DateTime(date_time=Now.dt() + timedelta(seconds=1)),
     )
 
-    await assert_expired_action_count(base_url=base_url, n=1)
+    await assert_expiring_action_count(base_url=base_url, n=1)
     await assert_scheduled_action_count(base_url=base_url, n=1)
 
     time.sleep(6)
 
-    await assert_expired_action_count(base_url=base_url, n=0)
+    await assert_expiring_action_count(base_url=base_url, n=0)
     await assert_scheduled_action_count(base_url=base_url, n=0)
 
 
@@ -883,13 +883,13 @@ async def assert_deferred_action_count(base_url: str, n: int):
     ), f"expected an deferred action count of ({n}); instead got ({deferred_action_count})"
 
 
-async def assert_expired_action_count(base_url: str, n: int):
-    response = await get(base_url, "/schedulers/expired_action_count")
-    assert response.status_code == 200, "failed to expired deferred action count"
-    expired_action_count = int(response.json()["expired_action_count"])
+async def assert_expiring_action_count(base_url: str, n: int):
+    response = await get(base_url, "/schedulers/expiring_action_count")
+    assert response.status_code == 200, "failed to expiring action count"
+    expiring_action_count = int(response.json()["expiring_action_count"])
     assert (
-        expired_action_count == n
-    ), f"expected an expired action count of ({n}); instead got ({expired_action_count})"
+        expiring_action_count == n
+    ), f"expected an expiring action count of ({n}); instead got ({expiring_action_count})"
 
 
 async def run_and_stop_jobs(base_url: str, pause: int):

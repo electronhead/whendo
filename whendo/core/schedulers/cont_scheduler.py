@@ -116,5 +116,5 @@ class Immediately(Scheduler):
         )
         wrapped_callable()
 
-    def joins_schedulers_actions(self):
+    def joins_scheduled_actions(self):
         return False

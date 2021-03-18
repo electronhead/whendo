@@ -31,11 +31,15 @@ def get_deferred_action_count():
         raise raised_exception(f"failed to retrieve the deferred action count", e)
 
 
-@router.get("/expired_action_count", status_code=status.HTTP_200_OK)
-def get_expired_action_count():
+@router.get("/expiring_action_count", status_code=status.HTTP_200_OK)
+def get_expiring_action_count():
     try:
         return return_success(
-            {"expired_action_count": get_dispatcher(router).get_expired_action_count()}
+            {
+                "expiring_action_count": get_dispatcher(
+                    router
+                ).get_expiring_action_count()
+            }
         )
     except Exception as e:
         raise raised_exception(f"failed to retrieve the deferred action count", e)
@@ -59,13 +63,13 @@ def clear_deferred_actions():
         raise raised_exception("failed to clear deferred actions", e)
 
 
-@router.get("/clear_expired_actions", status_code=status.HTTP_200_OK)
-def clear_expired_actions():
+@router.get("/clear_expiring_actions", status_code=status.HTTP_200_OK)
+def clear_expiring_actions():
     try:
-        get_dispatcher(router).clear_all_expired_actions()
-        return return_success("expired actions were cleared")
+        get_dispatcher(router).clear_all_expiring_actions()
+        return return_success("expiring actions were cleared")
     except Exception as e:
-        raise raised_exception("failed to clear expired actions", e)
+        raise raised_exception("failed to clear expiring actions", e)
 
 
 @router.get("/{scheduler_name}/actions/{action_name}", status_code=status.HTTP_200_OK)
@@ -194,9 +198,9 @@ def describe_scheduler(scheduler_name: str):
 
 
 @router.get("/{scheduler_name}/execute", status_code=status.HTTP_200_OK)
-def execute_scheduler_actions(scheduler_name: str):
+def execute_scheduled_actions(scheduler_name: str):
     try:
-        result = get_dispatcher(router).execute_scheduler_actions(
+        result = get_dispatcher(router).execute_scheduled_actions(
             scheduler_name=scheduler_name
         )
         return return_success(

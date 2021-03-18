@@ -76,7 +76,7 @@ class Scheduler(BaseModel):
     def schedule_action(self, tag: str, action: Action, continuous: Continuous):
         pass
 
-    def joins_schedulers_actions(self):
+    def joins_scheduled_actions(self):
         return True
 
     def during_period(self, tag: str, action: Action):

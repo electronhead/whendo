@@ -10,7 +10,7 @@ from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 from .fixtures import friends
 
-pause = 2
+pause = 3
 
 
 def test_schedule_action(friends):
@@ -231,8 +231,8 @@ def test_replace_dispatcher(friends):
     assert dispatcher.get_scheduler("bath")
     assert {"bath"} == set(k for k in dispatcher.get_schedulers())
     assert {"flea"} == set(k for k in dispatcher.get_actions())
-    assert {"bath"} == set(k for k in dispatcher.get_schedulers_actions())
-    assert {"flea"} == set(dispatcher.get_schedulers_actions()["bath"])
+    assert {"bath"} == set(k for k in dispatcher.get_scheduled_actions())
+    assert {"flea"} == set(dispatcher.get_scheduled_actions()["bath"])
 
 
 def test_load_dispatcher(friends):
@@ -253,8 +253,8 @@ def test_load_dispatcher(friends):
     assert set(k for k in dispatcher.get_schedulers()) == set(
         k for k in dispatcher2.get_schedulers()
     )
-    assert set(k for k in dispatcher.get_schedulers_actions()) == set(
-        k for k in dispatcher2.get_schedulers_actions()
+    assert set(k for k in dispatcher.get_scheduled_actions()) == set(
+        k for k in dispatcher2.get_scheduled_actions()
     )
 
 
@@ -305,12 +305,12 @@ def test_expire_action(friends):
     dispatcher.add_action("foo", action)
     dispatcher.add_scheduler("bar", scheduler)
 
-    assert 0 == dispatcher.get_expired_action_count()
+    assert 0 == dispatcher.get_expiring_action_count()
     assert 0 == dispatcher.get_scheduled_action_count()
 
     dispatcher.schedule_action(scheduler_name="bar", action_name="foo")
 
-    assert 0 == dispatcher.get_expired_action_count()
+    assert 0 == dispatcher.get_expiring_action_count()
     assert 1 == dispatcher.get_scheduled_action_count()
 
     dispatcher.expire_action(
@@ -319,12 +319,12 @@ def test_expire_action(friends):
         expire_on=util.Now.dt() + timedelta(seconds=1),
     )
 
-    assert 1 == dispatcher.get_expired_action_count()
+    assert 1 == dispatcher.get_expiring_action_count()
     assert 1 == dispatcher.get_scheduled_action_count()
 
     time.sleep(6)  # the out-of-band job runs every 2-5 seconds
 
-    assert 0 == dispatcher.get_expired_action_count()
+    assert 0 == dispatcher.get_expiring_action_count()
     assert 0 == dispatcher.get_scheduled_action_count()
 
 

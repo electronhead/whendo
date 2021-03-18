@@ -106,7 +106,7 @@ class ClientAsync(BaseModel):
     async def reschedule_all_schedulers(self):
         return await self.get(f"/schedulers/reschedule_all")
 
-    async def execute_scheduler_actions(self, scheduler_name: str):
+    async def execute_scheduled_actions(self, scheduler_name: str):
         return await self.get(f"/schedulers/{scheduler_name}/execute")
 
     async def scheduled_action_count(self):
@@ -152,11 +152,11 @@ class ClientAsync(BaseModel):
             f"/schedulers/{scheduler_name}/actions/{action_name}/expire", expire_on
         )
 
-    async def clear_expired_actions(self):
-        return await self.get(f"/schedulers/clear_expired_actions")
+    async def clear_expiring_actions(self):
+        return await self.get(f"/schedulers/clear_expiring_actions")
 
-    async def expired_action_count(self):
-        return await self.get("/schedulers/expired_action_count")
+    async def expiring_action_count(self):
+        return await self.get("/schedulers/expiring_action_count")
 
     # /jobs
     async def run_jobs(self):

@@ -383,8 +383,8 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, host, port, tmp_
     dispatcher = await load_dispatcher(client=client)
     assert "flea" in dispatcher.get_actions()
     assert "bath" in dispatcher.get_schedulers()
-    assert "bath" in dispatcher.get_schedulers_actions()
-    assert "flea" in dispatcher.get_schedulers_actions()["bath"]
+    assert "bath" in dispatcher.get_scheduled_actions()
+    assert "flea" in dispatcher.get_scheduled_actions()["bath"]
 
     # add the job
     await assert_scheduled_action_count(client=client, n=1)
@@ -497,7 +497,7 @@ async def test_expire_action(startup_and_shutdown_uvicorn, host, port, tmp_path)
     await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
     await schedule_action(client=client, action_name="foo", scheduler_name="bar")
 
-    await assert_expired_action_count(client=client, n=0)
+    await assert_expiring_action_count(client=client, n=0)
     await assert_scheduled_action_count(client=client, n=1)
 
     await expire_action(
@@ -507,12 +507,12 @@ async def test_expire_action(startup_and_shutdown_uvicorn, host, port, tmp_path)
         expire_on=DateTime(date_time=Now.dt() + timedelta(seconds=1)),
     )
 
-    await assert_expired_action_count(client=client, n=1)
+    await assert_expiring_action_count(client=client, n=1)
     await assert_scheduled_action_count(client=client, n=1)
 
     time.sleep(6)
 
-    await assert_expired_action_count(client=client, n=0)
+    await assert_expiring_action_count(client=client, n=0)
     await assert_scheduled_action_count(client=client, n=0)
 
 
@@ -812,11 +812,11 @@ async def assert_deferred_action_count(client: ClientAsync, n: int):
     assert deferred_action_count == n, f"expected a deferred action count of ({n})"
 
 
-async def assert_expired_action_count(client: ClientAsync, n: int):
-    response = await client.expired_action_count()
-    assert response.status_code == 200, "failed to retrieve expired action count"
-    expired_action_count = response.json()["expired_action_count"]
-    assert expired_action_count == n, f"expected a expired action count of ({n})"
+async def assert_expiring_action_count(client: ClientAsync, n: int):
+    response = await client.expiring_action_count()
+    assert response.status_code == 200, "failed to retrieve expiring action count"
+    expiring_action_count = response.json()["expiring_action_count"]
+    assert expiring_action_count == n, f"expected a expiring action count of ({n})"
 
 
 async def run_and_stop_jobs(client: ClientAsync, pause: int):
