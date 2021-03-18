@@ -3,31 +3,8 @@ pytest fixtures for unit testing
 """
 
 import pytest
-from whendo.core.dispatcher import Dispatcher
-from whendo.core.actions.file_action import FileHeartbeat
-from whendo.core.schedulers.cont_scheduler import Timely
-from whendo.core.continuous import Continuous
 from whendo.api import main_temp
 from .uvicorn_server import UvicornTestServer
-
-
-@pytest.fixture
-def friends(tmp_path):
-    """ returns a tuple of useful test objects """
-
-    def stuff():
-        # want a fresh tuple from the fixture
-        saved_dir = str(tmp_path)
-        output_file = str(tmp_path / "output.txt")
-        dispatcher = Dispatcher(saved_dir=saved_dir)
-        dispatcher.set_continuous(Continuous())
-        dispatcher.initialize()
-        action = FileHeartbeat(file=output_file)
-        scheduler = Timely(interval=1)
-
-        return dispatcher, scheduler, action
-
-    return stuff
 
 
 @pytest.fixture

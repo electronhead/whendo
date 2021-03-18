@@ -3,7 +3,6 @@ import whendo.core.scheduler as sched
 from whendo.core.util import Now
 from whendo.core.action import Action
 from whendo.core.continuous import Continuous
-from .fixtures import friends
 
 
 def test_during_period():

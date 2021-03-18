@@ -1,16 +1,14 @@
 import pytest
 import time
-import json
 from datetime import timedelta
 import whendo.core.util as util
 from whendo.core.action import Action
-from whendo.core.actions.file_action import FileHeartbeat
-from whendo.core.schedulers.cont_scheduler import Immediately
+from whendo.core.schedulers.cont_scheduler import Immediately, Timely
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
-from .fixtures import friends
+from whendo.core.continuous import Continuous
 
-pause = 3
+pause = 2
 
 
 def test_schedule_action(friends):
@@ -23,15 +21,14 @@ def test_schedule_action(friends):
     dispatcher.add_scheduler("bar", scheduler)
     dispatcher.schedule_action("bar", "foo")
 
+    assert dispatcher.get_scheduled_action_count() == 1
+
     dispatcher.run_jobs()
     time.sleep(pause)
     dispatcher.stop_jobs()
     dispatcher.clear_jobs()
 
-    line = None
-    with open(action.file, "r") as fid:
-        line = fid.readline()
-    assert line is not None and type(line) is str and len(line) > 0
+    assert action.flea_count > 0
 
 
 def test_unschedule_action(friends):
@@ -66,12 +63,7 @@ def test_reschedule_action(friends):
     dispatcher.stop_jobs()
     dispatcher.clear_jobs()
 
-    line = None
-    with open(action.file, "r") as fid:
-        line = fid.readline()
-
-    assert line is not None and type(line) is str and len(line) > 0
-
+    assert action.flea_count > 0
 
 def test_reschedule_action_2(friends, tmp_path):
     """
@@ -84,19 +76,17 @@ def test_reschedule_action_2(friends, tmp_path):
     dispatcher.add_scheduler("bar", scheduler)
     dispatcher.schedule_action("bar", "foo")
     stored_action = dispatcher.get_action("foo")
-    stored_action.file = str(tmp_path / "output2.txt")
+    stored_action.flea_count = 100000
     dispatcher.set_action("foo", stored_action)
     dispatcher.reschedule_action("foo")
+    retrieved_action = dispatcher.get_action("foo")
 
     dispatcher.run_jobs()
     time.sleep(pause)
     dispatcher.stop_jobs()
     dispatcher.clear_jobs()
 
-    line = None
-    with open(stored_action.file, "r") as fid:
-        line = fid.readline()
-    assert line is not None and type(line) is str and len(line) > 0
+    assert retrieved_action.flea_count > 100000
 
 
 def test_unschedule_scheduler(friends):
@@ -408,3 +398,25 @@ def test_program(friends):
     assert action2.fleas >= 2
     time.sleep(2)
     assert action3.fleas == 1
+
+
+@pytest.fixture
+def friends(tmp_path):
+    """ returns a tuple of useful test objects """
+    class FleaCount(Action):
+        flea_count:int = 0
+
+        def execute(self, tag: str = None, scheduler_info: dict = None):
+            self.flea_count += 1
+
+    def stuff():
+        # want a fresh tuple from the fixture
+        dispatcher = Dispatcher(saved_dir=str(tmp_path))
+        dispatcher.set_continuous(Continuous())
+        dispatcher.initialize()
+        action = FleaCount()
+        scheduler = Timely(interval=1)
+
+        return dispatcher, scheduler, action
+
+    return stuff
