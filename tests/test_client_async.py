@@ -13,6 +13,7 @@ from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.actions.logic_action import All
 from whendo.core.actions.http_action import ExecuteAction
+from whendo.core.actions.sys_action import BounceData
 from whendo.core.scheduler import Scheduler
 from whendo.core.schedulers.cont_scheduler import Timely, Immediately
 from whendo.core.dispatcher import Dispatcher
@@ -418,6 +419,27 @@ async def test_execute_action(startup_and_shutdown_uvicorn, host, port, tmp_path
 
 
 @pytest.mark.asyncio
+async def test_execute_action_with_data(
+    startup_and_shutdown_uvicorn, host, port, tmp_path
+):
+    """ execute an action at a host/port """
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    action = FileHeartbeat(
+        relative_to_output_dir=False, file=str(tmp_path / "output.txt")
+    )
+    await add_action(client=client, action_name="foo", action=action)
+    await execute_action_with_data(client, "foo", data={"fleas": "abound"})
+
+    lines = None
+    with open(action.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("fleas" in line for line in lines)
+
+
+@pytest.mark.asyncio
 async def test_execute_supplied_action(
     startup_and_shutdown_uvicorn, host, port, tmp_path
 ):
@@ -603,6 +625,23 @@ async def test_program(startup_and_shutdown_uvicorn, host, port, tmp_path):
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
 
+@pytest.mark.asyncio
+async def test_bounce_data(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    """ bounce a dictionary """
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    action = BounceData()
+    await add_action(client=client, action_name="bounce", action=action)
+    data = {"fleas": "unite!"}
+
+    result = await execute_action_with_data(
+        client=client, action_name="bounce", data=data
+    )
+
+    assert result["result"] == data
+
+
 # helpers
 
 
@@ -663,6 +702,14 @@ async def unschedule_action(client: ClientAsync, action_name: str):
 async def execute_action(client: ClientAsync, action_name: str):
     response = await client.execute_action(action_name=action_name)
     assert response.status_code == 200, f"failed to execute action ({action_name})"
+
+
+async def execute_action_with_data(client: ClientAsync, action_name: str, data: dict):
+    response = await client.execute_action_with_data(action_name=action_name, data=data)
+    assert (
+        response.status_code == 200
+    ), f"failed to execute action ({action_name}) with data ({data})"
+    return response.json()
 
 
 async def reschedule_action(client: ClientAsync, action_name: str):

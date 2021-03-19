@@ -9,6 +9,7 @@ from pprint import PrettyPrinter
 from sys import stdout
 import socket
 import requests
+import json
 from datetime import datetime, timedelta
 from typing import Callable
 import os
@@ -468,6 +469,21 @@ class Http(BaseModel):
 
     def patch_json(self, path: str, json: str):
         response = requests.post(self.cmd(path), json)
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def put_dict(self, path: str, data: dict):
+        response = requests.put(self.cmd(path), json.dumps(data))
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def post_dict(self, path: str, data: dict):
+        response = requests.post(self.cmd(path), json.dumps(data))
+        assert response.status_code == 200, response.text
+        return response.json()
+
+    def patch_dict(self, path: str, data: dict):
+        response = requests.post(self.cmd(path), json.dumps(data))
         assert response.status_code == 200, response.text
         return response.json()
 

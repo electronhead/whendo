@@ -77,6 +77,36 @@ def execute_action(action_name: str):
         raise exception
 
 
+@router.post("/{action_name}/execute", status_code=status.HTTP_200_OK)
+def execute_action_with_data(action_name: str, data: dict):
+    """
+    Two potential types of exceptions below. One resulting from the actual execute_action call and
+    the other returned from the execution of the action itself.
+    """
+    exception = None  # the action's exception if the action generated an exception
+    try:
+        result = get_dispatcher(router).execute_action_with_data(
+            action_name=action_name, data=data
+        )
+        if not isinstance(result, Exception):
+            return return_success(
+                {
+                    "msg": f"action ({action_name}) with data ({data}) was successfully executed",
+                    "result": result,
+                }
+            )
+        else:
+            exception = raised_exception(
+                f"failed to execute action ({action_name}) with data ({data})", result
+            )
+    except Exception as e:  # from execute_action
+        raise raised_exception(
+            f"failed to execute action ({action_name}) with data ({data})", e
+        )
+    if exception is not None:  # from the action
+        raise exception
+
+
 @router.get("/{action_name}/unschedule", status_code=status.HTTP_200_OK)
 def unschedule_action(action_name: str):
     try:

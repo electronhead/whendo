@@ -1,5 +1,4 @@
 from fastapi import APIRouter, status, Depends
-from typing import Optional
 from whendo.api.shared import return_success, raised_exception, get_dispatcher
 from whendo.core.resolver import resolve_scheduler
 import whendo.core.util as util

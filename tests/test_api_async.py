@@ -6,12 +6,14 @@ This class and the fixture, startup_and_shutdown_uvicorn, rely on asynchronous p
 """
 import time
 import pytest
+import json
 from pydantic import BaseModel
 from httpx import AsyncClient
 from datetime import timedelta, datetime
 from whendo.core.action import Action
 from whendo.core.actions.file_action import FileHeartbeat
 from whendo.core.actions.logic_action import All
+from whendo.core.actions.sys_action import BounceData
 from whendo.core.scheduler import Scheduler
 from whendo.core.schedulers.cont_scheduler import Timely, Immediately
 from whendo.core.dispatcher import Dispatcher
@@ -430,6 +432,29 @@ async def test_execute_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_execute_action_with_data(
+    startup_and_shutdown_uvicorn, base_url, tmp_path
+):
+    """ execute an action at a host/port """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action = FileHeartbeat(
+        relative_to_output_dir=False, file=str(tmp_path / "output.txt")
+    )
+    await add_action(base_url=base_url, action_name="foo", action=action)
+
+    await execute_action_with_data(
+        base_url=base_url, action_name="foo", data={"fleas": "abound"}
+    )
+
+    lines = None
+    with open(action.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("fleas" in line for line in lines)
+
+
+@pytest.mark.asyncio
 async def test_execute_supplied_action(
     startup_and_shutdown_uvicorn, base_url, tmp_path
 ):
@@ -612,6 +637,22 @@ async def test_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
 
+@pytest.mark.asyncio
+async def test_bounce_data(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    """ bounce a dictionary """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action = BounceData()
+    await add_action(base_url=base_url, action_name="bounce", action=action)
+    data = {"fleas": "unite!"}
+
+    result = await execute_action_with_data(
+        base_url=base_url, action_name="bounce", data=data
+    )
+
+    assert result["result"] == data
+
+
 # ==========================================
 # helpers
 
@@ -633,6 +674,21 @@ async def execute_action(base_url: str, action_name: str):
     assert isinstance(retrieved_action, Action), str(type(retrieved_action))
     response = await get(base_url, path=f"/actions/{action_name}/execute")
     assert response.status_code == 200, f"failed to execute action ({action_name})"
+
+
+async def execute_action_with_data(base_url: str, action_name: str, data: dict):
+    """ make sure action exists and resolves properly """
+    response = await get(base_url, path=f"/actions/{action_name}")
+    assert response.status_code == 200, f"failed to get action ({action_name})"
+    retrieved_action = resolve_action(response.json())
+    assert isinstance(retrieved_action, Action), str(type(retrieved_action))
+    response = await post_dict(
+        base_url, path=f"/actions/{action_name}/execute", data=data
+    )
+    assert (
+        response.status_code == 200
+    ), f"failed to execute action ({action_name}) with data ({data})"
+    return response.json()
 
 
 async def add_action(base_url: str, action_name: str, action: Action):
@@ -915,6 +971,11 @@ async def put(base_url: str, path: str, data: BaseModel):
 async def post(base_url: str, path: str, data: BaseModel):
     async with AsyncClient(base_url=base_url) as ac:
         return await ac.post(url=path, data=data.json())
+
+
+async def post_dict(base_url: str, path: str, data: dict):
+    async with AsyncClient(base_url=base_url) as ac:
+        return await ac.post(url=path, data=json.dumps(data))
 
 
 async def delete(base_url: str, path: str):

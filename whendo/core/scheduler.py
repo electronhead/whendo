@@ -94,6 +94,7 @@ class Scheduler(BaseModel):
         This is done so that is_in_period is freshly evaluated at the times when the schedule library runs the job
         (that is meant to invoke the Callable).
         """
+        data = {"tag": tag, "scheduler_info": self.info()}
         if (self.start is not None) and (self.stop is not None):
             is_in_period_wrapper = lambda start, stop: (
                 lambda now: start < now and now < stop
@@ -101,10 +102,10 @@ class Scheduler(BaseModel):
                 else start < now or now < stop
             )
             is_in_period = is_in_period_wrapper(self.start, self.stop)
-            do_nothing = lambda tag, scheduler_info: DoNothing.result
+            do_nothing = lambda data: DoNothing.result
             return self.wrap(
                 lambda: (action.execute if is_in_period(Now.t()) else do_nothing)(
-                    tag=tag, scheduler_info=self.info()
+                    data=data
                 ),
                 tag=tag,
                 action_json=action.json(),
@@ -112,7 +113,7 @@ class Scheduler(BaseModel):
             )
         else:
             return self.wrap(
-                lambda: action.execute(tag=tag, scheduler_info=self.info()),
+                lambda: action.execute(data=data),
                 tag=tag,
                 action_json=action.json(),
                 scheduler_json=self.json(),

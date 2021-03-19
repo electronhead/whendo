@@ -1,6 +1,6 @@
 import requests
-from typing import Optional, Dict, Any
 import logging
+import json
 from whendo.core.action import Action
 from whendo.core.util import Http
 
@@ -14,13 +14,16 @@ class SendPayload(Action):
     """
 
     url: str
-    payload: Optional[Dict[str, Any]] = None
+    payload: dict
 
     def description(self):
         return f"This action sends the supplied dictionary payload to ({self.url})."
 
-    def execute(self, tag: str = None, scheduler_info: dict = None):
-        response = requests.get(self.url, self.payload)
+    def execute(self, data: dict = None):
+        payload = self.payload
+        if data:
+            payload.update({"data": data})
+        response = requests.post(self.url, payload)
         if response.status_code != requests.codes.ok:
             raise Exception(response)
         return response.json()
@@ -38,7 +41,12 @@ class ExecuteAction(Action):
     def description(self):
         return f"This action executes ({self.action_name}) at host ({self.host}) and port ({self.port})."
 
-    def execute(self, tag: str = None, scheduler_info: dict = None):
-        return Http(host=self.host, port=self.port).get(
-            f"/actions/{self.action_name}/execute"
-        )
+    def execute(self, data: dict = None):
+        if data:
+            return Http(host=self.host, port=self.port).post_json(
+                f"/actions/{self.action_name}/execute", json.dumps(data)
+            )
+        else:
+            return Http(host=self.host, port=self.port).get(
+                f"/actions/{self.action_name}/execute"
+            )

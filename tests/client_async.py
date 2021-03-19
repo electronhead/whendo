@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from httpx import AsyncClient
+import json
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
 from whendo.core.resolver import (
@@ -74,6 +75,9 @@ class ClientAsync(BaseModel):
 
     async def execute_action(self, action_name: str):
         return await self.get(f"/actions/{action_name}/execute")
+
+    async def execute_action_with_data(self, action_name: str, data: dict):
+        return await self.post_dict(f"/actions/{action_name}/execute", data)
 
     async def reschedule_action(self, action_name: str):
         return await self.get(f"/actions/{action_name}/reschedule")
@@ -191,6 +195,10 @@ class ClientAsync(BaseModel):
     async def post(self, path: str, data: BaseModel):
         async with AsyncClient(base_url=self.base_url()) as ac:
             return await ac.post(url=path, data=data.json())
+
+    async def post_dict(self, path: str, data: dict):
+        async with AsyncClient(base_url=self.base_url()) as ac:
+            return await ac.post(url=path, data=json.dumps(data))
 
     async def delete(self, path: str):
         async with AsyncClient(base_url=self.base_url()) as ac:

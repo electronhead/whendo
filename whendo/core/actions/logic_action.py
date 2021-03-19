@@ -16,7 +16,7 @@ class Failure(Action):
     def description(self):
         return f"This action always fails. It serves a role similar to the bool, False."
 
-    def execute(self, tag: str = None, scheduler_info: dict = None):
+    def execute(self, data: dict = None):
         raise Exception("purposely unsuccessful execution", self.json())
 
 
@@ -30,7 +30,7 @@ class Success(Action):
             f"This action always succeeds. It serves a role similar to the bool, True."
         )
 
-    def execute(self, tag: str = None, scheduler_info: dict = None):
+    def execute(self, data: dict = None):
         return {"outcome": "purposely successful execution", "action": self.info()}
 
 
@@ -43,12 +43,10 @@ class Not(Action):
     def description(self):
         return f"If the operand ({self.operand}) fails, Not succeeds, otherwise fails (throwing an Exception). It serves a role similar to logical negation."
 
-    def execute(self, tag: str = None, scheduler_info: dict = None):
+    def execute(self, data: dict = None):
         operand_result = None
         try:
-            operand_result = self.operand.execute(
-                tag=tag, scheduler_info=scheduler_info
-            )
+            operand_result = self.operand.execute(data=data)
         except Exception as exception:
             operand_result = exception
         if isinstance(operand_result, Exception):
@@ -86,7 +84,7 @@ class ListAction(Action):
     action_list: List[Action]
     exception_on_no_success: bool = False
 
-    def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
+    def execute(self, data: dict = None):
         (
             processing_count,
             success_count,
@@ -94,9 +92,8 @@ class ListAction(Action):
             successful_actions,
             exception_actions,
         ) = process_action_list(
-            tag,
-            scheduler_info,
-            self.op_mode,
+            data=data,
+            op_mode=self.op_mode,
             action_list=self.action_list,
             successful_actions=[],
             exception_actions=[],
@@ -135,8 +132,8 @@ class All(ListAction):
             f"This action executes all of these actions in order: ({self.action_list})."
         )
 
-    def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
-        return super().execute(tag=tag, scheduler_info=scheduler_info)
+    def execute(self, data: dict = None):
+        return super().execute(data=data)
 
 
 class Or(ListAction):
@@ -150,8 +147,8 @@ class Or(ListAction):
     def description(self):
         return f"This action executes all of these actions in order until the first success: ({self.action_list}). It serves a role similar to logical or."
 
-    def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
-        return super().execute(tag=tag, scheduler_info=scheduler_info)
+    def execute(self, data: dict = None):
+        return super().execute(data=data)
 
 
 class And(ListAction):
@@ -165,8 +162,8 @@ class And(ListAction):
     def description(self):
         return f"This action executes all of these actions in order until the first failure: ({self.action_list}). It serves a role similar to logical and."
 
-    def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
-        return super().execute(tag=tag, scheduler_info=scheduler_info)
+    def execute(self, data: dict = None):
+        return super().execute(data=data)
 
 
 class IfElse(Action):
@@ -187,11 +184,9 @@ class IfElse(Action):
     def description(self):
         return f"If  action ({self.test_action}) succeeds, then IfElse executes ({self.if_action}), otherwise executes ({self.else_action})"
 
-    def execute(self, tag: str = None, scheduler_info: dict = None):
+    def execute(self, data: dict = None):
         try:
-            test_result = self.test_action.execute(
-                tag=tag, scheduler_info=scheduler_info
-            )
+            test_result = self.test_action.execute(data=data)
         except Exception as exception:
             test_result = exception
         processing_count = 1
@@ -205,9 +200,7 @@ class IfElse(Action):
             exception_actions.append(self.test_action.dict())
 
             try:
-                else_result = self.else_action.execute(
-                    tag=tag, scheduler_info=scheduler_info
-                )
+                else_result = self.else_action.execute(data=data)
             except Exception as exception:
                 else_result = exception
             processing_count += 1
@@ -222,9 +215,7 @@ class IfElse(Action):
             successful_actions.append(self.test_action.dict())
 
             try:
-                if_result = self.if_action.execute(
-                    tag=tag, scheduler_info=scheduler_info
-                )
+                if_result = self.if_action.execute(data=data)
             except Exception as exception:
                 if_result = exception
             processing_count += 1
@@ -258,22 +249,21 @@ class IfElse(Action):
 
 
 def process_action_list(
-    tag: Optional[str],
-    scheduler_info: Optional[Dict[str, Any]],
+    data: Optional[dict],
     op_mode: ListOpMode,
     action_list: List[Action],
+    successful_actions: List[Dict[Any, Any]] = [],
+    exception_actions: List[Dict[Any, Any]] = [],
     processing_count: int = 0,
     success_count: int = 0,
     exception_count: int = 0,
-    successful_actions: List[Dict[Any, Any]] = [],
-    exception_actions: List[Dict[Any, Any]] = [],
 ):
     """
     services the two action list classes
     """
     for action in action_list:
         try:  # in case an Action does not return an exception
-            result = action.execute(tag=tag, scheduler_info=scheduler_info)
+            result = action.execute(data=data)
         except Exception as exception:
             result = exception
         processing_count += 1

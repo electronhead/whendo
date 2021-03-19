@@ -19,9 +19,8 @@ class FileHeartbeat(Action):
     def description(self):
         return f"This action appends various status information to ({self.file})."
 
-    def execute(self, tag: str = None, scheduler_info: Dict[str, Any] = None):
-        payload = self.build_payload(self.info(), scheduler_info)
-        payload["tag"] = tag if tag else "N/A"
+    def execute(self, data: dict = None):
+        payload = self.build_payload(self.info(), data)
         if self.xtra:
             payload[
                 "xtra"
@@ -45,13 +44,11 @@ class FileHeartbeat(Action):
     def get_xtra(self):
         return self.xtra
 
-    def build_payload(
-        self, action_info: Dict[str, Any], scheduler_info: Dict[str, Any] = None
-    ):
+    def build_payload(self, action_info: Dict[str, Any], data: dict = None):
         payload = {}
         payload.update({"action_info": action_info})
-        if scheduler_info:
-            payload.update({"scheduler_info": scheduler_info})
+        if data:
+            payload.update({"data": data})
         payload.update(self.action_host())
         payload.update(self.action_time())
         return payload
