@@ -3,6 +3,7 @@ from pydantic import BaseModel
 from typing import Dict, Optional
 from collections.abc import Callable
 import logging
+from inspect import signature
 from whendo.core.util import Now, object_info, SystemInfo
 from whendo.core.action import Action
 from whendo.core.continuous import Continuous
@@ -94,7 +95,10 @@ class Scheduler(BaseModel):
         This is done so that is_in_period is freshly evaluated at the times when the schedule library runs the job
         (that is meant to invoke the Callable).
         """
-        stuf = {"tag": tag, "scheduler_info": self.info()}
+        if False:
+            log_action_execute_signature(action=action)
+
+        data = {"tag": tag, "scheduler_info": self.info()}
         if (self.start is not None) and (self.stop is not None):
             is_in_period_wrapper = lambda start, stop: (
                 lambda now: start < now and now < stop if (start < stop) else start < now or now < stop
@@ -102,7 +106,7 @@ class Scheduler(BaseModel):
             is_in_period = is_in_period_wrapper(self.start, self.stop)
             def thunk():
                 if is_in_period(Now.t()):
-                    return action.execute(stuf=stuf)
+                    return action.execute(data=data)
                 else:
                     return DoNothing.result
             return self.wrap(
@@ -113,7 +117,7 @@ class Scheduler(BaseModel):
             )
         else:
             def thunk():
-                return action.execute(stuf=stuf)
+                return action.execute(data=data)
             return self.wrap(
                 thunk=thunk,
                 tag=tag,
@@ -162,3 +166,10 @@ class Scheduler(BaseModel):
             return f"All between {self.start} and {self.stop}."
         else:
             return ""
+
+
+
+def log_action_execute_signature(action:Action):
+    sig = str(signature(action.execute))
+    typ = str(type(action))
+    logger.info(f"action.execute ({typ}).({sig})")

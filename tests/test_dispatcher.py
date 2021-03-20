@@ -331,7 +331,7 @@ def test_immediately(friends):
     class TestAction(Action):
         fleas: int = 0
 
-        def execute(self, stuf: dict = None):
+        def execute(self, data: dict = None):
             self.fleas += 1
             return "BLING"
 
@@ -358,21 +358,21 @@ def test_program(friends):
     class TestAction1(Action):
         fleas: int = 0
 
-        def execute(self, stuf: dict = None):
+        def execute(self, data: dict = None):
             self.fleas += 1
             return "BLING"
 
     class TestAction2(Action):
         fleas: int = 0
 
-        def execute(self, stuf: dict = None):
+        def execute(self, data: dict = None):
             self.fleas += 1
             return "BLING"
 
     class TestAction3(Action):
         fleas: int = 0
 
-        def execute(self, stuf: dict = None):
+        def execute(self, data: dict = None):
             self.fleas += 1
             return "BLING"
 
@@ -407,8 +407,8 @@ def test_execute_with_data(friends):
     Want to see execute work with supplied dictionary.
     """
     dispatcher, scheduler, action = friends()
-    action.execute(stuf={"fleacount": "infinite"})
-    assert action.stuf == {"fleacount": "infinite"}
+    action.execute(data={"fleacount": "infinite"})
+    assert action.data == {"fleacount": "infinite"}
 
 
 @pytest.fixture
@@ -417,11 +417,11 @@ def friends(tmp_path):
 
     class FleaCount(Action):
         flea_count: int = 0
-        stuf: Optional[Dict[Any, Any]]
+        data: Optional[Dict[Any, Any]]
 
-        def execute(self, stuf: dict = None):
+        def execute(self, data: dict = None):
             self.flea_count += 1
-            self.stuf = stuf
+            self.data = data
 
     def stuff():
         # want a fresh tuple from the fixture

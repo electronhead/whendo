@@ -269,7 +269,7 @@ class Dispatcher(BaseModel):
     def execute_action_with_data(self, action_name: str, data: dict):
         with Lok.lock:
             assert action_name in self.actions, f"action ({action_name}) does not exist"
-            return self.get_action(action_name).execute(stuf=data)
+            return self.get_action(action_name).execute(data=data)
 
     def execute_supplied_action(self, supplied_action: Action):
         with Lok.lock:
