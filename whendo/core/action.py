@@ -14,7 +14,7 @@ class Action(BaseModel):
     def description(self):
         return "This Action does nothing."
 
-    def execute(self, data: dict = None):
+    def execute(self, stuf: dict = None):
         """
         This method typically attempts to do something useful and return something useful
         """

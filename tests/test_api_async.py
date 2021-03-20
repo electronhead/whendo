@@ -644,13 +644,13 @@ async def test_bounce_data(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
     action = BounceData()
     await add_action(base_url=base_url, action_name="bounce", action=action)
-    data = {"fleas": "unite!"}
+    stuf = {"fleas": "unite!"}
 
     result = await execute_action_with_data(
-        base_url=base_url, action_name="bounce", data=data
+        base_url=base_url, action_name="bounce", data=stuf
     )
 
-    assert result["result"] == data
+    assert result["result"] == stuf
 
 
 # ==========================================
@@ -687,7 +687,7 @@ async def execute_action_with_data(base_url: str, action_name: str, data: dict):
     )
     assert (
         response.status_code == 200
-    ), f"failed to execute action ({action_name}) with data ({data})"
+    ), f"failed to execute action ({action_name}) with data ({data}) with response ({response.json()})"
     return response.json()
 
 

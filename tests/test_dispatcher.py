@@ -2,6 +2,7 @@ import pytest
 import time
 from datetime import timedelta
 import whendo.core.util as util
+from typing import Optional, Dict, Any
 from whendo.core.action import Action
 from whendo.core.schedulers.cont_scheduler import Immediately, Timely
 from whendo.core.dispatcher import Dispatcher
@@ -330,7 +331,7 @@ def test_immediately(friends):
     class TestAction(Action):
         fleas: int = 0
 
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             self.fleas += 1
             return "BLING"
 
@@ -357,21 +358,21 @@ def test_program(friends):
     class TestAction1(Action):
         fleas: int = 0
 
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             self.fleas += 1
             return "BLING"
 
     class TestAction2(Action):
         fleas: int = 0
 
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             self.fleas += 1
             return "BLING"
 
     class TestAction3(Action):
         fleas: int = 0
 
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             self.fleas += 1
             return "BLING"
 
@@ -406,8 +407,8 @@ def test_execute_with_data(friends):
     Want to see execute work with supplied dictionary.
     """
     dispatcher, scheduler, action = friends()
-    action.execute(data={"fleacount": "infinite"})
-    assert action.data == {"fleacount": "infinite"}
+    action.execute(stuf={"fleacount": "infinite"})
+    assert action.stuf == {"fleacount": "infinite"}
 
 
 @pytest.fixture
@@ -416,11 +417,11 @@ def friends(tmp_path):
 
     class FleaCount(Action):
         flea_count: int = 0
-        data: dict = None
+        stuf: Optional[Dict[Any, Any]]
 
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             self.flea_count += 1
-            self.data = data
+            self.stuf = stuf
 
     def stuff():
         # want a fresh tuple from the fixture

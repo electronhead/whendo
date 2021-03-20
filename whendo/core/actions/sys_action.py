@@ -17,7 +17,7 @@ class SysInfo(Action):
     def description(self):
         return f"This action returns system-level information."
 
-    def execute(self, data: dict = None):
+    def execute(self, stuf: dict = None):
         return util.SystemInfo.get()
 
 
@@ -32,7 +32,7 @@ class Pause(Action):
     def description(self):
         return f"This action sleeps for {self.seconds} second{'s' if self.seconds > 1 else ''}."
 
-    def execute(self, data: dict = None):
+    def execute(self, stuf: dict = None):
         return time.sleep(self.seconds)
 
 
@@ -44,7 +44,7 @@ class BounceData(Action):
     bounce_data: str = "bounce_data"
 
     def description(self):
-        return "This action returns the supplied data (dictionary)."
+        return "This action returns the supplied stuf (dictionary)."
 
-    def execute(self, data: dict = None):
-        return data
+    def execute(self, stuf: dict = None):
+        return stuf

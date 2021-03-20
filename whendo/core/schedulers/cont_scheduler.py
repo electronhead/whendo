@@ -108,26 +108,8 @@ class Immediately(Scheduler):
         in the same manner as actions that are executed in the Continuous job
         system.
         """
-        data = {"tag": tag, "scheduler_info": self.info()}
-        def thunk():
-            return action.execute(data)
-            """
-            For some reason, whendo_gpio's actions are not handled properly in this
-            function. The following line...
-
-                return action.execute(data={"tag": tag, "scheduler_info": self.info()})
-
-            ... resulted in this kind of error ...
-            ___________________________________________________________________________________
-            File "/home/pi/pi3/venv/lib/python3.9/site-packages/whendo/core/schedulers/cont_scheduler.py", line 112, in thunk
-                return action.execute(data={"tag": tag, "scheduler_info": self.info()})
-            TypeError: execute() got an unexpected keyword argument 'data'
-            ___________________________________________________________________________________
-            Some sort of black hole in the generation of the program. Eliding the 'data=' syntax
-            circumvented the issue (for now).
-            """
         wrapped_callable = self.wrap(
-            thunk=thunk,
+            thunk=lambda: action.execute(stuf={"tag": tag, "scheduler_info": self.info()}),
             tag=tag,
             action_json=action.json(),
             scheduler_json=self.json(),

@@ -86,7 +86,7 @@ def test_file_action(tmp_path):
     """
 
     class FileAction(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             path = tmp_path / "test.txt"
             with path.open(mode="a") as fid:
                 fid.write("blee\n")

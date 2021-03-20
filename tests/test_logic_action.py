@@ -32,7 +32,7 @@ def test_exception_1():
 
 def test_not_1():
     class Action1(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             raise Exception()
 
     action1 = Action1()
@@ -45,7 +45,7 @@ def test_not_1():
 
 def test_not_2():
     class Action1(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             return True
 
     action1 = Action1()
@@ -60,19 +60,19 @@ def test_list_action_all_1():
     dictionary = {"value": None}
 
     class Action1(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     class Action2(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     class Action3(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     class Action4(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     all_action = logic_x.All(
@@ -87,19 +87,19 @@ def test_list_action_or_1():
     dictionary = {"value": None}
 
     class Action1(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     class Action2(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     class Action3(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     class Action4(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     or_action = logic_x.Or(
@@ -113,19 +113,19 @@ def test_list_action_and_1():
     dictionary = {"value": None}
 
     class Action1(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     class Action2(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     class Action3(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     class Action4(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     and_action = logic_x.And(
@@ -139,19 +139,19 @@ def test_list_action_and_2():
     dictionary = {"value": None}
 
     class Action1(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     class Action2(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     class Action3(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     class Action4(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
 
     and_action = logic_x.And(
@@ -170,19 +170,19 @@ def test_list_action_and_3():
     dictionary = {"value": None}
 
     class Action1(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             return Exception()
 
     class Action2(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             return Exception()
 
     class Action3(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             return Exception()
 
     class Action4(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             return Exception()
 
     and_action = logic_x.And(
@@ -196,17 +196,17 @@ def test_if_else_action_or_2():
     dictionary = {"value": None}
 
     class Action1(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
             return True
 
     class Action2(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
             return True
 
     class Action3(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
             return True
 
@@ -224,16 +224,16 @@ def test_if_else_action_else_1():
     dictionary = {"value": None}
 
     class Action1(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             return Exception()
 
     class Action2(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
             return True
 
     class Action3(Action):
-        def execute(self, data: dict = None):
+        def execute(self, stuf: dict = None):
             dictionary["value"] = self.__class__
             return True
 

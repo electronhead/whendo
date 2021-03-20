@@ -19,7 +19,7 @@ class SendPayload(Action):
     def description(self):
         return f"This action sends the supplied dictionary payload to ({self.url})."
 
-    def execute(self, data: dict = None):
+    def execute(self, stuf: dict = None):
         payload = self.payload
         if data:
             payload.update({"data": data})
@@ -41,10 +41,10 @@ class ExecuteAction(Action):
     def description(self):
         return f"This action executes ({self.action_name}) at host ({self.host}) and port ({self.port})."
 
-    def execute(self, data: dict = None):
-        if data:
+    def execute(self, stuf: dict = None):
+        if stuf:
             return Http(host=self.host, port=self.port).post_json(
-                f"/actions/{self.action_name}/execute", json.dumps(data)
+                f"/actions/{self.action_name}/execute", json.dumps(stuf)
             )
         else:
             return Http(host=self.host, port=self.port).get(
