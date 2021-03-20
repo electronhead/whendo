@@ -32,7 +32,7 @@ def test_exception_1():
 
 def test_not_1():
     class Action1(Action):
-        def execute(self, tag: str = None, scheduler_info: dict = None):
+        def execute(self, data: dict = None):
             raise Exception()
 
     action1 = Action1()

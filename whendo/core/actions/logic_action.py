@@ -46,7 +46,7 @@ class Not(Action):
     def execute(self, data: dict = None):
         operand_result = None
         try:
-            operand_result = self.operand.execute(data=data)
+            operand_result = self.operand.execute(data)
         except Exception as exception:
             operand_result = exception
         if isinstance(operand_result, Exception):
@@ -133,7 +133,7 @@ class All(ListAction):
         )
 
     def execute(self, data: dict = None):
-        return super().execute(data=data)
+        return super().execute(data)
 
 
 class Or(ListAction):
@@ -148,7 +148,7 @@ class Or(ListAction):
         return f"This action executes all of these actions in order until the first success: ({self.action_list}). It serves a role similar to logical or."
 
     def execute(self, data: dict = None):
-        return super().execute(data=data)
+        return super().execute(data)
 
 
 class And(ListAction):
@@ -163,7 +163,7 @@ class And(ListAction):
         return f"This action executes all of these actions in order until the first failure: ({self.action_list}). It serves a role similar to logical and."
 
     def execute(self, data: dict = None):
-        return super().execute(data=data)
+        return super().execute(data)
 
 
 class IfElse(Action):
@@ -186,7 +186,7 @@ class IfElse(Action):
 
     def execute(self, data: dict = None):
         try:
-            test_result = self.test_action.execute(data=data)
+            test_result = self.test_action.execute(data)
         except Exception as exception:
             test_result = exception
         processing_count = 1
@@ -197,16 +197,20 @@ class IfElse(Action):
         else_test = isinstance(test_result, Exception)
         if else_test:  # execute the else action
             exception_count = 1
-            exception_actions.append(self.test_action.dict())
+            exception_dict = self.test_action.dict().copy()
+            exception_dict.update({"exception": str(test_result)})
+            exception_actions.append(exception_dict)
 
             try:
-                else_result = self.else_action.execute(data=data)
+                else_result = self.else_action.execute(data)
             except Exception as exception:
                 else_result = exception
             processing_count += 1
             if isinstance(else_result, Exception):
                 exception_count += 1
-                exception_actions.append(self.else_action.dict())
+                exception_dict = self.else_action.dict().copy()
+                exception_dict.update({"exception": str(else_result)})
+                exception_actions.append(exception_dict)
             else:
                 success_count += 1
                 successful_actions.append(self.else_action.dict())
@@ -215,13 +219,15 @@ class IfElse(Action):
             successful_actions.append(self.test_action.dict())
 
             try:
-                if_result = self.if_action.execute(data=data)
+                if_result = self.if_action.execute(data)
             except Exception as exception:
                 if_result = exception
             processing_count += 1
             if isinstance(if_result, Exception):
                 exception_count += 1
-                exception_actions.append(self.if_action.dict())
+                exception_dict = self.if_action.dict().copy()
+                exception_dict.update({"exception": str(if_result)})
+                exception_actions.append(exception_dict)
             else:
                 success_count += 1
                 successful_actions.append(self.if_action.dict())
@@ -263,13 +269,15 @@ def process_action_list(
     """
     for action in action_list:
         try:  # in case an Action does not return an exception
-            result = action.execute(data=data)
+            result = action.execute(data)
         except Exception as exception:
             result = exception
         processing_count += 1
         if isinstance(result, Exception):
             exception_count += 1
-            exception_actions.append(action.dict())
+            exception_dict = action.dict().copy()
+            exception_dict.update({"exception": str(result)})
+            exception_actions.append(exception_dict)
             if op_mode == ListOpMode.AND:  # stop after first failure
                 break
         else:

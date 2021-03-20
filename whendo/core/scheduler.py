@@ -97,23 +97,25 @@ class Scheduler(BaseModel):
         data = {"tag": tag, "scheduler_info": self.info()}
         if (self.start is not None) and (self.stop is not None):
             is_in_period_wrapper = lambda start, stop: (
-                lambda now: start < now and now < stop
-                if (start < stop)
-                else start < now or now < stop
+                lambda now: start < now and now < stop if (start < stop) else start < now or now < stop
             )
             is_in_period = is_in_period_wrapper(self.start, self.stop)
-            do_nothing = lambda data: DoNothing.result
+            def thunk():
+                if is_in_period(Now.t()):
+                    return action.execute(data)
+                else:
+                    return DoNothing.result
             return self.wrap(
-                lambda: (action.execute if is_in_period(Now.t()) else do_nothing)(
-                    data=data
-                ),
+                thunk=thunk,
                 tag=tag,
                 action_json=action.json(),
                 scheduler_json=self.json(),
             )
         else:
+            def thunk():
+                return action.execute(data)
             return self.wrap(
-                lambda: action.execute(data=data),
+                thunk=thunk,
                 tag=tag,
                 action_json=action.json(),
                 scheduler_json=self.json(),

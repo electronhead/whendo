@@ -8,7 +8,7 @@ from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 from whendo.core.continuous import Continuous
 
-pause = 2
+pause = 3
 
 
 def test_schedule_action(friends):
@@ -393,7 +393,7 @@ def test_program(friends):
     dispatcher.run_jobs()
     dispatcher.schedule_program("baz", start, stop)
     assert action1.fleas == 0
-    time.sleep(1)
+    time.sleep(2)
     assert action1.fleas == 1
     time.sleep(4)
     assert action2.fleas >= 2

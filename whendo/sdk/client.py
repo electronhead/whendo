@@ -90,7 +90,7 @@ class Client(BaseModel):
         return self.http().get(f"/actions/{action_name}/execute")
 
     def execute_action_with_data(self, action_name: str, data: dict):
-        return self.http().post(f"/actions/{action_name}/execute", data)
+        return self.http().post_dict(f"/actions/{action_name}/execute", data)
 
     def unschedule_action(self, action_name: str):
         return self.http().get(f"/actions/{action_name}/unschedule")

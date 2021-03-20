@@ -154,12 +154,15 @@ class Dispatcher(BaseModel):
             actions_copy = self.actions.copy()
             for action_name in actions_copy:
                 self.delete_action(action_name)
+
             programs_copy = self.programs.copy()
             for program_name in programs_copy:
                 self.delete_program(program_name)
 
             self.scheduled_actions.clear()
             self.deferred_scheduled_actions.clear()
+            self.expiring_scheduled_actions.clear()
+            
             if should_save:
                 self.save_current()
 
@@ -266,7 +269,7 @@ class Dispatcher(BaseModel):
     def execute_action_with_data(self, action_name: str, data: dict):
         with Lok.lock:
             assert action_name in self.actions, f"action ({action_name}) does not exist"
-            return self.get_action(action_name).execute(data=data)
+            return self.get_action(action_name).execute(data)
 
     def execute_supplied_action(self, supplied_action: Action):
         with Lok.lock:
