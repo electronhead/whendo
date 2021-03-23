@@ -10,7 +10,7 @@ from datetime import timedelta
 from pydantic import BaseModel
 from httpx import AsyncClient
 from whendo.core.action import Action
-from whendo.core.actions.file_action import FileHeartbeat, FileAppend
+import whendo.core.actions.file_action as file_x
 from whendo.core.actions.logic_action import All, Success
 from whendo.core.actions.sys_action import SysInfo
 from whendo.core.scheduler import Scheduler
@@ -32,7 +32,7 @@ async def test_client_1(startup_and_shutdown_uvicorn, host, port, tmp_path):
     await reset_dispatcher(client, str(tmp_path))
 
     output_file = str(tmp_path / "output.txt")
-    action = FileHeartbeat(relative_to_output_dir=False, file=output_file)
+    action = file_x.FileAppend(relative_to_output_dir=False, file=output_file)
     scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action)
@@ -48,7 +48,7 @@ async def test_client_2(startup_and_shutdown_uvicorn, host, port, tmp_path):
     await reset_dispatcher(client, str(tmp_path))
 
     output_file = str(tmp_path / "output.txt")
-    action = FileHeartbeat(relative_to_output_dir=False, file=output_file)
+    action = file_x.FileAppend(relative_to_output_dir=False, file=output_file)
     scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action)
@@ -66,7 +66,7 @@ async def test_client_3(startup_and_shutdown_uvicorn, host, port, tmp_path):
     await reset_dispatcher(client, str(tmp_path))
 
     output_file = str(tmp_path / "output.txt")
-    action = FileHeartbeat(relative_to_output_dir=False, file=output_file)
+    action = file_x.FileAppend(relative_to_output_dir=False, file=output_file)
     scheduler = Timely(interval=1)
 
     await add_action(client=client, action_name="foo", action=action)
@@ -88,10 +88,10 @@ async def test_client_logic_action(startup_and_shutdown_uvicorn, host, port, tmp
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(
+    action1 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    action2 = FileHeartbeat(
+    action2 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
     action3 = All(actions=[action1, action2])
@@ -121,10 +121,10 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, host, port, tmp_path):
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(
+    action1 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    action2 = FileHeartbeat(
+    action2 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
     scheduler = Timely(interval=1)
@@ -160,10 +160,10 @@ async def test_unschedule_action_1(startup_and_shutdown_uvicorn, host, port, tmp
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(
+    action1 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    action2 = FileHeartbeat(
+    action2 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
     scheduler = Timely(interval=1)
@@ -188,10 +188,10 @@ async def test_unschedule_action_2(startup_and_shutdown_uvicorn, host, port, tmp
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(
+    action1 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    action2 = FileHeartbeat(
+    action2 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
     scheduler = Timely(interval=1)
@@ -221,10 +221,10 @@ async def test_reschedule_action_1(startup_and_shutdown_uvicorn, host, port, tmp
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(
+    action1 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    action2 = FileHeartbeat(
+    action2 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
     scheduler = Timely(interval=1)
@@ -257,10 +257,10 @@ async def test_unschedule_scheduler(startup_and_shutdown_uvicorn, host, port, tm
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(
+    action1 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    action2 = FileHeartbeat(
+    action2 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
     scheduler = Timely(interval=1)
@@ -285,10 +285,10 @@ async def test_job_count(startup_and_shutdown_uvicorn, host, port, tmp_path):
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(
+    action1 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    action2 = FileHeartbeat(
+    action2 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
     scheduler = Timely(interval=1)
@@ -309,10 +309,10 @@ async def test_schedulers_action_count(
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(
+    action1 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    action2 = FileHeartbeat(
+    action2 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
     scheduler = Timely(interval=1)
@@ -333,10 +333,10 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, host, port, tmp_
 
     saved_dir = await get_saved_dir(client=client)
 
-    action1 = FileHeartbeat(
+    action1 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    action2 = FileHeartbeat(
+    action2 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
     scheduler = Timely(interval=1)
@@ -405,7 +405,7 @@ async def test_execute_action(startup_and_shutdown_uvicorn, host, port, tmp_path
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action = FileHeartbeat(
+    action = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
     await add_action(client=client, action_name="foo", action=action)
@@ -425,7 +425,7 @@ async def test_execute_action_with_data(
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action = FileHeartbeat(
+    action = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
     await add_action(client=client, action_name="foo", action=action)
@@ -446,7 +446,7 @@ async def test_execute_supplied_action(
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action = FileHeartbeat(
+    action = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
 
@@ -467,7 +467,7 @@ async def test_defer_action(startup_and_shutdown_uvicorn, host, port, tmp_path):
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action = FileHeartbeat(
+    action = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
     scheduler = Timely(interval=1)
@@ -509,7 +509,7 @@ async def test_expire_action(startup_and_shutdown_uvicorn, host, port, tmp_path)
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action = FileHeartbeat(
+    action = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
     scheduler = Timely(interval=1)
@@ -547,7 +547,7 @@ async def test_immediately(startup_and_shutdown_uvicorn, host, port, tmp_path):
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action = FileHeartbeat(
+    action = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
     scheduler = Immediately()
@@ -581,13 +581,13 @@ async def test_program(startup_and_shutdown_uvicorn, host, port, tmp_path):
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileHeartbeat(
+    action1 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
     )
-    action2 = FileHeartbeat(
+    action2 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    action3 = FileHeartbeat(
+    action3 = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output3.txt")
     )
     scheduler = Timely(interval=1)
@@ -647,7 +647,7 @@ async def test_file_append_1(startup_and_shutdown_uvicorn, host, port, tmp_path)
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action = FileAppend(
+    action = file_x.FileAppendP(
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
         payload={"free": "pyrambium"},
@@ -672,7 +672,7 @@ async def test_file_append_2(startup_and_shutdown_uvicorn, host, port, tmp_path)
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = FileAppend(
+    action1 = file_x.FileAppendD(
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
         payload={"hi": "pyrambium"},

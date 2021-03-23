@@ -146,7 +146,7 @@ def resolve_instance(
 def object_info(obj):
     return {
         "class": f"{obj.__class__.__module__}.{obj.__class__.__name__}",
-        "instance": obj,
+        "instance": obj.__dict__,
     }
 
 

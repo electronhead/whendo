@@ -275,13 +275,16 @@ class IfElse(Action):
                 json.dumps(processing_info),
             )
         else:
-            return {
+            result = {
                 "result": result,
                 "outcome": "if else action executed",
                 "tag": tag,
                 "action": self.info(),
                 "processing_info": processing_info,
             }
+            if data:
+                result["data"] = data
+            return result
 
 
 def process_actions(

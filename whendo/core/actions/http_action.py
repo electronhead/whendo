@@ -54,8 +54,8 @@ class ExecuteAction(Action):
         self.check_host_port(self.host, self.port)
         if data:
             result = {
-                "result": util_x.Http(host=self.host, port=self.port).post_json(
-                    f"/actions/{self.action_name}/execute", json.dumps(data)
+                "result": util_x.Http(host=self.host, port=self.port).post_dict(
+                    f"/actions/{self.action_name}/execute", data
                 ),
                 "data": data,
             }
