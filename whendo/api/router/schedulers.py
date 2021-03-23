@@ -113,7 +113,7 @@ def defer_action(scheduler_name: str, action_name: str, wait_until: util.DateTim
         get_dispatcher(router).defer_action(
             scheduler_name=scheduler_name,
             action_name=action_name,
-            wait_until=wait_until.date_time,
+            wait_until=wait_until.dt,
         )
         return return_success(
             f"action ({action_name}) under ({scheduler_name}) was deferred until ({wait_until})"
@@ -133,7 +133,7 @@ def expire_action(scheduler_name: str, action_name: str, expire_on: util.DateTim
         get_dispatcher(router).expire_action(
             scheduler_name=scheduler_name,
             action_name=action_name,
-            expire_on=expire_on.date_time,
+            expire_on=expire_on.dt,
         )
         return return_success(
             f"action ({action_name}) under ({scheduler_name}) will expire ({expire_on})"

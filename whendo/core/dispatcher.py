@@ -14,7 +14,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from .util import PP, Dirs, DateTime, Now, str_to_dt, dt_to_str
+from .util import PP, Dirs, Now, str_to_dt, dt_to_str
 from .action import Action
 from .program import Program
 from .scheduler import Scheduler
@@ -162,7 +162,7 @@ class Dispatcher(BaseModel):
             self.scheduled_actions.clear()
             self.deferred_scheduled_actions.clear()
             self.expiring_scheduled_actions.clear()
-            
+
             if should_save:
                 self.save_current()
 

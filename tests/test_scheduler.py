@@ -16,7 +16,7 @@ def test_during_period():
     class TestAction(Action):
         fleas: int
 
-        def execute(self, data: dict = None):
+        def execute(self, tag: str = None, data: dict = None):
             return True
 
     action = TestAction(fleas=185000000)
@@ -43,7 +43,9 @@ def test_wrap():
             self, tag: str, action: Action, continuous: Continuous = Continuous()
         ):
             wrapped_callable = self.wrap(
-                thunk=lambda: action.execute(data={"tag": tag, "scheduler_info": self.info()}),
+                thunk=lambda: action.execute(
+                    data={"tag": tag, "scheduler_info": self.info()}
+                ),
                 tag=tag,
                 action_json=action.json(),
                 scheduler_json=self.json(),
@@ -53,7 +55,7 @@ def test_wrap():
     class TestAction(Action):
         fleas: int = 0
 
-        def execute(self, data: dict = None):
+        def execute(self, tag: str = None, data: dict = None):
             self.fleas += 1
 
     scheduler = TestScheduler()

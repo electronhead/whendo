@@ -159,17 +159,32 @@ class Now:
     """
 
     @classmethod
-    def s(cls):
-        now = cls.dt()
-        return f"{now.strftime('%H:%M:%S')} on {now.strftime('%Y-%m-%d')}"
+    def dt(cls):
+        dt, s, t, st = cls.quad()
+        return dt
 
     @classmethod
-    def dt(cls):
-        return datetime.now()
+    def s(cls):
+        dt, s, t, st = cls.quad()
+        return s
 
     @classmethod
     def t(cls):
-        return cls.dt().time()
+        dt, s, t, st = cls.quad()
+        return t
+
+    @classmethod
+    def st(cls):
+        dt, s, t, st = cls.quad()
+        return st
+
+    @classmethod
+    def quad(cls):
+        dt = datetime.now()
+        s = f"{dt.strftime('%H:%M:%S')} on {dt.strftime('%Y-%m-%d')}"
+        t = dt.time()
+        st = f"{dt.strftime('%H:%M:%S')}"
+        return dt, s, t, st
 
 
 class Output:
@@ -359,15 +374,15 @@ class SystemInfo:
     @classmethod
     def init(cls, host: str, port: int):
         SharedRWs.clear()
-        start = Now.dt()
+        dt, s, t, st = Now.quad()
         SharedRWs.get(
             "system_info",
             {
                 "host": host,
                 "port": port,
-                "start": start,
-                "current": lambda: Now.dt(),
-                "elapsed": lambda: str(Now.dt() - start),
+                "start": s,
+                "current": lambda: Now.s(),
+                "elapsed": lambda: str(Now.dt() - dt),
                 "successes": 0,
                 "failures": 0,
                 "cwd": os.getcwd(),
@@ -419,7 +434,7 @@ class FilePathe(BaseModel):
 
 
 class DateTime(BaseModel):
-    date_time: datetime
+    dt: datetime
 
 
 class DateTime2(BaseModel):

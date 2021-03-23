@@ -17,8 +17,28 @@ class SysInfo(Action):
     def description(self):
         return f"This action returns system-level information."
 
-    def execute(self, data: dict = None):
-        return util.SystemInfo.get()
+    def execute(self, tag: str = None, data: dict = None):
+        result = {"result": util.SystemInfo.get()}
+        if data:
+            result["data"] = data
+        return result
+
+
+class MiniInfo(Action):
+    """
+    Return terse local info.
+    """
+
+    mini_info = "mini_info"
+
+    def description(self):
+        return f"This action returns terse local information."
+
+    def execute(self, tag: str = None, data: dict = None):
+        result = {"result": self.local_info()}
+        if data:
+            result["data"] = data
+        return result
 
 
 class Pause(Action):
@@ -27,24 +47,15 @@ class Pause(Action):
     does not interfere with job execution (blocking the thread).
     """
 
-    seconds: int = 1
+    pause: str = "pause"
+    seconds: float = 1.0
 
     def description(self):
-        return f"This action sleeps for {self.seconds} second{'s' if self.seconds > 1 else ''}."
+        return f"This action sleeps for {self.seconds} second{'s' if self.seconds != 1 else ''}."
 
-    def execute(self, data: dict = None):
-        return time.sleep(self.seconds)
-
-
-class BounceData(Action):
-    """
-    Returns supplied data(dictionary).
-    """
-
-    bounce_data: str = "bounce_data"
-
-    def description(self):
-        return "This action returns the supplied data (dictionary)."
-
-    def execute(self, data: dict = None):
-        return data
+    def execute(self, tag: str = None, data: dict = None):
+        time.sleep(self.seconds)
+        result = {"result": self.seconds, "action_info": self.info()}
+        if data:
+            result["data"] = data
+        return result

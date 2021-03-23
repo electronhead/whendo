@@ -7,26 +7,51 @@ from whendo.core.action import Action
 logger = logging.getLogger(__name__)
 
 
-class FileHeartbeat(Action):
+class FileAppend(Action):
     """
-    This class is primarily for testing and heartbeat purposes.
+    This action appends <data> to a file if <payload> is None.
     """
 
     file: str
     relative_to_output_dir: bool = True
-    xtra: Optional[Dict[str, Any]] = None
+    payload: Optional[dict]
+
+    def description(self):
+        return f"This action appends data to ({self.file})."
+
+    def execute(self, tag: str = None, data: dict = None):
+        payload = self.payload if self.payload else data
+        if not payload:
+            payload = {"result": "no data or payload provided"}
+        file = (
+            os.path.join(Dirs.output_dir(), self.file)
+            if self.relative_to_output_dir
+            else self.file
+        )
+        with open(file, "a") as outfile:
+            PP.pprint(data if data else self.payload, stream=outfile)
+            outfile.write("\n")
+        result = {"result": payload, "action_info": self.info()}
+
+
+class FileHeartbeat(Action):
+    """
+    This class is primarily for testing and heartbeat purposes. Appends
+    <payload> and, if supplied, <data>.
+    """
+
+    file: str
+    relative_to_output_dir: bool = True
+    payload: Optional[dict]
 
     def description(self):
         return f"This action appends various status information to ({self.file})."
 
-    def execute(self, data: dict = None):
-        payload = self.build_payload(self.info(), data)
-        if self.xtra:
-            payload[
-                "xtra"
-            ] = (
-                self.xtra
-            )  # dictionaries are sorted by key. Nice to have extra information at the bottom.
+    def execute(self, tag: str = None, data: dict = None):
+        payload = {"action_info": self.info()}
+        if data:
+            payload["data"] = data
+        payload.update(self.local_info())
         file = (
             os.path.join(Dirs.output_dir(), self.file)
             if self.relative_to_output_dir
@@ -35,26 +60,4 @@ class FileHeartbeat(Action):
         with open(file, "a") as outfile:
             PP.pprint(payload, stream=outfile)
             outfile.write("\n")
-        return {"outcome": "file appended", "action": self.info()}
-
-    def set_xtra(self, xtra: Dict[str, Any] = None):
-        self.xtra = xtra
-        return self
-
-    def get_xtra(self):
-        return self.xtra
-
-    def build_payload(self, action_info: Dict[str, Any], data: dict = None):
-        payload = {}
-        payload.update({"action_info": action_info})
-        if data:
-            payload.update({"data": data})
-        payload.update(self.action_host())
-        payload.update(self.action_time())
-        return payload
-
-    def action_host(self):
-        return {"action_host": SystemInfo.get()["host"]}
-
-    def action_time(self):
-        return {"action_time": Now.s()}
+        return {"result": payload}

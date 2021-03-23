@@ -98,17 +98,20 @@ class Scheduler(BaseModel):
         if False:
             log_action_execute_signature(action=action)
 
-        data = {"tag": tag, "scheduler_info": self.info()}
         if (self.start is not None) and (self.stop is not None):
             is_in_period_wrapper = lambda start, stop: (
-                lambda now: start < now and now < stop if (start < stop) else start < now or now < stop
+                lambda now: start < now and now < stop
+                if (start < stop)
+                else start < now or now < stop
             )
             is_in_period = is_in_period_wrapper(self.start, self.stop)
+
             def thunk():
                 if is_in_period(Now.t()):
-                    return action.execute(data=data)
+                    return action.execute(tag=tag)
                 else:
                     return DoNothing.result
+
             return self.wrap(
                 thunk=thunk,
                 tag=tag,
@@ -116,8 +119,10 @@ class Scheduler(BaseModel):
                 scheduler_json=self.json(),
             )
         else:
+
             def thunk():
-                return action.execute(data=data)
+                return action.execute(tag=tag)
+
             return self.wrap(
                 thunk=thunk,
                 tag=tag,
@@ -168,8 +173,7 @@ class Scheduler(BaseModel):
             return ""
 
 
-
-def log_action_execute_signature(action:Action):
+def log_action_execute_signature(action: Action):
     sig = str(signature(action.execute))
     typ = str(type(action))
     logger.info(f"action.execute ({typ}).({sig})")

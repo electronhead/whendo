@@ -109,7 +109,7 @@ class Immediately(Scheduler):
         system.
         """
         wrapped_callable = self.wrap(
-            thunk=lambda: action.execute(data={"tag": tag, "scheduler_info": self.info()}),
+            thunk=lambda: action.execute(tag=tag),
             tag=tag,
             action_json=action.json(),
             scheduler_json=self.json(),

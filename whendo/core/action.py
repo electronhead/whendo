@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 import logging
-from .util import object_info
+from .util import object_info, SystemInfo, Now
 
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ class Action(BaseModel):
     def description(self):
         return "This Action does nothing."
 
-    def execute(self, data: dict = None):
+    def execute(self, tag: str = None, data: dict = None):
         """
         This method typically attempts to do something useful and return something useful
         """
@@ -25,3 +25,19 @@ class Action(BaseModel):
 
     def flat(self):
         return self.json()
+
+    def local_host(self):
+        return SystemInfo.get()["host"]
+
+    def local_port(self):
+        return SystemInfo.get()["port"]
+
+    def local_time(self):
+        return SystemInfo.get()["current"]
+
+    def local_info(self):
+        return {
+            "host": self.local_host(),
+            "port": self.local_port(),
+            "time": self.local_time(),
+        }

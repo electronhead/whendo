@@ -11,9 +11,10 @@ from pydantic import BaseModel
 from httpx import AsyncClient
 from datetime import timedelta, datetime
 from whendo.core.action import Action
-from whendo.core.actions.file_action import FileHeartbeat
-from whendo.core.actions.logic_action import All
-from whendo.core.actions.sys_action import BounceData
+from whendo.core.actions.file_action import FileHeartbeat, FileAppend
+from whendo.core.actions.logic_action import All, Success
+from whendo.core.actions.sys_action import SysInfo
+from whendo.core.actions.http_action import ExecuteAction
 from whendo.core.scheduler import Scheduler
 from whendo.core.schedulers.cont_scheduler import Timely, Immediately
 from whendo.core.dispatcher import Dispatcher
@@ -117,7 +118,7 @@ async def test_uvicorn_logic_action(startup_and_shutdown_uvicorn, base_url, tmp_
     action2 = FileHeartbeat(
         relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
     )
-    action3 = All(action_list=[action1, action2])
+    action3 = All(actions=[action1, action2])
     scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action3)
@@ -496,7 +497,7 @@ async def test_defer_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
         base_url=base_url,
         action_name="foo",
         scheduler_name="bar",
-        wait_until=DateTime(date_time=Now.dt() + timedelta(seconds=0)),
+        wait_until=DateTime(dt=Now.dt() + timedelta(seconds=0)),
     )
 
     await assert_deferred_action_count(base_url=base_url, n=1)
@@ -538,7 +539,7 @@ async def test_expire_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
         base_url=base_url,
         action_name="foo",
         scheduler_name="bar",
-        expire_on=DateTime(date_time=Now.dt() + timedelta(seconds=1)),
+        expire_on=DateTime(dt=Now.dt() + timedelta(seconds=1)),
     )
 
     await assert_expiring_action_count(base_url=base_url, n=1)
@@ -572,7 +573,7 @@ async def test_immediately(startup_and_shutdown_uvicorn, base_url, tmp_path):
         base_url=base_url,
         action_name="foo",
         scheduler_name="bar",
-        wait_until=DateTime(date_time=Now.dt() + timedelta(seconds=1)),
+        wait_until=DateTime(dt=Now.dt() + timedelta(seconds=1)),
     )
 
     await assert_deferred_action_count(base_url=base_url, n=1)
@@ -638,19 +639,69 @@ async def test_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_bounce_data(startup_and_shutdown_uvicorn, base_url, tmp_path):
-    """ bounce a dictionary """
+async def test_success(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    """ test fixed point """
     await reset_dispatcher(base_url, str(tmp_path))
 
-    action = BounceData()
-    await add_action(base_url=base_url, action_name="bounce", action=action)
-    stuf = {"fleas": "unite!"}
+    action = Success()
+    await add_action(base_url=base_url, action_name="success", action=action)
+    data = {"fleas": "unite!"}
 
     result = await execute_action_with_data(
-        base_url=base_url, action_name="bounce", data=stuf
+        base_url=base_url, action_name="success", data=data
     )
 
-    assert result["result"] == stuf
+    assert result["result"] == data
+
+
+@pytest.mark.asyncio
+async def test_file_append_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    """ test basic use of FileAppend """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action = FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output.txt"),
+        payload={"free": "pyrambium"},
+    )
+    scheduler = Timely(interval=1)
+
+    await add_action(base_url=base_url, action_name="foo", action=action)
+    await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
+    await schedule_action(base_url=base_url, action_name="foo", scheduler_name="bar")
+
+    await run_and_stop_jobs(base_url=base_url, pause=2)
+    lines = None
+    with open(action.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("pyrambium" in line for line in lines)
+
+
+@pytest.mark.asyncio
+async def test_file_append_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    """ test use of execute <data> argument """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action1 = FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output.txt"),
+        payload={"hi": "pyrambium"},
+    )
+    action2 = SysInfo()
+    action3 = All(actions=[action2, action1])
+    scheduler = Timely(interval=1)
+
+    await add_action(base_url=base_url, action_name="foo", action=action3)
+    await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
+    await schedule_action(base_url=base_url, action_name="foo", scheduler_name="bar")
+
+    await run_and_stop_jobs(base_url=base_url, pause=2)
+    lines = None
+    with open(action1.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("virtual_memory" in line for line in lines)
 
 
 # ==========================================
