@@ -153,8 +153,6 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, host, port, tmp_path):
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
 
-
-
 @pytest.mark.asyncio
 async def test_unschedule_scheduler(startup_and_shutdown_uvicorn, host, port, tmp_path):
     """ unschedule a scheduler. """
@@ -204,7 +202,8 @@ async def test_job_count(startup_and_shutdown_uvicorn, host, port, tmp_path):
     await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
     await schedule_action(client=client, action_name="foo1", scheduler_name="bar")
     await schedule_action(client=client, action_name="foo2", scheduler_name="bar")
-    await assert_job_count(client=client, n=2)
+    await assert_job_count(client=client, n=1)
+    await assert_scheduled_action_count(client=client, n=2)
 
 
 @pytest.mark.asyncio
@@ -652,7 +651,6 @@ async def set_action(client: ClientAsync, action_name: str, action: Action):
     assert isinstance(retrieved_action, Action), str(type(retrieved_action))
 
 
-
 async def execute_action(client: ClientAsync, action_name: str):
     response = await client.execute_action(action_name=action_name)
     assert response.status_code == 200, f"failed to execute action ({action_name})"
@@ -664,7 +662,6 @@ async def execute_action_with_data(client: ClientAsync, action_name: str, data: 
         response.status_code == 200
     ), f"failed to execute action ({action_name}) with data ({data})"
     return response.json()
-
 
 
 async def get_scheduler(client: ClientAsync, scheduler_name: str):

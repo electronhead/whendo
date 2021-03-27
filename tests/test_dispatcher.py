@@ -32,6 +32,7 @@ def test_schedule_action(friends):
 
     assert action.flea_count > 0
 
+
 def test_unschedule_scheduler(friends):
     """
     Tests unscheduling a scheduler.
@@ -66,18 +67,18 @@ def test_reschedule_all(friends):
     dispatcher.add_scheduler("bar", scheduler)
     dispatcher.schedule_action("bar", "foo")
     assert dispatcher.job_count() == 1
+    assert dispatcher.get_scheduled_action_count() == 1
 
     dispatcher.clear_jobs()
     assert dispatcher.job_count() == 0
 
     dispatcher.add_action("foo2", action)
     dispatcher.schedule_action("bar", "foo2")
-    assert dispatcher.get_scheduled_action_count() == 1
+    assert dispatcher.get_scheduled_action_count() == 2
 
     dispatcher.reschedule_all_schedulers()
-    assert dispatcher.job_count() == 2
-
-    assert dispatcher.get_scheduled_action_count() == dispatcher.job_count()
+    assert dispatcher.job_count() == 1
+    assert dispatcher.get_scheduled_action_count() == 2
 
 
 def test_clear_dispatcher(friends):

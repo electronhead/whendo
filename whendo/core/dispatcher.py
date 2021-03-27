@@ -456,7 +456,9 @@ class Dispatcher(BaseModel):
                 return
             self.scheduled_actions[scheduler_name].append(action_name)
             if len(self.scheduled_actions[scheduler_name]) == 1:
-                scheduler.schedule(scheduler_name, self.executor)  # have an action to trigger
+                scheduler.schedule(
+                    scheduler_name, self.executor
+                )  # have an action to trigger
             self.save_current()
 
     def unschedule_scheduler_action(self, scheduler_name: str, action_name: str):

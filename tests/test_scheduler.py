@@ -31,4 +31,3 @@ def xtest_during_period():
         assert daytime_callable() and nighttime_callable() is sched.DoNothing.result
     else:
         assert daytime_callable() is sched.DoNothing.result and nighttime_callable()
-

@@ -260,7 +260,8 @@ async def test_job_count(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
     await schedule_action(base_url=base_url, action_name="foo1", scheduler_name="bar")
     await schedule_action(base_url=base_url, action_name="foo2", scheduler_name="bar")
-    await assert_job_count(base_url=base_url, n=2)
+    await assert_job_count(base_url=base_url, n=1)
+    await assert_scheduled_action_count(base_url=base_url, n=2)
 
 
 @pytest.mark.asyncio
@@ -568,7 +569,7 @@ async def test_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
     )
 
     # action1,2,3 doing their things
-    await run_and_stop_jobs(base_url=base_url, pause=6)
+    await run_and_stop_jobs(base_url=base_url, pause=8)
     lines = None
     with open(action1.file, "r") as fid:
         lines = fid.readlines()

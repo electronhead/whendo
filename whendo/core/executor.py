@@ -60,8 +60,11 @@ class Executor(BaseModel):
                     with Lok.lock:
                         while len(self.queue) > 0:
                             scheduler_name = self.queue.popleft()
-                            for (action_name, action) in self.compute_actions(scheduler_name):
+                            for (action_name, action) in self.compute_actions(
+                                scheduler_name
+                            ):
                                 action.execute(tag=f"{scheduler_name}:{action_name}")
+                    time.sleep(0.5)
 
         executor_thread = ExecutorThread()
         executor_thread.setDaemon(True)
