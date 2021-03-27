@@ -34,9 +34,8 @@ class Timely(TimedScheduler):
         return f"This scheduler executes its actions every {self.time_as_str()}. {super().description()}"
 
     def schedule(self, scheduler_name: str, executor: Executor):
-        super().schedule(scheduler_name, executor)
         self.unschedule(scheduler_name)
-        callable = self.during_period(scheduler_name=scheduler_name)
+        callable = self.during_period(scheduler_name=scheduler_name, executor=executor)
         self.get_timed().schedule_timely_callable(
             tag=scheduler_name,
             callable=callable,
@@ -85,9 +84,8 @@ class Randomly(TimedScheduler):
         return f"This scheduler executes its actions every {self.low} to {self.high} {self.time_unit.value}s. {super().description()}"
 
     def schedule(self, scheduler_name: str, executor: Executor):
-        super().schedule(scheduler_name, executor)
         self.unschedule(scheduler_name)
-        callable = self.during_period(scheduler_name=scheduler_name)
+        callable = self.during_period(scheduler_name=scheduler_name, executor=executor)
         self.get_timed().schedule_random_callable(
             tag=scheduler_name,
             callable=callable,

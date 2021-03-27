@@ -21,6 +21,10 @@ from threading import RLock, Thread, Event
 import time
 import random
 from collections.abc import Callable
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class Executor(BaseModel):
@@ -64,7 +68,12 @@ class Executor(BaseModel):
                             for (action_name, action) in self.compute_actions(
                                 scheduler_name
                             ):
-                                action.execute(tag=f"{scheduler_name}:{action_name}")
+                                try:
+                                    action.execute(
+                                        tag=f"{scheduler_name}:{action_name}"
+                                    )
+                                except Exception as e:
+                                    log.error(f"Executor execution error: ({str(e)}")
                     time.sleep(0.25 * (1 + random.random()))
 
         executor_thread = ExecutorThread()

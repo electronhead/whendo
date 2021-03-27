@@ -30,17 +30,16 @@ class Scheduler(BaseModel):
            behavior within a scheduled job. Outside of the specified period, a job will be run. It just won't do anything. [see do_nothing below]
     """
 
-    executor: Executor = None
     start: Optional[time] = None
     stop: Optional[time] = None
 
     def schedule(self, scheduler_name: str, executor: Executor):
-        self.executor = executor
+        pass
 
     def unschedule(self, scheduler_name: str):
         pass
 
-    def during_period(self, scheduler_name: str):
+    def during_period(self, scheduler_name: str, executor: Executor):
         """
         This method returns the thunk that ultimately gets invoked by the executor.
 
@@ -68,13 +67,13 @@ class Scheduler(BaseModel):
 
             def thunk():
                 if is_in_period(Now.t()):
-                    self.executor.push(scheduler_name)
+                    executor.push(scheduler_name)
 
             return thunk
         else:
 
             def thunk():
-                self.executor.push(scheduler_name)
+                executor.push(scheduler_name)
 
             return thunk
 
@@ -114,4 +113,4 @@ class Immediately(Scheduler):
         )
 
     def schedule(self, scheduler_name: str, executor: Executor):
-        self.executor.push(scheduler_name=scheduler_name)
+        pass  # self.executor.push(scheduler_name=scheduler_name)

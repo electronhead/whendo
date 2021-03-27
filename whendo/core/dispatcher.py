@@ -45,9 +45,6 @@ class Dispatcher(BaseModel):
     _timed_for_out_of_band: Timed = PrivateAttr(default_factory=Timed)
 
     # jobs and timed object
-    def get_timed(self):
-        return self._timed
-
     def set_timed(self, timed: Timed):
         self._timed = timed
 
@@ -67,9 +64,6 @@ class Dispatcher(BaseModel):
 
     def clear_jobs(self):
         self._timed.clear()
-
-    def get_timed_for_out_of_band(self):
-        return self._timed_for_out_of_band
 
     # internal dispatcher state access
     def get_actions(self):
@@ -169,6 +163,7 @@ class Dispatcher(BaseModel):
             self.scheduled_actions.clear()
             self.deferred_scheduled_actions.clear()
             self.expiring_scheduled_actions.clear()
+            self._timed.clear()
             self.executor.clear()
 
             if should_save:
