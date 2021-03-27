@@ -53,11 +53,11 @@ class Dispatcher(BaseModel):
 
     def run_jobs(self):
         self.executor.run()
-        self._timed.run_timedly()
+        self._timed.run()
 
     def stop_jobs(self):
         self.executor.stop()
-        self._timed.stop_running_timedly()
+        self._timed.stop()
 
     def jobs_are_running(self):
         return self._timed.is_running()
@@ -111,7 +111,7 @@ class Dispatcher(BaseModel):
         self._timed_for_out_of_band.every(1).second.do(
             self.check_for_expiring_actions
         ).tag("expiring")
-        self._timed_for_out_of_band.run_timedly()
+        self._timed_for_out_of_band.run()
         self.executor.run()
 
     def pprint(self):

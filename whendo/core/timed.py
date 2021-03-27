@@ -25,8 +25,8 @@ class Timed(Scheduler):
         timed = Timed()
         timed.job_count()
         timed.is_running()
-        timed.run_timedly()
-        timed.stop_running_timedly()
+        timed.run()
+        timed.stop()
     """
 
     instance = None
@@ -52,7 +52,7 @@ class Timed(Scheduler):
     def job_count(self):
         return len(self.jobs)
 
-    def stop_running_timedly(self):
+    def stop(self):
         if self.cease_timed_run:
             if self.cease_timed_run.is_set():
                 logger.info(f"timed run already stopped")
@@ -60,19 +60,19 @@ class Timed(Scheduler):
                 self.cease_timed_run.set()
                 logger.info(f"timed run stopped")
         else:
-            logger.info(f"yet to run timedly")
+            logger.info(f"yet to run timed")
 
     #
     # from https://github.com/mrhwick/schedule/blob/master/schedule/__init__.py
-    # ... ensures one active invocation of run_timedly at a
+    # ... ensures one active invocation of run at a
     #
-    def run_timedly(self, interval=1):
+    def run(self, interval=1):
         """
-        Timedly run, while executing pending jobs at each elapsed
+        Continuously run, while executing pending jobs at each elapsed
         time interval.
         @return cease_timed_run: threading.Event which can be set to
         cease timed run.
-        Please note that it is *intended behavior that run_timedly()
+        Please note that it is *intended behavior that run()
         does not run missed jobs*. For example, if you've registered a job
         that should run every minute and you set a timed run interval
         of one hour then your job won't be run 60 times at each interval but

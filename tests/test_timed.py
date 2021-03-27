@@ -31,9 +31,9 @@ def test_timely_callable(tmp_path):
         def run(self):
             timed = Timed()
             timed.schedule_timely_callable("tag", self.callable)
-            timed.run_timedly()
+            timed.run()
             time.sleep(pause)
-            timed.stop_running_timedly()
+            timed.stop()
             timed.clear()
 
     suite = Suite()
@@ -69,9 +69,9 @@ def test_random_callable(tmp_path):
             timed.schedule_random_callable(
                 "tag", self.callable, time_unit=TimeUnit.second, low=1, high=3
             )
-            timed.run_timedly()
+            timed.run()
             time.sleep(4)
-            timed.stop_running_timedly()
+            timed.stop()
             timed.clear()
 
     suite = Suite()
@@ -104,9 +104,9 @@ def test_file_action(tmp_path):
         def run(self):
             timed = Timed()
             timed.schedule_timely_callable("tag", self.action.execute)
-            timed.run_timedly()
+            timed.run()
             time.sleep(pause)
-            timed.stop_running_timedly()
+            timed.stop()
             timed.clear()
 
     suite = Suite(FileAction())
