@@ -330,8 +330,8 @@ def test_program(friends):
 
     program = Program().prologue("foo1").body_element("bar", "foo2").epilogue("foo3")
     dispatcher.add_program("baz", program)
-    start = util.Now().dt()
-    stop = start + timedelta(seconds=5)
+    start = util.Now().dt() + timedelta(seconds=1)
+    stop = start + timedelta(seconds=4)
 
     dispatcher.run_jobs()
     dispatcher.schedule_program("baz", start, stop)

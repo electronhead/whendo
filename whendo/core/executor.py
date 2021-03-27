@@ -19,6 +19,7 @@ from pydantic import BaseModel, PrivateAttr
 from collections import deque
 from threading import RLock, Thread, Event
 import time
+import random
 from collections.abc import Callable
 
 
@@ -37,7 +38,7 @@ class Executor(BaseModel):
 
     def push(self, scheduler_name: str):
         """
-        The event triggering mechanism calls this method.
+        The event triggering mechanism (time- or environment-based) calls this method.
         """
         with Lok.lock:
             self.queue.append(scheduler_name)
@@ -64,7 +65,7 @@ class Executor(BaseModel):
                                 scheduler_name
                             ):
                                 action.execute(tag=f"{scheduler_name}:{action_name}")
-                    time.sleep(0.5)
+                    time.sleep(0.25 * (1 + random.random()))
 
         executor_thread = ExecutorThread()
         executor_thread.setDaemon(True)

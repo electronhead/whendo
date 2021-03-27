@@ -331,7 +331,7 @@ class Dispatcher(BaseModel):
         assert (
             scheduler_name in self.schedulers
         ), f"scheduler ({scheduler_name}) does not exist"
-        if len(self.scheduled_actions[scheduled_name]) == 0:
+        if len(self.scheduled_actions[scheduler_name]) == 0:
             scheduler = self.get_scheduler(scheduler_name)
             if isinstance(scheduler, ContinuousScheduler):
                 scheduler.set_continuous(self._continuous)
@@ -571,7 +571,7 @@ class Dispatcher(BaseModel):
                                     f"failed to schedule deferred action ({action_name}) under ({scheduler_name}) as of ({wait_until_str})",
                                     exception,
                                 )
-                to_remove.append(wait_until_str)
+                    to_remove.append(wait_until_str)
             for wait_until_str in to_remove:  # modify outside the previous for-loop
                 self.deferred_scheduled_actions.pop(wait_until_str)
             self.save_current()

@@ -569,7 +569,7 @@ async def test_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
     )
 
     # action1,2,3 doing their things
-    await run_and_stop_jobs(base_url=base_url, pause=8)
+    await run_and_stop_jobs(base_url=base_url, pause=6)
     lines = None
     with open(action1.file, "r") as fid:
         lines = fid.readlines()

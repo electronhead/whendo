@@ -68,13 +68,13 @@ class Scheduler(BaseModel):
 
             def thunk():
                 if is_in_period(Now.t()):
-                    self.executor.push(scheduler_name=scheduler_name)
+                    self.executor.push(scheduler_name)
 
             return thunk
         else:
 
             def thunk():
-                self.executor.push(scheduler_name=scheduler_name)
+                self.executor.push(scheduler_name)
 
             return thunk
 
