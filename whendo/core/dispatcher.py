@@ -17,9 +17,10 @@ from typing import Optional, Dict, Any
 from .util import PP, Dirs, Now, str_to_dt, dt_to_str
 from .action import Action
 from .program import Program
-from .scheduler import Scheduler
+from .scheduler import Scheduler, ContinuousScheduler, EventScheduler, Immediately
 from .continuous import Continuous
 from .resolver import resolve_action, resolve_scheduler, resolve_program
+from .executor import Executor
 
 logger = logging.getLogger(__name__)
 
@@ -30,6 +31,7 @@ class Dispatcher(BaseModel):
     up, Dispatch loads the last saved version.
     """
 
+    executor: Executor = Executor()
     actions: Dict[str, Action] = {}
     schedulers: Dict[str, Scheduler] = {}
     programs: Dict[str, Program] = {}
@@ -50,9 +52,11 @@ class Dispatcher(BaseModel):
         self._continuous = continuous
 
     def run_jobs(self):
+        self.executor.run()
         self._continuous.run_continuously()
 
     def stop_jobs(self):
+        self.executor.stop()
         self._continuous.stop_running_continuously()
 
     def jobs_are_running(self):
@@ -98,6 +102,8 @@ class Dispatcher(BaseModel):
     # other internal dispatcher operations
     def initialize(self):
         Lok.reset()
+        self.executor._actions_thunk = lambda: self.actions
+        self.executor._scheduled_actions_thunk = lambda: self.scheduled_actions
         self._continuous_for_out_of_band.clear()
         self._continuous_for_out_of_band.every(1).second.do(
             self.check_for_deferred_actions
@@ -106,6 +112,7 @@ class Dispatcher(BaseModel):
             self.check_for_expiring_actions
         ).tag("expiring")
         self._continuous_for_out_of_band.run_continuously()
+        self.executor.run()
 
     def pprint(self):
         PP.pprint(self.dict())
@@ -162,6 +169,7 @@ class Dispatcher(BaseModel):
             self.scheduled_actions.clear()
             self.deferred_scheduled_actions.clear()
             self.expiring_scheduled_actions.clear()
+            self.executor.clear()
 
             if should_save:
                 self.save_current()
@@ -247,17 +255,16 @@ class Dispatcher(BaseModel):
         with Lok.lock:
             assert action_name in self.actions, f"action ({action_name}) does not exist"
             self.actions[action_name] = action
-            self.reschedule_action(action_name)
             self.save_current()
 
     def delete_action(self, action_name: str):
         with Lok.lock:
             assert action_name in self.actions, f"action ({action_name}) does not exist"
             for scheduler_name in self.schedulers:
-                self.unschedule_action(action_name)
                 action_names = self.scheduled_actions[scheduler_name]
                 if action_name in action_names:
                     action_names.remove(action_name)
+                self.check_scheduler(scheduler_name)
             self.actions.pop(action_name, None)
             self.save_current()
 
@@ -320,15 +327,15 @@ class Dispatcher(BaseModel):
             self.scheduled_actions.pop(scheduler_name)
             self.save_current()
 
-    def execute_scheduled_actions(self, scheduler_name: str):
-        with Lok.lock:
-            assert (
-                scheduler_name in self.schedulers
-            ), f"scheduler ({scheduler_name}) does not exist"
-            result = []
-            for action_name in self.scheduled_actions.get(scheduler_name, []):
-                result.append(self.get_action(action_name).execute())
-            return result
+    def check_scheduler(self, scheduler_name: str):
+        assert (
+            scheduler_name in self.schedulers
+        ), f"scheduler ({scheduler_name}) does not exist"
+        if len(self.scheduled_actions[scheduled_name]) == 0:
+            scheduler = self.get_scheduler(scheduler_name)
+            if isinstance(scheduler, ContinuousScheduler):
+                scheduler.set_continuous(self._continuous)
+            scheduler.unschedule(scheduler_name)
 
     # programs
     def get_program(self, program_name: str):
@@ -429,6 +436,10 @@ class Dispatcher(BaseModel):
 
     # scheduling
     def schedule_action(self, scheduler_name: str, action_name: str):
+        """
+        Puts the scheduler/action into active processing. The scheduled_action
+        dictionary mirrors the successful scheduling of actions.
+        """
         with Lok.lock:
             assert (
                 scheduler_name in self.schedulers
@@ -436,23 +447,16 @@ class Dispatcher(BaseModel):
             assert action_name in self.actions, f"action ({action_name}) does not exist"
             assert not action_name in self.scheduled_actions[scheduler_name]
             scheduler = self.get_scheduler(scheduler_name)
-            action = self.actions.get(action_name)
-            tag = self.scheduler_tag(scheduler_name, action_name)
-            scheduler.schedule_action(tag, action, self._continuous)
-            if scheduler.joins_scheduled_actions():
-                self.scheduled_actions[scheduler_name].append(action_name)
-                self.save_current()
-
-    def unschedule_action(self, action_name: str):
-        with Lok.lock:
-            assert action_name in self.actions, f"action ({action_name}) does not exist"
-            for scheduler_name in self.scheduled_actions:
-                if action_name in self.scheduled_actions[scheduler_name]:
-                    tag = self.scheduler_tag(scheduler_name, action_name)
-                    self._continuous.clear(tag)
-                    action_names = self.scheduled_actions[scheduler_name]
-                    if action_name in action_names:
-                        action_names.remove(action_name)
+            if isinstance(scheduler, ContinuousScheduler):
+                scheduler.set_continuous(self._continuous)
+            elif isinstance(
+                scheduler, Immediately
+            ):  # executes once; does not participate further in scheduling
+                self.get_action(action_name).execute()
+                return
+            self.scheduled_actions[scheduler_name].append(action_name)
+            if len(self.scheduled_actions[scheduler_name]) == 1:
+                scheduler.schedule(scheduler_name, self.executor)  # have an action to trigger
             self.save_current()
 
     def unschedule_scheduler_action(self, scheduler_name: str, action_name: str):
@@ -461,32 +465,28 @@ class Dispatcher(BaseModel):
                 scheduler_name in self.schedulers
             ), f"scheduler ({scheduler_name}) does not exist"
             assert action_name in self.actions, f"action ({action_name}) does not exist"
-            tag = self.scheduler_tag(scheduler_name, action_name)
-            self._continuous.clear(tag)
+            # get the scheduler
+            scheduler = self.get_scheduler(scheduler_name)
+            if isinstance(scheduler, ContinuousScheduler):
+                scheduler.set_continuous(self._continuous)
+            # remove the action from the scheduler's actions
             action_names = self.scheduled_actions[scheduler_name]
             if action_name in action_names:
                 action_names.remove(action_name)
-                self.save_current()
-
-    def reschedule_action(self, action_name: str):
-        with Lok.lock:
-            assert action_name in self.actions, f"action ({action_name}) does not exist"
-            for scheduler_name in self.scheduled_actions:
-                if action_name in self.scheduled_actions[scheduler_name]:
-                    tag = self.scheduler_tag(scheduler_name, action_name)
-                    self._continuous.clear(tag)
-                    scheduler = self.get_scheduler(scheduler_name)
-                    action = self.actions[action_name]
-                    scheduler.schedule_action(tag, action, self._continuous)
+            # unschedule the scheduler if there are no associated actions
+            if len(action_names) == 0:
+                scheduler.unschedule(scheduler_name)
+            self.save_current()
 
     def unschedule_scheduler(self, scheduler_name: str):
         with Lok.lock:
             assert (
                 scheduler_name in self.schedulers
             ), f"scheduler ({scheduler_name}) does not exist"
-            for action_name in self.scheduled_actions[scheduler_name]:
-                tag = self.scheduler_tag(scheduler_name, action_name)
-                self._continuous.clear(tag)
+            scheduler = self.get_scheduler(scheduler_name)
+            if isinstance(scheduler, ContinuousScheduler):
+                scheduler.set_continuous(self._continuous)
+            scheduler.unschedule(scheduler_name)
             self.scheduled_actions[scheduler_name].clear()
             self.save_current()
 
@@ -495,23 +495,18 @@ class Dispatcher(BaseModel):
             assert (
                 scheduler_name in self.schedulers
             ), f"scheduler ({scheduler_name}) does not exist"
-            scheduler_actions = self.scheduled_actions[scheduler_name]
-            for action_name in scheduler_actions:
-                tag = self.scheduler_tag(scheduler_name, action_name)
-                self._continuous.clear(tag)
-                scheduler = self.get_scheduler(scheduler_name)
-                action = self.actions[action_name]
-                scheduler.schedule_action(tag, action, self._continuous)
+            scheduler = self.get_scheduler(scheduler_name)
+            if isinstance(scheduler, ContinuousScheduler):
+                scheduler.set_continuous(self._continuous)
+            scheduler.schedule(scheduler_name, self.executor)
 
     def reschedule_all_schedulers(self):
         with Lok.lock:
             for scheduler_name in self.scheduled_actions:
-                for action_name in self.scheduled_actions[scheduler_name]:
-                    tag = self.scheduler_tag(scheduler_name, action_name)
-                    self._continuous.clear(tag)
-                    scheduler = self.get_scheduler(scheduler_name)
-                    action = self.actions[action_name]
-                    scheduler.schedule_action(tag, action, self._continuous)
+                scheduler = self.get_scheduler(scheduler_name)
+                if isinstance(scheduler, ContinuousScheduler):
+                    scheduler.set_continuous(self._continuous)
+                scheduler.schedule(scheduler_name, self.executor)
 
     def get_scheduled_action_count(self):
         # returns the total number of actions in the scheduled_actions dictionary
@@ -568,16 +563,13 @@ class Dispatcher(BaseModel):
                     for scheduler_name in scheduled_actions:
                         for action_name in scheduled_actions[scheduler_name]:
                             try:
-                                self.schedule_action(
-                                    scheduler_name=scheduler_name,
-                                    action_name=action_name,
-                                )
+                                self.schedule_action(scheduler_name, action_name)
                             except Exception as exception:
                                 logger.error(
                                     f"failed to schedule deferred action ({action_name}) under ({scheduler_name}) as of ({wait_until_str})",
                                     exception,
                                 )
-                    to_remove.append(wait_until_str)
+                to_remove.append(wait_until_str)
             for wait_until_str in to_remove:  # modify outside the previous for-loop
                 self.deferred_scheduled_actions.pop(wait_until_str)
             self.save_current()
@@ -646,8 +638,7 @@ class Dispatcher(BaseModel):
                         for action_name in scheduled_actions[scheduler_name]:
                             try:
                                 self.unschedule_scheduler_action(
-                                    scheduler_name=scheduler_name,
-                                    action_name=action_name,
+                                    scheduler_name, action_name
                                 )
                             except Exception as exception:
                                 logger.error(
@@ -688,6 +679,7 @@ class Dispatcher(BaseModel):
         if len(dictionary) == 0:
             return Dispatcher()
         else:
+            executor = dictionary["executor"]
             saved_dir = dictionary["saved_dir"]
             actions = dictionary["actions"]
             schedulers = dictionary["schedulers"]
@@ -705,6 +697,7 @@ class Dispatcher(BaseModel):
             for program_name in programs:
                 programs[program_name] = resolve_program(programs[program_name])
             return Dispatcher(
+                executor=executor,
                 saved_dir=saved_dir,
                 actions=actions,
                 schedulers=schedulers,

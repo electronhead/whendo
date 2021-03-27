@@ -1,54 +1,13 @@
 from datetime import time
-from pydantic import BaseModel
+from pydantic import BaseModel, PrivateAttr
 from typing import Dict, Optional
 from collections.abc import Callable
 import logging
-from inspect import signature
-from whendo.core.util import Now, object_info, SystemInfo
-from whendo.core.action import Action
-from whendo.core.continuous import Continuous
+from .util import Now, object_info
+from .executor import Executor
+from .continuous import Continuous
 
 logger = logging.getLogger(__name__)
-
-
-class Count:
-    """
-    This counter is useful for distiguishing between different sets of log entries as well as viewing a count for each tag.
-    """
-
-    good_count: Dict[str, int] = {}
-    bad_count: Dict[str, int] = {}
-
-    @classmethod
-    def good_up(cls, tag):
-        if tag not in cls.good_count:
-            cls.good_count[tag] = 0
-        cls.good_count[tag] = 1 + cls.good_count[tag]
-
-    @classmethod
-    def bad_up(cls, tag):
-        if tag not in cls.bad_count:
-            cls.bad_count[tag] = 0
-        cls.bad_count[tag] = 1 + cls.bad_count[tag]
-
-    @classmethod
-    def good(cls, tag):
-        return cls.good_count.get(tag, 0)
-
-    @classmethod
-    def bad(cls, tag):
-        return cls.bad_count.get(tag, 0)
-
-
-class DoNothing:
-    """
-    Returned by the do_nothing thunk. The exception handling
-    code needs to know when a result was produced by a do_nothing thunk.
-    In the abasence of an explicitly returned result, an Action will return
-    None.
-    """
-
-    result = {"outcome": "DoNothing"}
 
 
 class Scheduler(BaseModel):
@@ -71,17 +30,20 @@ class Scheduler(BaseModel):
            behavior within a scheduled job. Outside of the specified period, a job will be run. It just won't do anything. [see do_nothing below]
     """
 
+    executor: Executor = None
     start: Optional[time] = None
     stop: Optional[time] = None
 
-    def schedule_action(self, tag: str, action: Action, continuous: Continuous):
+    def schedule(self, scheduler_name: str, executor: Executor):
+        self.executor = executor
+
+    def unschedule(self, scheduler_name: str):
         pass
 
-    def joins_scheduled_actions(self):
-        return True
-
-    def during_period(self, tag: str, action: Action):
+    def during_period(self, scheduler_name: str):
         """
+        This method returns the thunk that ultimately gets invoked by the executor.
+
         is_in_period_wrapper below takes (start) and (stop) and returns a 1-arg function that compares (start)
         and (stop) with a supplied time (now).
 
@@ -95,8 +57,6 @@ class Scheduler(BaseModel):
         This is done so that is_in_period is freshly evaluated at the times when the schedule library runs the job
         (that is meant to invoke the Callable).
         """
-        if False:
-            log_action_execute_signature(action=action)
 
         if (self.start is not None) and (self.stop is not None):
             is_in_period_wrapper = lambda start, stop: (
@@ -108,60 +68,15 @@ class Scheduler(BaseModel):
 
             def thunk():
                 if is_in_period(Now.t()):
-                    return action.execute(tag=tag)
-                else:
-                    return DoNothing.result
+                    self.executor.push(scheduler_name=scheduler_name)
 
-            return self.wrap(
-                thunk=thunk,
-                tag=tag,
-                action_json=action.json(),
-                scheduler_json=self.json(),
-            )
+            return thunk
         else:
 
             def thunk():
-                return action.execute(tag=tag)
+                self.executor.push(scheduler_name=scheduler_name)
 
-            return self.wrap(
-                thunk=thunk,
-                tag=tag,
-                action_json=action.json(),
-                scheduler_json=self.json(),
-            )
-
-    def wrap(self, thunk: Callable, tag: str, action_json: str, scheduler_json: str):
-        """
-        wraps the execution inside a try block;
-        allows for logging and handling of raised exceptions
-        """
-
-        def execute():
-            try:
-                result = thunk()
-                if result is DoNothing.result:
-                    return result
-                else:
-                    Count.good_up(tag)
-                    logger.info(f"({Count.good(tag):09}) tag={tag}")
-                    logger.info(f"({Count.good(tag):09}) scheduler={scheduler_json}")
-                    logger.info(f"({Count.good(tag):09}) action={action_json}")
-                    SystemInfo.increment_successes()
-            except Exception as exception:
-                result = exception
-                Count.bad_up(tag)
-                logger.exception(f"({Count.bad(tag):09}) tag={tag}", exc_info=exception)
-                logger.exception(
-                    f"({Count.bad(tag):09}) scheduler={scheduler_json}",
-                    exc_info=exception,
-                )
-                logger.exception(
-                    f"({Count.bad(tag):09}) action={action_json}", exc_info=exception
-                )
-                SystemInfo.increment_failures()
-            return result
-
-        return execute
+            return thunk
 
     def info(self):
         return object_info(self)
@@ -173,7 +88,30 @@ class Scheduler(BaseModel):
             return ""
 
 
-def log_action_execute_signature(action: Action):
-    sig = str(signature(action.execute))
-    typ = str(type(action))
-    logger.info(f"action.execute ({typ}).({sig})")
+class ContinuousScheduler(Scheduler):
+    _continuous: Continuous = PrivateAttr()
+
+    def get_continuous(self):
+        return self._continuous
+
+    def set_continuous(self, continuous: Continuous):
+        self._continuous = continuous
+
+    def unschedule(self, scheduler_name: str):
+        self._continuous.clear(scheduler_name)
+
+
+class EventScheduler(Scheduler):
+    pass
+
+
+class Immediately(Scheduler):
+    immediately: str = "immediately"
+
+    def description(self):
+        return (
+            f"This scheduler executes its actions immediately. {super().description()}"
+        )
+
+    def schedule(self, scheduler_name: str, executor: Executor):
+        self.executor.push(scheduler_name=scheduler_name)

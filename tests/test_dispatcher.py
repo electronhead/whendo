@@ -4,7 +4,8 @@ from datetime import timedelta
 import whendo.core.util as util
 from typing import Optional, Dict, Any
 from whendo.core.action import Action
-from whendo.core.schedulers.cont_scheduler import Immediately, Timely
+from whendo.core.schedulers.cont_scheduler import Timely
+from whendo.core.scheduler import Immediately
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 from whendo.core.continuous import Continuous
@@ -30,66 +31,6 @@ def test_schedule_action(friends):
     dispatcher.clear_jobs()
 
     assert action.flea_count > 0
-
-
-def test_unschedule_action(friends):
-    """
-    Tests unscheduling an action.
-    """
-    dispatcher, scheduler, action = friends()
-
-    dispatcher.add_action("foo", action)
-    dispatcher.add_scheduler("bar", scheduler)
-    dispatcher.schedule_action("bar", "foo")
-    assert dispatcher.job_count() == 1
-    dispatcher.unschedule_action("foo")
-    assert dispatcher.job_count() == 0
-    assert dispatcher.get_scheduled_action_count() == dispatcher.job_count()
-
-
-def test_reschedule_action(friends):
-    """
-    Tests unscheduling and then rescheduling an action.
-    """
-    dispatcher, scheduler, action = friends()
-    assert dispatcher.job_count() == 0
-
-    dispatcher.add_action("foo", action)
-    dispatcher.add_scheduler("bar", scheduler)
-    dispatcher.schedule_action("bar", "foo")
-    dispatcher.reschedule_action("foo")
-
-    dispatcher.run_jobs()
-    time.sleep(pause)
-    dispatcher.stop_jobs()
-    dispatcher.clear_jobs()
-
-    assert action.flea_count > 0
-
-
-def test_reschedule_action_2(friends, tmp_path):
-    """
-    Tests unscheduling and then rescheduling an action.
-    """
-    dispatcher, scheduler, action = friends()
-    assert dispatcher.job_count() == 0
-
-    dispatcher.add_action("foo", action)
-    dispatcher.add_scheduler("bar", scheduler)
-    dispatcher.schedule_action("bar", "foo")
-    stored_action = dispatcher.get_action("foo")
-    stored_action.flea_count = 100000
-    dispatcher.set_action("foo", stored_action)
-    dispatcher.reschedule_action("foo")
-    retrieved_action = dispatcher.get_action("foo")
-
-    dispatcher.run_jobs()
-    time.sleep(pause)
-    dispatcher.stop_jobs()
-    dispatcher.clear_jobs()
-
-    assert retrieved_action.flea_count > 100000
-
 
 def test_unschedule_scheduler(friends):
     """
@@ -131,7 +72,7 @@ def test_reschedule_all(friends):
 
     dispatcher.add_action("foo2", action)
     dispatcher.schedule_action("bar", "foo2")
-    assert dispatcher.job_count() == 1
+    assert dispatcher.get_scheduled_action_count() == 1
 
     dispatcher.reschedule_all_schedulers()
     assert dispatcher.job_count() == 2

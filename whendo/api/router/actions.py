@@ -107,24 +107,6 @@ def execute_action_with_data(action_name: str, data: dict):
         raise exception
 
 
-@router.get("/{action_name}/unschedule", status_code=status.HTTP_200_OK)
-def unschedule_action(action_name: str):
-    try:
-        get_dispatcher(router).unschedule_action(action_name=action_name)
-        return return_success(f"action ({action_name}) was successfully unscheduled")
-    except Exception as e:
-        raise raised_exception(f"failed to unschedule action ({action_name})", e)
-
-
-@router.get("/{action_name}/reschedule", status_code=status.HTTP_200_OK)
-def reschedule_action(action_name: str):
-    try:
-        get_dispatcher(router).reschedule_action(action_name=action_name)
-        return return_success(f"action ({action_name}) was successfully rescheduled")
-    except Exception as e:
-        raise raised_exception(f"failed to reschedule action ({action_name})", e)
-
-
 @router.put("/execute", status_code=status.HTTP_200_OK)
 def execute_supplied_action(action_name: str, action=Depends(resolve_action)):
     try:

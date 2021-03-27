@@ -15,8 +15,8 @@ import whendo.core.actions.file_action as file_x
 from whendo.core.actions.logic_action import All, Success
 from whendo.core.actions.sys_action import SysInfo
 from whendo.core.actions.http_action import ExecuteAction
-from whendo.core.scheduler import Scheduler
-from whendo.core.schedulers.cont_scheduler import Timely, Immediately
+from whendo.core.scheduler import Scheduler, Immediately
+from whendo.core.schedulers.cont_scheduler import Timely
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 from whendo.core.util import (
@@ -169,7 +169,6 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
     await set_action(base_url=base_url, action_name="foo", action=action2)
-    await reschedule_action(base_url=base_url, action_name="foo")
     await assert_job_count(base_url=base_url, n=1)
 
     await run_and_stop_jobs(base_url=base_url, pause=2)
@@ -178,65 +177,6 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     with open(action2.file, "r") as fid:
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
-
-
-@pytest.mark.asyncio
-async def test_unschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
-    """ unschedule an action. """
-    await reset_dispatcher(base_url, str(tmp_path))
-
-    action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
-    )
-    action2 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
-    )
-    scheduler = Timely(interval=1)
-
-    await add_action(base_url=base_url, action_name="foo1", action=action1)
-    await add_action(base_url=base_url, action_name="foo2", action=action2)
-    await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
-    await schedule_action(base_url=base_url, action_name="foo1", scheduler_name="bar")
-    await schedule_action(base_url=base_url, action_name="foo2", scheduler_name="bar")
-    await assert_job_count(base_url=base_url, n=2)
-
-    await unschedule_action(base_url=base_url, action_name="foo1")
-    await assert_job_count(base_url=base_url, n=1)
-    await get_action(base_url=base_url, action_name="foo1")
-    await get_action(base_url=base_url, action_name="foo2")
-    await get_scheduler(base_url=base_url, scheduler_name="bar")
-
-
-@pytest.mark.asyncio
-async def test_unschedule_action_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
-    """ unschedule an action. make sure both schedulers are affected."""
-    await reset_dispatcher(base_url, str(tmp_path))
-
-    action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
-    )
-    action2 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
-    )
-    scheduler = Timely(interval=1)
-
-    await add_action(base_url=base_url, action_name="foo1", action=action1)
-    await add_action(base_url=base_url, action_name="foo2", action=action2)
-    await add_scheduler(base_url=base_url, scheduler_name="bar1", scheduler=scheduler)
-    await add_scheduler(base_url=base_url, scheduler_name="bar2", scheduler=scheduler)
-    await schedule_action(base_url=base_url, action_name="foo1", scheduler_name="bar1")
-    await schedule_action(base_url=base_url, action_name="foo1", scheduler_name="bar2")
-    await schedule_action(base_url=base_url, action_name="foo2", scheduler_name="bar1")
-    await assert_job_count(base_url=base_url, n=3)
-
-    await unschedule_action(
-        base_url=base_url, action_name="foo1"
-    )  # two schedulers involved
-    await assert_job_count(base_url=base_url, n=1)
-    await get_action(base_url=base_url, action_name="foo1")
-    await get_action(base_url=base_url, action_name="foo2")
-    await get_scheduler(base_url=base_url, scheduler_name="bar1")
-    await get_scheduler(base_url=base_url, scheduler_name="bar2")
 
 
 @pytest.mark.asyncio
@@ -264,7 +204,6 @@ async def test_reschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_p
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
 
     await set_action(base_url=base_url, action_name="foo", action=action2)
-    await reschedule_action(base_url=base_url, action_name="foo")
     await assert_job_count(base_url=base_url, n=1)
 
     await run_and_stop_jobs(base_url=base_url, pause=2)
@@ -292,10 +231,12 @@ async def test_unschedule_scheduler(startup_and_shutdown_uvicorn, base_url, tmp_
     await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
     await schedule_action(base_url=base_url, action_name="foo1", scheduler_name="bar")
     await schedule_action(base_url=base_url, action_name="foo2", scheduler_name="bar")
-    await assert_job_count(base_url=base_url, n=2)
+    await assert_job_count(base_url=base_url, n=1)
+    await assert_scheduled_action_count(base_url=base_url, n=2)
 
     await unschedule_scheduler(base_url=base_url, scheduler_name="bar")
     await assert_job_count(base_url=base_url, n=0)
+    await assert_scheduled_action_count(base_url=base_url, n=0)
     await get_action(base_url=base_url, action_name="foo1")
     await get_action(base_url=base_url, action_name="foo2")
     await get_scheduler(base_url=base_url, scheduler_name="bar")
@@ -768,18 +709,6 @@ async def set_action(base_url: str, action_name: str, action: Action):
     assert response.status_code == 200, f"failed to get action ({action_name})"
     retrieved_action = resolve_action(response.json())
     assert isinstance(retrieved_action, Action), str(type(retrieved_action))
-
-
-async def unschedule_action(base_url: str, action_name: str):
-    response = await get(base_url=base_url, path=f"/actions/{action_name}/unschedule")
-    assert response.status_code == 200, f"failed to unschedule action ({action_name})"
-
-
-async def reschedule_action(base_url: str, action_name: str):
-    response = await get(base_url=base_url, path=f"/actions/{action_name}/reschedule")
-    assert (
-        response.status_code == 200
-    ), f"failed to reschedule action ({action_name}) with response({response.json()})"
 
 
 async def get_scheduler(base_url: str, scheduler_name: str):

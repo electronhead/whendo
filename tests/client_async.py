@@ -79,12 +79,6 @@ class ClientAsync(BaseModel):
     async def execute_action_with_data(self, action_name: str, data: dict):
         return await self.post_dict(f"/actions/{action_name}/execute", data)
 
-    async def reschedule_action(self, action_name: str):
-        return await self.get(f"/actions/{action_name}/reschedule")
-
-    async def unschedule_action(self, action_name: str):
-        return await self.get(f"/actions/{action_name}/unschedule")
-
     # /schedulers
     async def schedule_action(self, scheduler_name: str, action_name: str):
         return await self.get(f"/schedulers/{scheduler_name}/actions/{action_name}")

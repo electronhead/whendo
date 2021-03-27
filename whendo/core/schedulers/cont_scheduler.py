@@ -1,15 +1,14 @@
 from typing import Optional
 import logging
-import random
 from whendo.core.util import TimeUnit
-from whendo.core.action import Action
-from whendo.core.scheduler import Scheduler
+from whendo.core.scheduler import ContinuousScheduler
 from whendo.core.continuous import Continuous
+from whendo.core.executor import Executor
 
 logger = logging.getLogger(__name__)
 
 
-class Timely(Scheduler):
+class Timely(ContinuousScheduler):
     """
     This scheduler executes Actions every [interval] days, hours, minutes, seconds at a
     time within the time unit (hour, minute, second).
@@ -34,10 +33,12 @@ class Timely(Scheduler):
     def description(self):
         return f"This scheduler executes its actions every {self.time_as_str()}. {super().description()}"
 
-    def schedule_action(self, tag: str, action: Action, continuous: Continuous):
-        callable = self.during_period(tag=tag, action=action)
-        continuous.schedule_timely_callable(
-            tag=tag,
+    def schedule(self, scheduler_name: str, executor: Executor):
+        super().schedule(scheduler_name, executor)
+        self.unschedule(scheduler_name)
+        callable = self.during_period(scheduler_name=scheduler_name)
+        self.get_continuous().schedule_timely_callable(
+            tag=scheduler_name,
             callable=callable,
             interval=self.interval,
             hour=self.hour,
@@ -66,7 +67,7 @@ class Timely(Scheduler):
             return f"{interval} second{'s' if interval > 1 else ''}"
 
 
-class Randomly(Scheduler):
+class Randomly(ContinuousScheduler):
     """
     This scheduler randomly executes Actions every [low] to [high] days, hours, minutes, or seconds.
 
@@ -83,38 +84,14 @@ class Randomly(Scheduler):
     def description(self):
         return f"This scheduler executes its actions every {self.low} to {self.high} {self.time_unit.value}s. {super().description()}"
 
-    def schedule_action(self, tag: str, action: Action, continuous: Continuous):
-        callable = self.during_period(tag=tag, action=action)
-        continuous.schedule_random_callable(
-            tag=tag,
+    def schedule(self, scheduler_name: str, executor: Executor):
+        super().schedule(scheduler_name, executor)
+        self.unschedule(scheduler_name)
+        callable = self.during_period(scheduler_name=scheduler_name)
+        self.get_continuous().schedule_random_callable(
+            tag=scheduler_name,
             callable=callable,
             time_unit=self.time_unit,
             low=self.low,
             high=self.high,
         )
-
-
-class Immediately(Scheduler):
-    immediately: str = "immediately"
-
-    def description(self):
-        return (
-            f"This scheduler executes its actions immediately. {super().description()}"
-        )
-
-    def schedule_action(self, tag: str, action: Action, continuous: Continuous):
-        """
-        Wrapping ensures that the execution of the action participates in logging
-        in the same manner as actions that are executed in the Continuous job
-        system.
-        """
-        wrapped_callable = self.wrap(
-            thunk=lambda: action.execute(tag=tag),
-            tag=tag,
-            action_json=action.json(),
-            scheduler_json=self.json(),
-        )
-        wrapped_callable()
-
-    def joins_scheduled_actions(self):
-        return False
