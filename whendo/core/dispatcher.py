@@ -505,10 +505,7 @@ class Dispatcher(BaseModel):
     def reschedule_all_schedulers(self):
         with Lok.lock:
             for scheduler_name in self.scheduled_actions:
-                scheduler = self.get_scheduler(scheduler_name)
-                if isinstance(scheduler, TimedScheduler):
-                    scheduler.set_timed(self._timed)
-                scheduler.schedule(scheduler_name, self.executor)
+                self.reschedule_scheduler(scheduler_name)
 
     def get_scheduled_action_count(self):
         # returns the total number of actions in the scheduled_actions dictionary
