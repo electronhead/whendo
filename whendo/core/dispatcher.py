@@ -4,7 +4,7 @@ to the python runtime (api server, testing harness). The class implements all of
 endpoints of a restful api and supports testing outside of the restful api implementation.
 
 Instances of this class contain Schedulers and Actions, which can at any point be submitted to and removed from the
-job scheduling mechanism of the schedule library (refer to the 'continuous' module).
+job scheduling mechanism of the schedule library (refer to the 'timed' module).
 """
 from pydantic import BaseModel, PrivateAttr
 from threading import RLock
@@ -17,8 +17,8 @@ from typing import Optional, Dict, Any
 from .util import PP, Dirs, Now, str_to_dt, dt_to_str
 from .action import Action
 from .program import Program
-from .scheduler import Scheduler, ContinuousScheduler, EventScheduler, Immediately
-from .continuous import Continuous
+from .scheduler import Scheduler, TimedScheduler, ThresholdScheduler, Immediately
+from .timed import Timed
 from .resolver import resolve_action, resolve_scheduler, resolve_program
 from .executor import Executor
 
@@ -41,35 +41,35 @@ class Dispatcher(BaseModel):
     saved_dir: Optional[str] = None
 
     # not treated as a model attrs
-    _continuous: Continuous = PrivateAttr(default_factory=Continuous.get)
-    _continuous_for_out_of_band: Continuous = PrivateAttr(default_factory=Continuous)
+    _timed: Timed = PrivateAttr(default_factory=Timed.get)
+    _timed_for_out_of_band: Timed = PrivateAttr(default_factory=Timed)
 
-    # jobs and continuous object
-    def get_continuous(self):
-        return self._continuous
+    # jobs and timed object
+    def get_timed(self):
+        return self._timed
 
-    def set_continuous(self, continuous: Continuous):
-        self._continuous = continuous
+    def set_timed(self, timed: Timed):
+        self._timed = timed
 
     def run_jobs(self):
         self.executor.run()
-        self._continuous.run_continuously()
+        self._timed.run_timedly()
 
     def stop_jobs(self):
         self.executor.stop()
-        self._continuous.stop_running_continuously()
+        self._timed.stop_running_timedly()
 
     def jobs_are_running(self):
-        return self._continuous.is_running()
+        return self._timed.is_running()
 
     def job_count(self):
-        return self._continuous.job_count()
+        return self._timed.job_count()
 
     def clear_jobs(self):
-        self._continuous.clear()
+        self._timed.clear()
 
-    def get_continuous_for_out_of_band(self):
-        return self._continuous_for_out_of_band
+    def get_timed_for_out_of_band(self):
+        return self._timed_for_out_of_band
 
     # internal dispatcher state access
     def get_actions(self):
@@ -104,14 +104,14 @@ class Dispatcher(BaseModel):
         Lok.reset()
         self.executor._actions_thunk = lambda: self.actions
         self.executor._scheduled_actions_thunk = lambda: self.scheduled_actions
-        self._continuous_for_out_of_band.clear()
-        self._continuous_for_out_of_band.every(1).second.do(
+        self._timed_for_out_of_band.clear()
+        self._timed_for_out_of_band.every(1).second.do(
             self.check_for_deferred_actions
         ).tag("deferred")
-        self._continuous_for_out_of_band.every(1).second.do(
+        self._timed_for_out_of_band.every(1).second.do(
             self.check_for_expiring_actions
         ).tag("expiring")
-        self._continuous_for_out_of_band.run_continuously()
+        self._timed_for_out_of_band.run_timedly()
         self.executor.run()
 
     def pprint(self):
@@ -333,8 +333,8 @@ class Dispatcher(BaseModel):
         ), f"scheduler ({scheduler_name}) does not exist"
         if len(self.scheduled_actions[scheduler_name]) == 0:
             scheduler = self.get_scheduler(scheduler_name)
-            if isinstance(scheduler, ContinuousScheduler):
-                scheduler.set_continuous(self._continuous)
+            if isinstance(scheduler, TimedScheduler):
+                scheduler.set_timed(self._timed)
             scheduler.unschedule(scheduler_name)
 
     # programs
@@ -447,8 +447,8 @@ class Dispatcher(BaseModel):
             assert action_name in self.actions, f"action ({action_name}) does not exist"
             assert not action_name in self.scheduled_actions[scheduler_name]
             scheduler = self.get_scheduler(scheduler_name)
-            if isinstance(scheduler, ContinuousScheduler):
-                scheduler.set_continuous(self._continuous)
+            if isinstance(scheduler, TimedScheduler):
+                scheduler.set_timed(self._timed)
             elif isinstance(
                 scheduler, Immediately
             ):  # executes once; does not participate further in scheduling
@@ -469,8 +469,8 @@ class Dispatcher(BaseModel):
             assert action_name in self.actions, f"action ({action_name}) does not exist"
             # get the scheduler
             scheduler = self.get_scheduler(scheduler_name)
-            if isinstance(scheduler, ContinuousScheduler):
-                scheduler.set_continuous(self._continuous)
+            if isinstance(scheduler, TimedScheduler):
+                scheduler.set_timed(self._timed)
             # remove the action from the scheduler's actions
             action_names = self.scheduled_actions[scheduler_name]
             if action_name in action_names:
@@ -486,8 +486,8 @@ class Dispatcher(BaseModel):
                 scheduler_name in self.schedulers
             ), f"scheduler ({scheduler_name}) does not exist"
             scheduler = self.get_scheduler(scheduler_name)
-            if isinstance(scheduler, ContinuousScheduler):
-                scheduler.set_continuous(self._continuous)
+            if isinstance(scheduler, TimedScheduler):
+                scheduler.set_timed(self._timed)
             scheduler.unschedule(scheduler_name)
             self.scheduled_actions[scheduler_name].clear()
             self.save_current()
@@ -498,21 +498,21 @@ class Dispatcher(BaseModel):
                 scheduler_name in self.schedulers
             ), f"scheduler ({scheduler_name}) does not exist"
             scheduler = self.get_scheduler(scheduler_name)
-            if isinstance(scheduler, ContinuousScheduler):
-                scheduler.set_continuous(self._continuous)
+            if isinstance(scheduler, TimedScheduler):
+                scheduler.set_timed(self._timed)
             scheduler.schedule(scheduler_name, self.executor)
 
     def reschedule_all_schedulers(self):
         with Lok.lock:
             for scheduler_name in self.scheduled_actions:
                 scheduler = self.get_scheduler(scheduler_name)
-                if isinstance(scheduler, ContinuousScheduler):
-                    scheduler.set_continuous(self._continuous)
+                if isinstance(scheduler, TimedScheduler):
+                    scheduler.set_timed(self._timed)
                 scheduler.schedule(scheduler_name, self.executor)
 
     def get_scheduled_action_count(self):
         # returns the total number of actions in the scheduled_actions dictionary
-        # should be equal to the number of jobs in related Continuous instance
+        # should be equal to the number of jobs in related Timed instance
         with Lok.lock:
             return sum(
                 len(action_array) for action_array in self.scheduled_actions.values()
@@ -549,7 +549,7 @@ class Dispatcher(BaseModel):
 
     def check_for_deferred_actions(self):
         """
-        This gets run as a job in the out-of-band Continuous instance.
+        This gets run as a job in the out-of-band Timed instance.
 
         It looks for deferred actions whose dates are prior to the current
         time and schedules them using the associated scheduler. See the
@@ -623,7 +623,7 @@ class Dispatcher(BaseModel):
 
     def check_for_expiring_actions(self):
         """
-        This gets run as a job in the out-of-band Continuous instance.
+        This gets run as a job in the out-of-band Timed instance.
 
         It looks for expiring actions whose dates are later than the current
         time and unschedules them within the context of the associated scheduler.
@@ -740,7 +740,7 @@ class DispatcherSingleton:
                 cls.dispatcher = cls.dispatcher.load_current()
             except Exception as exception:
                 logger.error("error loading dispatcher from disk", exception)
-            cls.dispatcher.set_continuous(Continuous.get())
+            cls.dispatcher.set_timed(Timed.get())
             cls.dispatcher.initialize()
             cls.dispatcher.reschedule_all_schedulers()
         return cls.dispatcher

@@ -5,7 +5,7 @@ from collections.abc import Callable
 import logging
 from .util import Now, object_info
 from .executor import Executor
-from .continuous import Continuous
+from .timed import Timed
 
 logger = logging.getLogger(__name__)
 
@@ -88,20 +88,20 @@ class Scheduler(BaseModel):
             return ""
 
 
-class ContinuousScheduler(Scheduler):
-    _continuous: Continuous = PrivateAttr()
+class TimedScheduler(Scheduler):
+    _timed: Timed = PrivateAttr()
 
-    def get_continuous(self):
-        return self._continuous
+    def get_timed(self):
+        return self._timed
 
-    def set_continuous(self, continuous: Continuous):
-        self._continuous = continuous
+    def set_timed(self, timed: Timed):
+        self._timed = timed
 
     def unschedule(self, scheduler_name: str):
-        self._continuous.clear(scheduler_name)
+        self._timed.clear(scheduler_name)
 
 
-class EventScheduler(Scheduler):
+class ThresholdScheduler(Scheduler):
     pass
 
 

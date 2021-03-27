@@ -4,7 +4,7 @@ It also initializes the Dispatcher for the calling ASGI server.
 """
 from fastapi import FastAPI
 from whendo.core.dispatcher import DispatcherSingleton
-from whendo.core.continuous import Continuous
+from whendo.core.timed import Timed
 from whendo.api.router import actions, schedulers, dispatcher, jobs, execution, programs
 from whendo.api.shared import set_dispatcher
 import whendo.log.init

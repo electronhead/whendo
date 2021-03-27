@@ -5,7 +5,7 @@ corresponding to the schedule in the schedule_actions dispatcher
 dictionary are executed.
 
 In this manner, action execution is decoupled from the underlying event
-mechanism. For example, the Continuous class (from the schedule library)
+mechanism. For example, the Timed class (from the schedule library)
 only sees thunks whose only effect is to push schedule names onto the
 executor queue.
 

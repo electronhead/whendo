@@ -1,14 +1,14 @@
 from typing import Optional
 import logging
 from whendo.core.util import TimeUnit
-from whendo.core.scheduler import ContinuousScheduler
-from whendo.core.continuous import Continuous
+from whendo.core.scheduler import TimedScheduler
+from whendo.core.timed import Timed
 from whendo.core.executor import Executor
 
 logger = logging.getLogger(__name__)
 
 
-class Timely(ContinuousScheduler):
+class Timely(TimedScheduler):
     """
     This scheduler executes Actions every [interval] days, hours, minutes, seconds at a
     time within the time unit (hour, minute, second).
@@ -37,7 +37,7 @@ class Timely(ContinuousScheduler):
         super().schedule(scheduler_name, executor)
         self.unschedule(scheduler_name)
         callable = self.during_period(scheduler_name=scheduler_name)
-        self.get_continuous().schedule_timely_callable(
+        self.get_timed().schedule_timely_callable(
             tag=scheduler_name,
             callable=callable,
             interval=self.interval,
@@ -67,7 +67,7 @@ class Timely(ContinuousScheduler):
             return f"{interval} second{'s' if interval > 1 else ''}"
 
 
-class Randomly(ContinuousScheduler):
+class Randomly(TimedScheduler):
     """
     This scheduler randomly executes Actions every [low] to [high] days, hours, minutes, or seconds.
 
@@ -88,7 +88,7 @@ class Randomly(ContinuousScheduler):
         super().schedule(scheduler_name, executor)
         self.unschedule(scheduler_name)
         callable = self.during_period(scheduler_name=scheduler_name)
-        self.get_continuous().schedule_random_callable(
+        self.get_timed().schedule_random_callable(
             tag=scheduler_name,
             callable=callable,
             time_unit=self.time_unit,

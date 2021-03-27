@@ -7,7 +7,7 @@ is different from main.py.
 """
 from fastapi import FastAPI
 from whendo.core.dispatcher import Dispatcher
-from whendo.core.continuous import Continuous
+from whendo.core.timed import Timed
 from whendo.api.router import actions, schedulers, dispatcher, jobs, execution, programs
 from whendo.api.shared import set_dispatcher
 
@@ -20,7 +20,7 @@ async def root():
 
 
 dispatcher_instance = Dispatcher()
-dispatcher_instance.set_continuous(Continuous())
+dispatcher_instance.set_timed(Timed())
 dispatcher_instance.initialize()
 
 app.include_router(set_dispatcher(actions.router, dispatcher_instance))

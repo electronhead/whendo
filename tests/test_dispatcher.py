@@ -4,18 +4,18 @@ from datetime import timedelta
 import whendo.core.util as util
 from typing import Optional, Dict, Any
 from whendo.core.action import Action
-from whendo.core.schedulers.cont_scheduler import Timely
+from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.scheduler import Immediately
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
-from whendo.core.continuous import Continuous
+from whendo.core.timed import Timed
 
 pause = 3
 
 
 def test_schedule_action(friends):
     """
-    Tests Dispatcher and Continuous objects running a scheduled action.
+    Tests Dispatcher and Timed objects running a scheduled action.
     """
     dispatcher, scheduler, action = friends()
 
@@ -368,7 +368,7 @@ def friends(tmp_path):
     def stuff():
         # want a fresh tuple from the fixture
         dispatcher = Dispatcher(saved_dir=str(tmp_path))
-        dispatcher.set_continuous(Continuous())
+        dispatcher.set_timed(Timed())
         dispatcher.initialize()
         action = FleaCount()
         scheduler = Timely(interval=1)

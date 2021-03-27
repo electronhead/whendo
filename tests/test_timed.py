@@ -1,5 +1,5 @@
 import time
-from whendo.core.continuous import Continuous
+from whendo.core.timed import Timed
 from whendo.core.util import TimeUnit, PP
 from whendo.core.action import Action
 
@@ -29,12 +29,12 @@ def test_timely_callable(tmp_path):
             return result
 
         def run(self):
-            continuous = Continuous()
-            continuous.schedule_timely_callable("tag", self.callable)
-            continuous.run_continuously()
+            timed = Timed()
+            timed.schedule_timely_callable("tag", self.callable)
+            timed.run_timedly()
             time.sleep(pause)
-            continuous.stop_running_continuously()
-            continuous.clear()
+            timed.stop_running_timedly()
+            timed.clear()
 
     suite = Suite()
     suite.run()
@@ -65,14 +65,14 @@ def test_random_callable(tmp_path):
             return result
 
         def run(self):
-            continuous = Continuous()
-            continuous.schedule_random_callable(
+            timed = Timed()
+            timed.schedule_random_callable(
                 "tag", self.callable, time_unit=TimeUnit.second, low=1, high=3
             )
-            continuous.run_continuously()
+            timed.run_timedly()
             time.sleep(4)
-            continuous.stop_running_continuously()
-            continuous.clear()
+            timed.stop_running_timedly()
+            timed.clear()
 
     suite = Suite()
     suite.run()
@@ -102,12 +102,12 @@ def test_file_action(tmp_path):
                 return sum(1 for line in fid)
 
         def run(self):
-            continuous = Continuous()
-            continuous.schedule_timely_callable("tag", self.action.execute)
-            continuous.run_continuously()
+            timed = Timed()
+            timed.schedule_timely_callable("tag", self.action.execute)
+            timed.run_timedly()
             time.sleep(pause)
-            continuous.stop_running_continuously()
-            continuous.clear()
+            timed.stop_running_timedly()
+            timed.clear()
 
     suite = Suite(FileAction())
     suite.run()

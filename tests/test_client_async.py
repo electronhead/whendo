@@ -14,7 +14,7 @@ import whendo.core.actions.file_action as file_x
 from whendo.core.actions.logic_action import All, Success
 from whendo.core.actions.sys_action import SysInfo
 from whendo.core.scheduler import Scheduler, Immediately
-from whendo.core.schedulers.cont_scheduler import Timely
+from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 from whendo.core.util import FilePathe, resolve_instance, DateTime, Now, Http, DateTime2
@@ -60,7 +60,7 @@ async def test_client_2(startup_and_shutdown_uvicorn, host, port, tmp_path):
 @pytest.mark.asyncio
 async def test_client_3(startup_and_shutdown_uvicorn, host, port, tmp_path):
     """
-    add action and scheduler, run continuous, and then make sure the action produced file output
+    add action and scheduler, run timed, and then make sure the action produced file output
     """
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))

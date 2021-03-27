@@ -2,7 +2,7 @@ from datetime import time
 import whendo.core.scheduler as sched
 from whendo.core.util import Now
 from whendo.core.action import Action
-from whendo.core.continuous import Continuous
+from whendo.core.timed import Timed
 
 
 def xtest_during_period():

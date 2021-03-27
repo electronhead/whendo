@@ -6,4 +6,4 @@ import whendo.core.actions.file_action
 import whendo.core.actions.http_action
 import whendo.core.actions.logic_action
 import whendo.core.actions.sys_action
-import whendo.core.schedulers.cont_scheduler
+import whendo.core.schedulers.timed_scheduler

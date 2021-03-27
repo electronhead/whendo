@@ -12,21 +12,21 @@ from whendo.core.util import Now, TimeUnit
 logger = logging.getLogger(__name__)
 
 
-class Continuous(Scheduler):
+class Timed(Scheduler):
     """
     This class extends the functionality of schedule.Scheduler using code from github [see below]
-    that runs jobs continuously in a separate thread. There is no need to invoke run_pending()
+    that runs jobs timedly in a separate thread. There is no need to invoke run_pending()
     in a loop.
 
     docs:
         https://schedule.readthedocs.io/en/stable/
 
     usage of additional methods:
-        continuous = Continuous()
-        continuous.job_count()
-        continuous.is_running()
-        continuous.run_continuously()
-        continuous.stop_running_continuously()
+        timed = Timed()
+        timed.job_count()
+        timed.is_running()
+        timed.run_timedly()
+        timed.stop_running_timedly()
     """
 
     instance = None
@@ -34,17 +34,17 @@ class Continuous(Scheduler):
     @classmethod
     def get(cls):
         if not cls.instance:
-            cls.instance = Continuous()
+            cls.instance = Timed()
         return cls.instance
 
     def __init__(self):
         super().__init__()
-        self.cease_continuous_run = None
+        self.cease_timed_run = None
 
     def is_running(self):
-        if not self.cease_continuous_run:
+        if not self.cease_timed_run:
             return False
-        if self.cease_continuous_run.is_set():
+        if self.cease_timed_run.is_set():
             return False
         else:
             return True
@@ -52,52 +52,48 @@ class Continuous(Scheduler):
     def job_count(self):
         return len(self.jobs)
 
-    def stop_running_continuously(self):
-        if self.cease_continuous_run:
-            if self.cease_continuous_run.is_set():
-                logger.info(f"continuous run already stopped")
+    def stop_running_timedly(self):
+        if self.cease_timed_run:
+            if self.cease_timed_run.is_set():
+                logger.info(f"timed run already stopped")
             else:
-                self.cease_continuous_run.set()
-                logger.info(f"continuous run stopped")
+                self.cease_timed_run.set()
+                logger.info(f"timed run stopped")
         else:
-            logger.info(f"yet to run continuously")
+            logger.info(f"yet to run timedly")
 
     #
     # from https://github.com/mrhwick/schedule/blob/master/schedule/__init__.py
-    # ... ensures one active invocation of run_continuously at a
+    # ... ensures one active invocation of run_timedly at a
     #
-    def run_continuously(self, interval=1):
+    def run_timedly(self, interval=1):
         """
-        Continuously run, while executing pending jobs at each elapsed
+        Timedly run, while executing pending jobs at each elapsed
         time interval.
-        @return cease_continuous_run: threading.Event which can be set to
-        cease continuous run.
-        Please note that it is *intended behavior that run_continuously()
+        @return cease_timed_run: threading.Event which can be set to
+        cease timed run.
+        Please note that it is *intended behavior that run_timedly()
         does not run missed jobs*. For example, if you've registered a job
-        that should run every minute and you set a continuous run interval
+        that should run every minute and you set a timed run interval
         of one hour then your job won't be run 60 times at each interval but
         only once.
         """
         # do not run again if already running. Stop first, then run again.
-        assert (
-            True
-            if self.cease_continuous_run == None
-            else self.cease_continuous_run.is_set()
-        )
+        assert True if self.cease_timed_run == None else self.cease_timed_run.is_set()
 
-        self.cease_continuous_run = Event()
+        self.cease_timed_run = Event()
 
         class ScheduleThread(Thread):
             @classmethod
             def run(cls):
-                while not self.cease_continuous_run.is_set():
+                while not self.cease_timed_run.is_set():
                     self.run_pending()
                     time.sleep(interval)
 
-        continuous_thread = ScheduleThread()
-        continuous_thread.setDaemon(True)
-        continuous_thread.start()
-        logger.info(f"started running continuously")
+        timed_thread = ScheduleThread()
+        timed_thread.setDaemon(True)
+        timed_thread.start()
+        logger.info(f"started running timedly")
 
     # methods added to adapt to Dispatcher scheduling model (an adaptation of the schedule library model)
     def schedule_timely_callable(
