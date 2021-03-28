@@ -92,12 +92,18 @@ class Dispatcher(BaseModel):
 
     def get_saved_dir(self):
         return self.saved_dir
+    
+    def get_actions_for_scheduler(self, scheduler_name:str):
+        with Lok.lock:
+            action_names = self.scheduled_actions[scheduler_name]
+            return { action_name:self.actions[action_name] for action_name in action_names }
 
     # other internal dispatcher operations
     def initialize(self):
         Lok.reset()
         self.executor._actions_thunk = lambda: self.actions
         self.executor._scheduled_actions_thunk = lambda: self.scheduled_actions
+        self.executor._get_actions_thunk = self.get_actions_for_scheduler
         self._timed_for_out_of_band.clear()
         self._timed_for_out_of_band.every(1).second.do(
             self.check_for_deferred_actions

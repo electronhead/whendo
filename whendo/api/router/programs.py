@@ -62,4 +62,4 @@ def schedule_program(program_name: str, datetime2: DateTime2):
         )
         return return_success(f"program ({program_name}) was successfully scheduled")
     except Exception as e:
-        raise raised_exception("failed to schedule program (program_name)", e)
+        raise raised_exception(f"failed to schedule program ({program_name})", e)
