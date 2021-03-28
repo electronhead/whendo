@@ -147,7 +147,7 @@ class All(ListAction):
     executes all actions
     """
 
-    logic_all: str = "logic_all"
+    _all: str = "all"
     op_mode: ListOpMode = ListOpMode.ALL
 
     def description(self):
