@@ -1,100 +1,29 @@
 """
-An Executor instance executes actions based on schedule names pushed
-onto the queue. If a scheduler name lands on the queue, its actions
-corresponding to the schedule in the schedule_actions dispatcher
-dictionary are executed.
-
-In this manner, action execution is decoupled from the underlying event
-mechanism. For example, the Timed class (from the schedule library)
-only sees thunks whose only effect is to push schedule names onto the
-executor queue.
-
-When it comes time to handle non-time-specific events, it will just be a
-matter of pushing scheduler names to the executor's queue and relying
-on the executor to execute the corresponding actions.
+An Executor instance executes actions immediately based on scheduler names
+supplied by time- or threshold-based schedulers. The actions associated with
+the named scheduler are executed.
 """
 
-from typing import List, Dict
-from pydantic import BaseModel, PrivateAttr
-from collections import deque
-from threading import RLock, Thread, Event
-import time
-import random
-from collections.abc import Callable
+from typing import Callable
 import logging
-
 
 logger = logging.getLogger(__name__)
 
 
-class Executor(BaseModel):
-    queue: deque = deque()
-
-    # list funny business -- can't assign Callable to variable typed as Callable
-    # thinks it's trying to assign into a method
-    # so couldn't use setters on these puppies -- setting directly in calling code
-    _scheduled_actions_thunk: Callable = PrivateAttr()
-    _actions_thunk: Callable = PrivateAttr()
-    _get_actions_thunk: Callable = PrivateAttr()
-    _cease_run: Event = PrivateAttr()
-
-    def clear(self):
-        pass
-        # self.queue.clear()
+class Executor:
+    
+    def __init__(self, get_actions_thunk:Callable):
+        self.get_actions_thunk = get_actions_thunk
 
     def push(self, scheduler_name: str):
         """
-        The event triggering mechanism (time- or environment-based) calls this method.
+        The event triggering mechanism (time- or threshold-based) calls this method.
         """
-        # with Lok.lock:
-            # self.queue.append(scheduler_name)
-        actions_dictionary = self._get_actions_thunk(scheduler_name)
+        actions_dictionary = self.get_actions_thunk(scheduler_name)
         for action_name in actions_dictionary:
-            actions_dictionary[action_name].execute(tag=f"f{scheduler_name}:{action_name}")
-
-
-    def compute_actions(self, scheduler_name: str):
-        """
-        Just-in-time computation of actions.
-        """
-        action_names = self._scheduled_actions_thunk()[scheduler_name]
-        actions = self._actions_thunk()
-        return zip(action_names, [actions[action_name] for action_name in action_names])
-
-    def run(self):
-        pass
-        # self._cease_run = Event()
-
-        # class ExecutorThread(Thread):
-        #     @classmethod
-        #     def run(cls):
-        #         while not self._cease_run.is_set():
-        #             with Lok.lock:
-        #                 while len(self.queue) > 0:
-        #                     scheduler_name = self.queue.popleft()
-        #                     for (action_name, action) in self.compute_actions(
-        #                         scheduler_name
-        #                     ):
-        #                         try:
-        #                             action.execute(
-        #                                 tag=f"{scheduler_name}:{action_name}"
-        #                             )
-        #                         except Exception as e:
-        #                             logging.error(f"Executor execution error: ({str(e)}")
-        #             time.sleep(0.1 * (1 + random.random()))
-
-        # executor_thread = ExecutorThread()
-        # executor_thread.setDaemon(True)
-        # executor_thread.start()
-
-    def stop(self):
-        pass
-        # self._cease_run.set()
-
-
-class Lok:
-    lock = RLock()
-
-    @classmethod
-    def reset(cls):
-        cls.lock = RLock()
+            try:
+                actions_dictionary[action_name].execute(
+                    tag=f"{scheduler_name}:{action_name}"
+                )
+            except Exception as e:
+                logging.error(f"Executor execution error: ({str(e)}")

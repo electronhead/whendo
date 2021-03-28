@@ -31,7 +31,6 @@ class Dispatcher(BaseModel):
     up, Dispatch loads the last saved version.
     """
 
-    executor: Executor = Executor()
     actions: Dict[str, Action] = {}
     schedulers: Dict[str, Scheduler] = {}
     programs: Dict[str, Program] = {}
@@ -49,11 +48,9 @@ class Dispatcher(BaseModel):
         self._timed = timed
 
     def run_jobs(self):
-        self.executor.run()
         self._timed.run()
 
     def stop_jobs(self):
-        self.executor.stop()
         self._timed.stop()
 
     def jobs_are_running(self):
@@ -92,18 +89,17 @@ class Dispatcher(BaseModel):
 
     def get_saved_dir(self):
         return self.saved_dir
-    
-    def get_actions_for_scheduler(self, scheduler_name:str):
+
+    def get_actions_for_scheduler(self, scheduler_name: str):
         with Lok.lock:
             action_names = self.scheduled_actions[scheduler_name]
-            return { action_name:self.actions[action_name] for action_name in action_names }
+            return {
+                action_name: self.actions[action_name] for action_name in action_names
+            }
 
     # other internal dispatcher operations
     def initialize(self):
         Lok.reset()
-        self.executor._actions_thunk = lambda: self.actions
-        self.executor._scheduled_actions_thunk = lambda: self.scheduled_actions
-        self.executor._get_actions_thunk = self.get_actions_for_scheduler
         self._timed_for_out_of_band.clear()
         self._timed_for_out_of_band.every(1).second.do(
             self.check_for_deferred_actions
@@ -112,7 +108,6 @@ class Dispatcher(BaseModel):
             self.check_for_expiring_actions
         ).tag("expiring")
         self._timed_for_out_of_band.run()
-        self.executor.run()
 
     def pprint(self):
         PP.pprint(self.dict())
@@ -170,7 +165,6 @@ class Dispatcher(BaseModel):
             self.deferred_scheduled_actions.clear()
             self.expiring_scheduled_actions.clear()
             self._timed.clear()
-            self.executor.clear()
 
             if should_save:
                 self.save_current()
@@ -458,7 +452,7 @@ class Dispatcher(BaseModel):
             self.scheduled_actions[scheduler_name].append(action_name)
             if len(self.scheduled_actions[scheduler_name]) == 1:
                 scheduler.schedule(
-                    scheduler_name, self.executor
+                    scheduler_name, Executor(self.get_actions_for_scheduler)
                 )  # have an action to trigger
             self.save_current()
 
@@ -501,7 +495,7 @@ class Dispatcher(BaseModel):
             scheduler = self.get_scheduler(scheduler_name)
             if isinstance(scheduler, TimedScheduler):
                 scheduler.set_timed(self._timed)
-            scheduler.schedule(scheduler_name, self.executor)
+            scheduler.schedule(scheduler_name, Executor(self.get_actions_for_scheduler))
 
     def reschedule_all_schedulers(self):
         with Lok.lock:
@@ -679,7 +673,6 @@ class Dispatcher(BaseModel):
         if len(dictionary) == 0:
             return Dispatcher()
         else:
-            executor = dictionary["executor"]
             saved_dir = dictionary["saved_dir"]
             actions = dictionary["actions"]
             schedulers = dictionary["schedulers"]
@@ -697,7 +690,6 @@ class Dispatcher(BaseModel):
             for program_name in programs:
                 programs[program_name] = resolve_program(programs[program_name])
             return Dispatcher(
-                executor=executor,
                 saved_dir=saved_dir,
                 actions=actions,
                 schedulers=schedulers,
