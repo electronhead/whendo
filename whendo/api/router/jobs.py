@@ -5,25 +5,17 @@ router = APIRouter(prefix="/jobs", tags=["Jobs"])
 
 
 @router.get("/run", status_code=status.HTTP_200_OK)
-def start_scheduled_jobs():
+def run_jobs():
     try:
-        assert not get_dispatcher(
-            router
-        ).jobs_are_running(), "should not be running when trying to start"
-        get_dispatcher(router).run_jobs()
-        return return_success("started running")
+        return return_success(get_dispatcher(router).run_jobs())
     except Exception as e:
         raise raised_exception("failed to start running", e)
 
 
 @router.get("/stop", status_code=status.HTTP_200_OK)
-def stop_scheduled_jobs():
+def stop_jobs():
     try:
-        assert get_dispatcher(
-            router
-        ).jobs_are_running(), "should be running when trying to stop"
-        get_dispatcher(router).stop_jobs()
-        return return_success("stopped running")
+        return return_success(get_dispatcher(router).stop_jobs())
     except Exception as e:
         raise raised_exception("failed to stop running", e)
 
@@ -45,9 +37,8 @@ def jobs_are_running():
 
 
 @router.get("/clear", status_code=status.HTTP_200_OK)
-def clear():
+def clear_jobs():
     try:
-        get_dispatcher(router).clear_jobs()
-        return return_success("jobs cleared")
+        return return_success(get_dispatcher(router).clear_jobs())
     except Exception as e:
         raise raised_exception("failed to get job count", e)

@@ -55,12 +55,12 @@ class Timed(Scheduler):
     def stop(self):
         if self.cease_timed_run:
             if self.cease_timed_run.is_set():
-                logger.info(f"timed run already stopped")
+                return "already stopped"
             else:
                 self.cease_timed_run.set()
-                logger.info(f"timed run stopped")
+                return "stopped"
         else:
-            logger.info(f"yet to run timed")
+            return "yet to run"
 
     #
     # from https://github.com/mrhwick/schedule/blob/master/schedule/__init__.py
@@ -79,21 +79,25 @@ class Timed(Scheduler):
         only once.
         """
         # do not run again if already running. Stop first, then run again.
-        assert True if self.cease_timed_run == None else self.cease_timed_run.is_set()
+        # assert True if self.cease_timed_run == None else self.cease_timed_run.is_set()
 
-        self.cease_timed_run = Event()
+        if not self.is_running():
 
-        class ScheduleThread(Thread):
-            @classmethod
-            def run(cls):
-                while not self.cease_timed_run.is_set():
-                    self.run_pending()
-                    time.sleep(interval)
+            self.cease_timed_run = Event()
 
-        timed_thread = ScheduleThread()
-        timed_thread.setDaemon(True)
-        timed_thread.start()
-        logger.info(f"started running timedly")
+            class ScheduleThread(Thread):
+                @classmethod
+                def run(cls):
+                    while not self.cease_timed_run.is_set():
+                        self.run_pending()
+                        time.sleep(interval)
+
+            timed_thread = ScheduleThread()
+            timed_thread.setDaemon(True)
+            timed_thread.start()
+            return "started running"
+        else:
+            return "already running"
 
     # methods added to adapt to Dispatcher scheduling model (an adaptation of the schedule library model)
     def schedule_timely_callable(

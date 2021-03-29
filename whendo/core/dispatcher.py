@@ -48,10 +48,10 @@ class Dispatcher(BaseModel):
         self._timed = timed
 
     def run_jobs(self):
-        self._timed.run()
+        return self._timed.run()
 
     def stop_jobs(self):
-        self._timed.stop()
+        return self._timed.stop()
 
     def jobs_are_running(self):
         return self._timed.is_running()

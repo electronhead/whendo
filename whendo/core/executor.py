@@ -11,8 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 class Executor:
-    
-    def __init__(self, get_actions_thunk:Callable):
+    def __init__(self, get_actions_thunk: Callable):
         self.get_actions_thunk = get_actions_thunk
 
     def push(self, scheduler_name: str):

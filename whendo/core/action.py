@@ -12,13 +12,13 @@ class Action(BaseModel):
     """
 
     def description(self):
-        return "This Action does nothing."
+        return "This has no description."
 
     def execute(self, tag: str = None, data: dict = None):
         """
         This method typically attempts to do something useful and return something useful
         """
-        return {"result": "something useful happened"}
+        return {"result": "not sure what happened"}
 
     def info(self):
         return object_info(self)
