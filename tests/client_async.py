@@ -53,6 +53,9 @@ class ClientAsync(BaseModel):
     async def replace_dispatcher(self, replacement: Dispatcher):
         return await self.put("/dispatcher/replace", replacement)
 
+    async def describe_all(self):
+        return await self.get("/dispatcher/describe_all")
+
     # /execution
     async def execute_supplied_action(self, supplied_action: Action):
         return await self.put("/execution", supplied_action)
@@ -88,6 +91,9 @@ class ClientAsync(BaseModel):
             await self.get_as_json(f"/schedulers/{scheduler_name}"),
             check_for_found_class=False,
         )
+
+    async def describe_scheduler(self, scheduler_name: str):
+        return await self.get(f"/schedulers/{scheduler_name}/describe")
 
     async def add_scheduler(self, scheduler_name: str, scheduler: Scheduler):
         return await self.post(f"/schedulers/{scheduler_name}", scheduler)
@@ -131,6 +137,12 @@ class ClientAsync(BaseModel):
 
     async def unschedule_program(self, program_name: str):
         return await self.get(f"/programs/{program_name}/unschedule")
+
+    async def clear_deferred_programs(self):
+        return await self.get(f"/programs/clear_deferred_programs")
+
+    async def deferred_program_count(self):
+        return await self.get(f"/programs/deferred_program_count")
 
     # deferrals and expirations
     async def defer_action(

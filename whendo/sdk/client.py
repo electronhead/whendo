@@ -123,9 +123,6 @@ class Client(BaseModel):
     def reschedule_all_schedulers(self):
         return self.http().get(f"/schedulers/reschedule_all")
 
-    def execute_scheduled_actions(self, scheduler_name: str):
-        return self.http().get(f"/schedulers/{scheduler_name}/execute")
-
     def scheduled_action_count(self):
         return self.http().get("/schedulers/action_count")
 
@@ -150,6 +147,12 @@ class Client(BaseModel):
 
     def unschedule_program(self, program_name: str):
         return self.http().get(f"/programs/{program_name}/unschedule")
+
+    def clear_deferred_programs(self):
+        return self.http().get(f"/programs/clear_deferred_programs")
+
+    def deferred_program_count(self):
+        return self.http().get(f"/programs/deferred_program_count")
 
     # deferrals and expirations
     def defer_action(self, scheduler_name: str, action_name: str, wait_until: DateTime):

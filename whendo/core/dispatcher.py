@@ -114,10 +114,6 @@ class Dispatcher(BaseModel):
         self._timed_for_out_of_band.every(1).second.do(
             self.check_for_expirations_and_deferrals
         ).tag("check_for_expirations_and_deferrals")
-        # self._timed_for_out_of_band.every(1).second.do(
-        # ).tag("expiring")
-        # self._timed_for_out_of_band.every(1).second.do(
-        # ).tag("programs")
         self._timed_for_out_of_band.run()
 
     def pprint(self):
@@ -378,8 +374,9 @@ class Dispatcher(BaseModel):
             assert (
                 program_name in self.programs
             ), f"program ({program_name}) does not exist"
+            self.unschedule_program(program_name)
             self.programs.pop(program_name)
-            self.unschedule_program(program_name)  # saves current state of dispatcher
+            self.save_current()
 
     def unschedule_program(self, program_name: str):
         """
@@ -607,11 +604,9 @@ class Dispatcher(BaseModel):
         """
         with Lok.lock:
             assert (
-                scheduler_name in self.get_schedulers()
+                scheduler_name in self.schedulers
             ), f"scheduler ({scheduler_name}) does not exist"
-            assert (
-                action_name in self.get_actions()
-            ), f"action ({action_name}) does not exist"
+            assert action_name in self.actions, f"action ({action_name}) does not exist"
             # needs to be a str key because of Dispatcher json serialization and deserialization
             wait_until_str = dt_to_str(wait_until)
             if wait_until_str not in self.deferred_scheduled_actions:
@@ -681,11 +676,9 @@ class Dispatcher(BaseModel):
         """
         with Lok.lock:
             assert (
-                scheduler_name in self.get_schedulers()
+                scheduler_name in self.schedulers
             ), f"scheduler ({scheduler_name}) does not exist"
-            assert (
-                action_name in self.get_actions()
-            ), f"action ({action_name}) does not exist"
+            assert action_name in self.actions, f"action ({action_name}) does not exist"
             # needs to be a str key because of Dispatcher json serialization and deserialization
             expire_on_str = dt_to_str(expire_on)
             if expire_on_str not in self.expiring_scheduled_actions:

@@ -345,6 +345,131 @@ def test_program_1(friends):
     assert action3.fleas == 1
 
 
+def test_program_2(friends):
+    """
+    Want to observe that a Program's actions are not executed
+    after being unscheduled prior to the deferral time.
+    """
+
+    dispatcher, scheduler, action = friends()
+
+    class TestAction1(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, data: dict = None):
+            self.fleas += 1
+            return "BLING"
+
+    class TestAction2(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, data: dict = None):
+            self.fleas += 1
+            return "BLING"
+
+    class TestAction3(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, data: dict = None):
+            self.fleas += 1
+            return "BLING"
+
+    action1 = TestAction1()
+    action2 = TestAction2()
+    action3 = TestAction3()
+
+    dispatcher.add_action("foo1", action1)
+    dispatcher.add_action("foo2", action2)
+    dispatcher.add_action("foo3", action3)
+    dispatcher.add_scheduler("bar", scheduler)
+    dispatcher.add_scheduler("immediately", Immediately())
+
+    program = PBEProgram().prologue("foo1").body_element("bar", "foo2").epilogue("foo3")
+    dispatcher.add_program("baz", program)
+    start = util.Now().dt() + timedelta(seconds=4)
+    stop = start + timedelta(seconds=4)
+
+    dispatcher.run_jobs()
+    dispatcher.schedule_program("baz", start, stop)
+    assert dispatcher.get_deferred_program_count() == 1
+    assert dispatcher.get_scheduled_action_count() == 0
+
+    dispatcher.unschedule_program("baz")
+    assert len(dispatcher.get_programs()) == 1
+    assert dispatcher.get_deferred_program_count() == 0
+
+    assert action1.fleas == 0
+    time.sleep(3)
+    assert action1.fleas == 0
+    time.sleep(4)
+    assert action2.fleas == 0
+    time.sleep(2)
+    assert action3.fleas == 0
+
+
+def test_program_3(friends):
+    """
+    Want to observe that a Program's actions are not executed
+    after being deleted prior to the deferral time.
+    """
+
+    dispatcher, scheduler, action = friends()
+
+    class TestAction1(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, data: dict = None):
+            self.fleas += 1
+            return "BLING"
+
+    class TestAction2(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, data: dict = None):
+            self.fleas += 1
+            return "BLING"
+
+    class TestAction3(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, data: dict = None):
+            self.fleas += 1
+            return "BLING"
+
+    action1 = TestAction1()
+    action2 = TestAction2()
+    action3 = TestAction3()
+
+    dispatcher.add_action("foo1", action1)
+    dispatcher.add_action("foo2", action2)
+    dispatcher.add_action("foo3", action3)
+    dispatcher.add_scheduler("bar", scheduler)
+    dispatcher.add_scheduler("immediately", Immediately())
+
+    program = PBEProgram().prologue("foo1").body_element("bar", "foo2").epilogue("foo3")
+    dispatcher.add_program("baz", program)
+    start = util.Now().dt() + timedelta(seconds=4)
+    stop = start + timedelta(seconds=4)
+    assert len(dispatcher.get_programs()) == 1
+
+    dispatcher.run_jobs()
+    dispatcher.schedule_program("baz", start, stop)
+    assert dispatcher.get_deferred_program_count() == 1
+    assert dispatcher.get_scheduled_action_count() == 0
+
+    dispatcher.delete_program("baz")
+    assert len(dispatcher.get_programs()) == 0
+    assert dispatcher.get_deferred_program_count() == 0
+
+    assert action1.fleas == 0
+    time.sleep(3)
+    assert action1.fleas == 0
+    time.sleep(4)
+    assert action2.fleas == 0
+    time.sleep(2)
+    assert action3.fleas == 0
+
+
 def test_execute_with_data(friends):
     """
     Want to see execute work with supplied dictionary.

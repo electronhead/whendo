@@ -196,24 +196,6 @@ def describe_scheduler(scheduler_name: str):
         raise raised_exception(f"failed to describe scheduler ({scheduler_name})", e)
 
 
-@router.get("/{scheduler_name}/execute", status_code=status.HTTP_200_OK)
-def execute_scheduled_actions(scheduler_name: str):
-    try:
-        result = get_dispatcher(router).execute_scheduled_actions(
-            scheduler_name=scheduler_name
-        )
-        return return_success(
-            {
-                "msg": f"scheduler ({scheduler_name}) actions were successfully executed",
-                "result": result,
-            }
-        )
-    except Exception as e:
-        raise raised_exception(
-            f"failed to execute scheduler ({scheduler_name}) actions", e
-        )
-
-
 @router.get("/{scheduler_name}/unschedule", status_code=status.HTTP_200_OK)
 def unschedule_scheduler(scheduler_name: str):
     try:
