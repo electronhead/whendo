@@ -40,6 +40,7 @@ def test_program_3():
     )
     assert program1 == program2
 
+
 def test_program_item_1():
     dt = Now.dt()
     scheduler_name = "bar"
@@ -50,6 +51,7 @@ def test_program_item_1():
     assert item.dt == dt
     assert item.scheduler_name == scheduler_name
     assert item.action_name == action_name
+
 
 def test_program_item_2():
     dt = None

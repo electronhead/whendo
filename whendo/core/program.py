@@ -25,4 +25,3 @@ class Program(BaseModel):
         Returns a list of ProgramItems used for scheduling by the dispatcher.
         """
         pass
-

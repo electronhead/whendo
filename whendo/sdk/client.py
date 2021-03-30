@@ -148,6 +148,9 @@ class Client(BaseModel):
     def schedule_program(self, program_name: str, datetime2: DateTime2):
         return self.http().post(f"/programs/{program_name}/schedule", datetime2)
 
+    def unschedule_program(self, program_name: str):
+        return self.http().get(f"/programs/{program_name}/unschedule")
+
     # deferrals and expirations
     def defer_action(self, scheduler_name: str, action_name: str, wait_until: DateTime):
         return self.http().post(

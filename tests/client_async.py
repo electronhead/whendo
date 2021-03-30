@@ -129,6 +129,9 @@ class ClientAsync(BaseModel):
     async def schedule_program(self, program_name: str, datetime2: DateTime2):
         return await self.post(f"/programs/{program_name}/schedule", datetime2)
 
+    async def unschedule_program(self, program_name: str):
+        return await self.get(f"/programs/{program_name}/unschedule")
+
     # deferrals and expirations
     async def defer_action(
         self, scheduler_name: str, action_name: str, wait_until: DateTime

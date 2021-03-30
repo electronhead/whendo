@@ -290,7 +290,7 @@ def test_immediately(friends):
     assert test_action.fleas == 1
 
 
-def test_program(friends):
+def test_program_1(friends):
     """
     Want to observe that a Program's actions are executed.
     """
@@ -335,8 +335,9 @@ def test_program(friends):
 
     dispatcher.run_jobs()
     dispatcher.schedule_program("baz", start, stop)
+
     assert action1.fleas == 0
-    time.sleep(2)
+    time.sleep(3)
     assert action1.fleas == 1
     time.sleep(4)
     assert action2.fleas >= 2

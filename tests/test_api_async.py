@@ -774,12 +774,12 @@ async def get_program(base_url: str, program_name: str):
     return retrieved_program
 
 
-async def add_program(base_url: str, program_name: str, program: Action):
+async def add_program(base_url: str, program_name: str, program: Program):
     """ add a program and confirm """
     response = await post(
         base_url=base_url, path=f"/programs/{program_name}", data=program
     )
-    assert response.status_code == 200, f"failed to put program ({program_name})"
+    assert response.status_code == 200, f"failed to post program ({program_name})"
     response = await get(base_url, path=f"/programs/{program_name}")
     assert response.status_code == 200, f"failed to get program ({program_name})"
     retrieved_program = resolve_program(response.json())
