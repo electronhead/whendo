@@ -7,7 +7,7 @@ from whendo.core.action import Action
 from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.scheduler import Immediately
 from whendo.core.dispatcher import Dispatcher
-from whendo.core.program import Program
+from whendo.core.programs.simple_program import PBEProgram
 from whendo.core.timed import Timed
 
 pause = 3
@@ -328,7 +328,7 @@ def test_program(friends):
     dispatcher.add_scheduler("bar", scheduler)
     dispatcher.add_scheduler("immediately", Immediately())
 
-    program = Program().prologue("foo1").body_element("bar", "foo2").epilogue("foo3")
+    program = PBEProgram().prologue("foo1").body_element("bar", "foo2").epilogue("foo3")
     dispatcher.add_program("baz", program)
     start = util.Now().dt() + timedelta(seconds=1)
     stop = start + timedelta(seconds=4)

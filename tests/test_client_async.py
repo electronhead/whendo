@@ -17,6 +17,7 @@ from whendo.core.scheduler import Scheduler, Immediately
 from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
+from whendo.core.programs.simple_program import PBEProgram
 from whendo.core.util import FilePathe, resolve_instance, DateTime, Now, Http, DateTime2
 from whendo.core.resolver import resolve_action, resolve_scheduler, resolve_file_pathe
 from .fixtures import port, host, startup_and_shutdown_uvicorn
@@ -506,7 +507,7 @@ async def test_program(startup_and_shutdown_uvicorn, host, port, tmp_path):
         client=client, scheduler_name="immediately", scheduler=immediately
     )
 
-    program = Program().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
+    program = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
     await add_program(client=client, program_name="baz", program=program)
     start = Now().dt()
     stop = start + timedelta(seconds=4)

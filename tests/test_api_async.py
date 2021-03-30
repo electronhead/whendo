@@ -19,6 +19,7 @@ from whendo.core.scheduler import Scheduler, Immediately
 from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
+from whendo.core.programs.simple_program import PBEProgram
 from whendo.core.util import (
     FilePathe,
     resolve_instance,
@@ -560,7 +561,7 @@ async def test_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
         base_url=base_url, scheduler_name="immediately", scheduler=immediately
     )
 
-    program = Program().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
+    program = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
     await add_program(base_url=base_url, program_name="baz", program=program)
     start = Now().dt()
     stop = start + timedelta(seconds=4)

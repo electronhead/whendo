@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from .util import PP, Dirs, Now, str_to_dt, dt_to_str
 from .action import Action
-from .program import Program
+from .program import Program, ProgramItem
 from .scheduler import Scheduler, TimedScheduler, ThresholdScheduler, Immediately
 from .timed import Timed
 from .resolver import resolve_action, resolve_scheduler, resolve_program
@@ -373,59 +373,36 @@ class Dispatcher(BaseModel):
             self.save_current()
 
     def check_program(self, program: Program):
-        error_msgs = []
-
-        # check action names
-        action_names = set(
-            (
-                x
-                for x in [program.prologue_name, program.epilogue_name]
-                if x != "NOT_APPLICABLE"
-            )
-        )
-        for scheduler_name in program.body:
-            action_names.update(program.body[scheduler_name])
-        missing_actions = action_names - set(self.actions.keys())
-        if len(missing_actions) > 0:
-            error_msgs.append(f"actions missing: ({missing_actions})")
-
-        # check scheduler names
-        scheduler_names = {"immediately"}
-        scheduler_names.update(set(program.body.keys()))
-        missing_schedulers = scheduler_names - set(self.schedulers.keys())
-        if len(missing_schedulers) > 0:
-            error_msgs.append(f"schedulers missing: ({missing_schedulers})")
-
-        if len(error_msgs) > 0:
-            raise ValueError(", ".join(error_msgs))
+        """
+        Makes sure that actions and schedulers referenced in the program exist.
+        """
+        with Lok.lock:
+            error_msgs = []
+            program_items = program.compute_program_items()
+            if len(program_items) == 0:
+                error_msgs.append(f"empty program")
+            else:
+                for item in program_items:
+                    if item.action_name not in self.actions:
+                        error_msgs.append(f"missing action: ({item.action_name})")
+                    if item.scheduler_name not in self.schedulers:
+                        error_msgs.append(f"missing scheduler: ({item.scheduler_name})")
+            if len(error_msgs) > 0:
+                raise ValueError(", ".join(error_msgs))
 
     def schedule_program(self, program_name: str, start: datetime, stop: datetime):
-        """
-        This method utilizes the named Program's innards and schedules actions
-        specified therein.
-        """
         with Lok.lock:
             assert (
                 program_name in self.get_programs()
             ), f"program ({program_name}) does not exist"
-
             program = self.get_program(program_name)
             self.check_program(program)
-
-            if program.prologue_name != "NOT_APPLICABLE":
-                self.defer_action("immediately", program.prologue_name, start)
-
-            if len(program.body) > 0:
-                timedelta_offset = timedelta(seconds=program.offset_seconds)
-                start_plus = start + timedelta_offset
-                stop_minus = stop - timedelta_offset
-                for scheduler_name in program.body:
-                    for action_name in program.body[scheduler_name]:
-                        self.defer_action(scheduler_name, action_name, start_plus)
-                        self.expire_action(scheduler_name, action_name, stop_minus)
-
-            if program.epilogue_name != "NOT_APPLICABLE":
-                self.defer_action("immediately", program.epilogue_name, stop)
+            program_items = program.compute_program_items(start, stop)
+            for item in program_items:
+                if item.type == "defer":
+                    self.defer_action(item.scheduler_name, item.action_name, item.dt)
+                if item.type == "expire":
+                    self.expire_action(item.scheduler_name, item.action_name, item.dt)
 
             self.save_current()
 
