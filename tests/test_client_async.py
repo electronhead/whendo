@@ -531,6 +531,106 @@ async def test_program(startup_and_shutdown_uvicorn, host, port, tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_unschedule_program(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    action1 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+    )
+    action2 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+    )
+    action3 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output3.txt")
+    )
+    scheduler = Timely(interval=1)
+    immediately = Immediately()
+
+    await add_action(client=client, action_name="foo1", action=action1)
+    await add_action(client=client, action_name="foo2", action=action2)
+    await add_action(client=client, action_name="foo3", action=action3)
+    await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
+    await add_scheduler(
+        client=client, scheduler_name="immediately", scheduler=immediately
+    )
+
+    program = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
+    await add_program(client=client, program_name="baz", program=program)
+    start = Now().dt()
+    stop = start + timedelta(seconds=4)
+    datetime2 = DateTime2(dt1=start, dt2=stop)
+    await schedule_program(client=client, program_name="baz", datetime2=datetime2)
+
+    await assert_deferred_program_count(client=client, n=1)
+    await assert_scheduled_action_count(client=client, n=0)
+    await unschedule_program(client=client, program_name="baz")
+    await assert_deferred_program_count(client=client, n=0)
+
+    # action1,2,3 not doing their things
+    await run_and_stop_jobs(client=client, pause=6)
+    with pytest.raises(FileNotFoundError):
+        with open(action1.file, "r") as fid:
+            lines = fid.readlines()
+    with pytest.raises(FileNotFoundError):
+        with open(action2.file, "r") as fid:
+            lines = fid.readlines()
+    with pytest.raises(FileNotFoundError):
+        with open(action3.file, "r") as fid:
+            lines = fid.readlines()
+
+
+@pytest.mark.asyncio
+async def test_delete_program(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    action1 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+    )
+    action2 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+    )
+    action3 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output3.txt")
+    )
+    scheduler = Timely(interval=1)
+    immediately = Immediately()
+
+    await add_action(client=client, action_name="foo1", action=action1)
+    await add_action(client=client, action_name="foo2", action=action2)
+    await add_action(client=client, action_name="foo3", action=action3)
+    await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
+    await add_scheduler(
+        client=client, scheduler_name="immediately", scheduler=immediately
+    )
+
+    program = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
+    await add_program(client=client, program_name="baz", program=program)
+    start = Now().dt()
+    stop = start + timedelta(seconds=4)
+    datetime2 = DateTime2(dt1=start, dt2=stop)
+    await schedule_program(client=client, program_name="baz", datetime2=datetime2)
+
+    await assert_deferred_program_count(client=client, n=1)
+    await assert_scheduled_action_count(client=client, n=0)
+    await delete_program(client=client, program_name="baz")
+    await assert_deferred_program_count(client=client, n=0)
+
+    # action1,2,3 not doing their things
+    await run_and_stop_jobs(client=client, pause=6)
+    with pytest.raises(FileNotFoundError):
+        with open(action1.file, "r") as fid:
+            lines = fid.readlines()
+    with pytest.raises(FileNotFoundError):
+        with open(action2.file, "r") as fid:
+            lines = fid.readlines()
+    with pytest.raises(FileNotFoundError):
+        with open(action3.file, "r") as fid:
+            lines = fid.readlines()
+
+
+@pytest.mark.asyncio
 async def test_success(startup_and_shutdown_uvicorn, host, port, tmp_path):
     """ make sure success.execute is a fixed point function """
     client = ClientAsync(host=host, port=port)
@@ -606,7 +706,7 @@ async def test_file_append_2(startup_and_shutdown_uvicorn, host, port, tmp_path)
 async def get_program(client: ClientAsync, program_name: str):
     """ add a program and confirm """
     response = await client.get_program(program_name=program_name)
-    assert response.status_code == 200, f"failed to put program ({program_name})"
+    assert response.status_code == 200, f"failed to get program ({program_name})"
     retrieved_program = await client.get_program(program_name=program_name)
     assert isinstance(retrieved_program, Program), str(type(retrieved_program))
 
@@ -614,9 +714,25 @@ async def get_program(client: ClientAsync, program_name: str):
 async def add_program(client: ClientAsync, program_name: str, program: Program):
     """ add a program and confirm """
     response = await client.add_program(program_name=program_name, program=program)
-    assert response.status_code == 200, f"failed to put program ({program_name})"
+    assert response.status_code == 200, f"failed to add program ({program_name})"
     retrieved_program = await client.get_program(program_name=program_name)
     assert isinstance(retrieved_program, Program), str(type(retrieved_program))
+
+
+async def set_program(client: ClientAsync, program_name: str, program: Program):
+    """ add a program and confirm """
+    response = await client.set_program(program_name=program_name, program=program)
+    assert response.status_code == 200, f"failed to set program ({program_name})"
+    retrieved_program = await client.get_program(program_name=program_name)
+    assert isinstance(retrieved_program, Program), str(type(retrieved_program))
+
+
+async def delete_program(client: ClientAsync, program_name: str):
+    """ schedule an program """
+    response = await client.delete_program(
+        program_name=program_name,
+    )
+    assert response.status_code == 200, f"failed to delete program ({program_name})"
 
 
 async def schedule_program(
@@ -627,6 +743,14 @@ async def schedule_program(
         program_name=program_name, datetime2=datetime2
     )
     assert response.status_code == 200, f"failed to schedule program ({program_name})"
+
+
+async def unschedule_program(client: ClientAsync, program_name: str):
+    """ schedule an program """
+    response = await client.unschedule_program(
+        program_name=program_name,
+    )
+    assert response.status_code == 200, f"failed to unschedule program ({program_name})"
 
 
 async def get_action(client: ClientAsync, action_name: str):
@@ -810,6 +934,13 @@ async def assert_expiring_action_count(client: ClientAsync, n: int):
     assert response.status_code == 200, "failed to retrieve expiring action count"
     expiring_action_count = response.json()["expiring_action_count"]
     assert expiring_action_count == n, f"expected a expiring action count of ({n})"
+
+
+async def assert_deferred_program_count(client: ClientAsync, n: int):
+    response = await client.deferred_program_count()
+    assert response.status_code == 200, "failed to retrieve deferred program count"
+    deferred_program_count = response.json()["deferred_program_count"]
+    assert deferred_program_count == n, f"expected a deferred program count of ({n})"
 
 
 async def run_and_stop_jobs(client: ClientAsync, pause: int):

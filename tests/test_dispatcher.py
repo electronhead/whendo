@@ -345,7 +345,7 @@ def test_program_1(friends):
     assert action3.fleas == 1
 
 
-def test_program_2(friends):
+def test_unschedule_program(friends):
     """
     Want to observe that a Program's actions are not executed
     after being unscheduled prior to the deferral time.
@@ -407,7 +407,7 @@ def test_program_2(friends):
     assert action3.fleas == 0
 
 
-def test_program_3(friends):
+def test_delete_program(friends):
     """
     Want to observe that a Program's actions are not executed
     after being deleted prior to the deferral time.

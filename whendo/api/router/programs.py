@@ -91,7 +91,7 @@ def schedule_program(program_name: str, datetime2: DateTime2):
 @router.get("/{program_name}/unschedule", status_code=status.HTTP_200_OK)
 def unschedule_program(program_name: str):
     try:
-        get_dispatcher(router).schedule_program(program_name=program_name)
+        get_dispatcher(router).unschedule_program(program_name=program_name)
         return return_success(f"program ({program_name}) was successfully unscheduled")
     except Exception as e:
         raise raised_exception(f"failed to schedule program ({program_name})", e)

@@ -586,6 +586,106 @@ async def test_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_unschedule_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action1 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+    )
+    action2 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+    )
+    action3 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output3.txt")
+    )
+    scheduler = Timely(interval=1)
+    immediately = Immediately()
+
+    await add_action(base_url=base_url, action_name="foo1", action=action1)
+    await add_action(base_url=base_url, action_name="foo2", action=action2)
+    await add_action(base_url=base_url, action_name="foo3", action=action3)
+    await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
+    await add_scheduler(
+        base_url=base_url, scheduler_name="immediately", scheduler=immediately
+    )
+
+    program = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
+    await add_program(base_url=base_url, program_name="baz", program=program)
+    start = Now().dt()
+    stop = start + timedelta(seconds=4)
+    await schedule_program(
+        base_url=base_url, program_name="baz", start=start, stop=stop
+    )
+
+    await assert_deferred_program_count(base_url=base_url, n=1)
+    await assert_scheduled_action_count(base_url=base_url, n=0)
+    await unschedule_program(base_url=base_url, program_name="baz")
+    await assert_deferred_program_count(base_url=base_url, n=0)
+
+    # action1,2,3 not doing their things
+    await run_and_stop_jobs(base_url=base_url, pause=6)
+    with pytest.raises(FileNotFoundError):
+        with open(action1.file, "r") as fid:
+            lines = fid.readlines()
+    with pytest.raises(FileNotFoundError):
+        with open(action2.file, "r") as fid:
+            lines = fid.readlines()
+    with pytest.raises(FileNotFoundError):
+        with open(action3.file, "r") as fid:
+            lines = fid.readlines()
+
+
+@pytest.mark.asyncio
+async def test_delete_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action1 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+    )
+    action2 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+    )
+    action3 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output3.txt")
+    )
+    scheduler = Timely(interval=1)
+    immediately = Immediately()
+
+    await add_action(base_url=base_url, action_name="foo1", action=action1)
+    await add_action(base_url=base_url, action_name="foo2", action=action2)
+    await add_action(base_url=base_url, action_name="foo3", action=action3)
+    await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
+    await add_scheduler(
+        base_url=base_url, scheduler_name="immediately", scheduler=immediately
+    )
+
+    program = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
+    await add_program(base_url=base_url, program_name="baz", program=program)
+    start = Now().dt()
+    stop = start + timedelta(seconds=4)
+    await schedule_program(
+        base_url=base_url, program_name="baz", start=start, stop=stop
+    )
+
+    await assert_deferred_program_count(base_url=base_url, n=1)
+    await assert_scheduled_action_count(base_url=base_url, n=0)
+    await delete_program(base_url=base_url, program_name="baz")
+    await assert_deferred_program_count(base_url=base_url, n=0)
+
+    # action1,2,3 not doing their things
+    await run_and_stop_jobs(base_url=base_url, pause=6)
+    with pytest.raises(FileNotFoundError):
+        with open(action1.file, "r") as fid:
+            lines = fid.readlines()
+    with pytest.raises(FileNotFoundError):
+        with open(action2.file, "r") as fid:
+            lines = fid.readlines()
+    with pytest.raises(FileNotFoundError):
+        with open(action3.file, "r") as fid:
+            lines = fid.readlines()
+
+
+@pytest.mark.asyncio
 async def test_success(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """ test fixed point """
     await reset_dispatcher(base_url, str(tmp_path))
@@ -809,6 +909,18 @@ async def schedule_program(
     assert response.status_code == 200, f"failed to schedule program ({program_name})"
 
 
+async def unschedule_program(base_url: str, program_name: str):
+    """ schedule a program """
+    response = await get(base_url=base_url, path=f"/programs/{program_name}/unschedule")
+    assert response.status_code == 200, f"failed to unschedule program ({program_name})"
+
+
+async def delete_program(base_url: str, program_name: str):
+    """ schedule a program """
+    response = await delete(base_url=base_url, path=f"/programs/{program_name}")
+    assert response.status_code == 200, f"failed to delete program ({program_name})"
+
+
 async def defer_action(
     base_url: str, scheduler_name: str, action_name: str, wait_until: DateTime
 ):
@@ -929,11 +1041,20 @@ async def assert_deferred_action_count(base_url: str, n: int):
 
 async def assert_expiring_action_count(base_url: str, n: int):
     response = await get(base_url, "/schedulers/expiring_action_count")
-    assert response.status_code == 200, "failed to expiring action count"
+    assert response.status_code == 200, "failed to retrieve expiring action count"
     expiring_action_count = int(response.json()["expiring_action_count"])
     assert (
         expiring_action_count == n
     ), f"expected an expiring action count of ({n}); instead got ({expiring_action_count})"
+
+
+async def assert_deferred_program_count(base_url: str, n: int):
+    response = await get(base_url, "/programs/deferred_program_count")
+    assert response.status_code == 200, "failed to retrieve deferred program count"
+    deferred_program_count = int(response.json()["deferred_program_count"])
+    assert (
+        deferred_program_count == n
+    ), f"expected an deferred program count of ({n}); instead got ({deferred_program_count})"
 
 
 async def run_and_stop_jobs(base_url: str, pause: int):
