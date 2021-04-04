@@ -102,6 +102,10 @@ class Dispatcher(BaseModel):
                 action_name: self.actions[action_name] for action_name in action_names
             }
 
+    def unschedule_scheduler_thunk(self, scheduler_name: str):
+        with Lok.lock:
+            self.unschedule_scheduler(scheduler_name)
+
     # other internal dispatcher operations
     def check_for_expirations_and_deferrals(self):
         self.check_for_deferred_programs()
@@ -532,13 +536,25 @@ class Dispatcher(BaseModel):
                 scheduler.set_timed(self._timed)
             elif isinstance(
                 scheduler, Immediately
-            ):  # executes once; does not participate further in scheduling
-                self.get_action(action_name).execute()
+            ):  # executes once; does not participate in scheduling
+                tag = f"{scheduler_name}:{action_name}"
+                action = self.get_action(action_name)
+                try:
+                    action.execute(tag=tag)
+                    logger.info(f"Execution: tag ({tag}); executed action ({action})")
+                except Exception as exception:
+                    logger.exception(
+                        f"Execution: tag ({tag}); error while executing action ({action})",
+                        exc_info=exception,
+                    )
                 return
             self.scheduled_actions[scheduler_name].append(action_name)
             if len(self.scheduled_actions[scheduler_name]) == 1:
                 scheduler.schedule(
-                    scheduler_name, Executor(self.get_actions_for_scheduler)
+                    scheduler_name,
+                    Executor(
+                        self.get_actions_for_scheduler, self.unschedule_scheduler_thunk
+                    ),
                 )  # have an action to trigger
             self.save_current()
 
@@ -581,7 +597,12 @@ class Dispatcher(BaseModel):
             scheduler = self.get_scheduler(scheduler_name)
             if isinstance(scheduler, TimedScheduler):
                 scheduler.set_timed(self._timed)
-            scheduler.schedule(scheduler_name, Executor(self.get_actions_for_scheduler))
+            scheduler.schedule(
+                scheduler_name,
+                Executor(
+                    self.get_actions_for_scheduler, self.unschedule_scheduler_thunk
+                ),
+            )
 
     def reschedule_all_schedulers(self):
         with Lok.lock:

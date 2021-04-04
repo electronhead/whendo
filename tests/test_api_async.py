@@ -450,7 +450,7 @@ async def test_defer_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await assert_deferred_action_count(base_url=base_url, n=1)
     await assert_scheduled_action_count(base_url=base_url, n=0)
 
-    time.sleep(6)
+    time.sleep(4)
 
     await assert_deferred_action_count(base_url=base_url, n=0)
     await assert_scheduled_action_count(base_url=base_url, n=1)

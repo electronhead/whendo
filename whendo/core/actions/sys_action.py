@@ -18,10 +18,7 @@ class SysInfo(Action):
         return f"This action returns system-level information."
 
     def execute(self, tag: str = None, data: dict = None):
-        result = {"result": util.SystemInfo.get()}
-        if data:
-            result["data"] = data
-        return result
+        return self.action_result(result=util.SystemInfo.get(), data=data)
 
 
 class MiniInfo(Action):
@@ -35,10 +32,7 @@ class MiniInfo(Action):
         return f"This action returns terse local information."
 
     def execute(self, tag: str = None, data: dict = None):
-        result = {"result": self.local_info()}
-        if data:
-            result["data"] = data
-        return result
+        return self.action_result(result=self.local_info(), data=data)
 
 
 class Pause(Action):
@@ -55,7 +49,4 @@ class Pause(Action):
 
     def execute(self, tag: str = None, data: dict = None):
         time.sleep(self.seconds)
-        result = {"result": self.seconds, "action_info": self.info()}
-        if data:
-            result["data"] = data
-        return result
+        return self.action_result(result=self.seconds, data=data)

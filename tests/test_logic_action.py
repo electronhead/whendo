@@ -1,6 +1,8 @@
+from typing import Optional, Any, Dict
+import pytest
 import whendo.core.actions.logic_action as logic_x
 from whendo.core.action import Action
-import pytest
+from whendo.core.exception import TerminateSchedulerException
 
 
 def negate(action: Action):
@@ -192,115 +194,6 @@ def test_list_action_and_3():
     assert computes_exception(and_action.execute)
 
 
-def test_if_else_action_or_2():
-    dictionary = {"value": None}
-
-    class Action1(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            dictionary["value"] = self.__class__
-            return True
-
-    class Action2(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            dictionary["value"] = self.__class__
-            return True
-
-    class Action3(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            dictionary["value"] = self.__class__
-            return True
-
-    if_else_action = logic_x.IfElse(
-        test_action=Action1(),
-        else_action=Action2(),
-        if_action=Action3(),
-        exception_on_no_success=False,
-    )
-    result = if_else_action.execute()
-    assert dictionary["value"] == Action3
-
-
-def test_if_else_action_else_1():
-    dictionary = {"value": None}
-
-    class Action1(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            return Exception()
-
-    class Action2(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            dictionary["value"] = self.__class__
-            return True
-
-    class Action3(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            dictionary["value"] = self.__class__
-            return True
-
-    if_else_action = logic_x.IfElse(
-        test_action=Action1(),
-        else_action=Action2(),
-        if_action=Action3(),
-        exception_on_no_success=False,
-    )
-    result = if_else_action.execute()
-    assert dictionary["value"] == Action2
-
-
-def test_if_else_action_else_2():
-    """
-    Show that, in the absence of an if_action,
-    if test action succeeds, its result
-    is the result of if_then_else.
-    """
-    dictionary = {"value": None}
-
-    class Action1(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            dictionary["value"] = self.__class__
-            return Exception()
-
-    class Action2(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            dictionary["value"] = self.__class__
-            return True
-
-    if_else_action = logic_x.IfElse(
-        test_action=Action1(),
-        else_action=Action2(),
-        exception_on_no_success=False,
-    )
-    result = if_else_action.execute()
-    assert dictionary["value"] == Action2
-
-
-def test_if_else_action_else_3():
-    """
-    Show that, in the absence of an if_action,
-    if test action fails, the else result
-    is the result of if_then_else.
-    """
-    dictionary = {"value": None}
-
-    class Action1(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            dictionary["value"] = self.__class__
-            return True
-
-    class Action2(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            dictionary["value"] = self.__class__
-            return True
-
-    if_else_action = logic_x.IfElse(
-        test_action=Action1(),
-        else_action=Action2(),
-        exception_on_no_success=False,
-    )
-    result = if_else_action.execute()
-    assert dictionary["value"] == Action1
-
-
 def test_composition_all_1():
     """
     Show that Actions execute methods are composed.
@@ -308,11 +201,11 @@ def test_composition_all_1():
 
     class Add1(Action):
         def execute(self, tag: str = None, data: dict = None):
-            if data:
-                value = data.get("result", 0)
+            if isinstance(data, dict):
+                value = data["result"] if "result" in data else 0
                 if isinstance(value, int) or isinstance(value, float):
-                    return 1 + value
-            return 1
+                    return self.action_result(result=1 + value, data=data)
+            return self.action_result(result=1, data=data)
 
     add1 = Add1()
     sum_all = logic_x.All(actions=[add1, add1, add1, add1]).execute(
@@ -329,11 +222,11 @@ def test_composition_all_2():
 
     class Add1(Action):
         def execute(self, tag: str = None, data: dict = None):
-            if data:
-                value = data.get("result", 0)
+            if isinstance(data, dict):
+                value = data["result"] if "result" in data else 0
                 if isinstance(value, int) or isinstance(value, float):
-                    return 1 + value
-            return 1
+                    return self.action_result(result=1 + value, data=data)
+            return self.action_result(result=1, data=data)
 
     add1 = Add1()
     sum_all = logic_x.All(actions=[add1, add1, logic_x.Failure(), add1, add1]).execute(
@@ -349,11 +242,11 @@ def test_composition_all_3():
 
     class Add1(Action):
         def execute(self, tag: str = None, data: dict = None):
-            if data:
-                value = data.get("result", 0)
+            if isinstance(data, dict):
+                value = data["result"] if "result" in data else 0
                 if isinstance(value, int) or isinstance(value, float):
-                    return 1 + value
-            return 1
+                    return self.action_result(result=1 + value, data=data)
+            return self.action_result(result=1, data=data)
 
     add1 = Add1()
     sum_all = logic_x.All(actions=[add1, add1, logic_x.Success(), add1, add1]).execute(
@@ -369,16 +262,17 @@ def test_composition_and():
 
     class Add1(Action):
         def execute(self, tag: str = None, data: dict = None):
-            if data:
-                value = data.get("result", 0)
+            if isinstance(data, dict):
+                value = data["result"] if "result" in data else 0
                 if isinstance(value, int) or isinstance(value, float):
-                    return 1 + value
-            return 1
+                    return self.action_result(result=1 + value, data=data)
+            return self.action_result(result=1, data=data)
 
     add1 = Add1()
     sum_and = logic_x.And(actions=[add1, add1, logic_x.Failure(), add1, add1]).execute(
         data={"result": 10.1}
     )
+    print(sum_and)
     assert sum_and["result"] == 12.1
 
 
@@ -389,11 +283,11 @@ def test_composition_or():
 
     class Add1(Action):
         def execute(self, tag: str = None, data: dict = None):
-            if data:
-                value = data.get("result", 0)
+            if isinstance(data, dict):
+                value = data["result"] if "result" in data else 0
                 if isinstance(value, int) or isinstance(value, float):
-                    return 1 + value
-            return 1
+                    return self.action_result(result=1 + value, data=data)
+            return self.action_result(result=1, data=data)
 
     add1 = Add1()
     sum_or = logic_x.Or(actions=[add1, add1, logic_x.Failure(), add1, add1]).execute(
@@ -409,16 +303,17 @@ def test_composition_arg():
 
     class Add1(Action):
         def execute(self, tag: str = None, data: dict = None):
-            if data:
-                value = data.get("result", 0)
+            if isinstance(data, dict):
+                value = data["result"] if "result" in data else 0
                 if isinstance(value, int) or isinstance(value, float):
-                    return 1 + value
-            return 1
+                    return self.action_result(result=1 + value, data=data)
+            return self.action_result(result=1, data=data)
 
     add1 = Add1()
     sum_all = logic_x.All(
         actions=[logic_x.Arg(data={"result": 10.1}), add1, add1, add1]
     ).execute()
+    print("sum_all", sum_all)
     assert sum_all["result"] == 13.1
 
 
@@ -430,11 +325,30 @@ def test_compose():
     class Add1(Action):
         def execute(self, tag: str = None, data: dict = None):
             if isinstance(data, dict):
-                value = data.get("result", 0)
+                value = self.get_result(data)
                 if isinstance(value, int) or isinstance(value, float):
-                    return {"result": 1 + value}
-            return {"result": 1}
+                    return self.action_result(result=1 + value, data=data)
+            return self.action_result(result=1, data=data)
 
     add1 = Add1()
     result = logic_x.Compose(actions=[add1, add1, logic_x.Success(), add1]).execute()
     assert result["result"] == 3
+
+
+def test_terminate():
+    class FleaCount(Action):
+        flea_count: int = 0
+
+        def execute(self, tag: str = None, data: dict = None):
+            self.flea_count += 1
+            return self.action_result(result=self.flea_count, data=data)
+
+    action1 = FleaCount(flea_count=0)
+    action2 = FleaCount(flea_count=0)
+    actions = [action1, logic_x.Terminate(), action2]
+    action3 = logic_x.And()  # pydantic copies actions list in the constructor
+    action3.actions = actions
+    with pytest.raises(TerminateSchedulerException):
+        result = action3.execute()
+    assert action1.flea_count == 1
+    assert action2.flea_count == 0

@@ -1,5 +1,7 @@
 from pydantic import BaseModel
+from typing import Dict, Any, Optional
 import logging
+from collections import namedtuple
 from .util import object_info, SystemInfo, Now
 
 
@@ -41,3 +43,23 @@ class Action(BaseModel):
             "port": self.local_port(),
             "time": self.local_time(),
         }
+
+    def action_result(self, result: Any = None, data: dict = None, extra: dict = None):
+        output = {}
+        if result:
+            output["result"] = result
+        if data:
+            output["data"] = data
+        if extra:
+            output["extra"] = extra
+        return output
+
+    @classmethod
+    def get_result(cls, something: Any):
+        if isinstance(something, dict):
+            if "result" in something:
+                return something["result"]
+            else:
+                return something
+        else:
+            return {"result": something}

@@ -4,6 +4,7 @@ from datetime import timedelta
 import whendo.core.util as util
 from typing import Optional, Dict, Any
 from whendo.core.action import Action
+from whendo.core.actions.logic_action import And, Or, All, Terminate
 from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.scheduler import Immediately
 from whendo.core.dispatcher import Dispatcher
@@ -275,7 +276,7 @@ def test_immediately(friends):
 
         def execute(self, tag: str = None, data: dict = None):
             self.fleas += 1
-            return "BLING"
+            return self.action_result(result=self.fleas, data=data)
 
     test_action = TestAction()
 
@@ -479,17 +480,61 @@ def test_execute_with_data(friends):
     assert action.data == {"fleacount": "infinite"}
 
 
+def test_terminate_scheduler(friends):
+    """
+    Want to terminate scheduler using TerminateScheduler action.
+    """
+    dispatcher, scheduler, action = friends()
+    action2 = Terminate()
+    dispatcher.add_action("foo", action)
+    dispatcher.add_action("terminate", action2)
+    dispatcher.add_scheduler("bar", scheduler)
+
+    dispatcher.run_jobs()
+    dispatcher.schedule_action("bar", "foo")
+    time.sleep(2)
+    assert action.flea_count >= 1
+    assert dispatcher.get_scheduled_action_count() == 1
+    dispatcher.schedule_action("bar", "terminate")
+    assert dispatcher.get_scheduled_action_count() == 2
+    time.sleep(2)
+    assert dispatcher.get_scheduled_action_count() == 0
+
+
+def test_terminate_scheduler_and(friends):
+    """
+    Want to terminate scheduler using TerminateScheduler action.
+    """
+    dispatcher, scheduler, action = friends()
+    action2 = FleaCount(flea_count=100)
+    actions = [action, Terminate(), action2]
+    action3 = (
+        And()
+    )  # add actions on next line to use them directly below; pydantic deep copies field values
+    action3.actions = actions
+    dispatcher.add_action("foo", action3)
+    dispatcher.add_scheduler("bar", scheduler)
+
+    dispatcher.run_jobs()
+    dispatcher.schedule_action("bar", "foo")
+    time.sleep(2)
+    assert action.flea_count == 1
+    assert action2.flea_count == 100
+
+
+class FleaCount(Action):
+    flea_count: int = 0
+    data: Optional[Dict[Any, Any]]
+
+    def execute(self, tag: str = None, data: dict = None):
+        self.flea_count += 1
+        self.data = data
+        return self.action_result(result=self.flea_count, data=data)
+
+
 @pytest.fixture
 def friends(tmp_path):
     """ returns a tuple of useful test objects """
-
-    class FleaCount(Action):
-        flea_count: int = 0
-        data: Optional[Dict[Any, Any]]
-
-        def execute(self, tag: str = None, data: dict = None):
-            self.flea_count += 1
-            self.data = data
 
     def stuff():
         # want a fresh tuple from the fixture

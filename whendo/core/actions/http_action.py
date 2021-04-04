@@ -52,20 +52,29 @@ class ExecuteAction(Action):
 
     def execute(self, tag: str = None, data: dict = None):
         self.check_host_port(self.host, self.port)
+        # if data:
+        #     result = {
+        #         "result": util_x.Http(host=self.host, port=self.port).post_dict(
+        #             f"/actions/{self.action_name}/execute", data
+        #         ),
+        #         "data": data,
+        #     }
+        # else:
+        #     result = {
+        #         "result": util_x.Http(host=self.host, port=self.port).get(
+        #             f"/actions/{self.action_name}/execute"
+        #         )
+        #     }
+        # return result
         if data:
-            result = {
-                "result": util_x.Http(host=self.host, port=self.port).post_dict(
-                    f"/actions/{self.action_name}/execute", data
-                ),
-                "data": data,
-            }
+            result = util_x.Http(host=self.host, port=self.port).post_dict(
+                f"/actions/{self.action_name}/execute", self.get_result(data)
+            )
         else:
-            result = {
-                "result": util_x.Http(host=self.host, port=self.port).get(
-                    f"/actions/{self.action_name}/execute"
-                )
-            }
-        return result
+            result = util_x.Http(host=self.host, port=self.port).get(
+                f"/actions/{self.action_name}/execute"
+            )
+        return self.action_result(result=result, data=data)
 
     def check_host_port(self, host: str, port: int):
         if host == self.local_host() and port == self.local_port():

@@ -45,13 +45,15 @@ class FileAppend(Action):
         with open(file, "a") as outfile:
             PP.pprint(payload, stream=outfile)
             outfile.write("\n")
-        result = {"result": payload, "action_info": self.info()}
-        return result
+        # return {"result": payload, "action_info": self.info()}
+        return self.action_result(
+            result=f"file ({self.file}) appended", data=data, extra=self.info()
+        )
 
     def compute_payload(
         self, mode: str, payload: Optional[dict] = None, data: dict = None
     ):
-        result = {"missing": {"args": "payload,data"}}
+        result = {}
         upper_mode = mode.upper()
         if upper_mode == "P":
             if payload:
