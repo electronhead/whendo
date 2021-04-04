@@ -46,11 +46,11 @@ class Action(BaseModel):
 
     def action_result(self, result: Any = None, data: dict = None, extra: dict = None):
         output = {}
-        if result:
+        if result is not None:
             output["result"] = result
-        if data:
+        if data is not None:
             output["data"] = data
-        if extra:
+        if extra is not None:
             output["extra"] = extra
         return output
 
