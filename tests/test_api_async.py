@@ -12,7 +12,7 @@ from httpx import AsyncClient
 from datetime import timedelta, datetime
 from whendo.core.action import Action
 import whendo.core.actions.file_action as file_x
-from whendo.core.actions.logic_action import All, Success
+from whendo.core.actions.list_action import All, Success
 from whendo.core.actions.sys_action import SysInfo
 from whendo.core.actions.http_action import ExecuteAction
 from whendo.core.scheduler import Scheduler, Immediately

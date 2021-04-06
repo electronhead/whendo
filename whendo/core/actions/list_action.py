@@ -100,10 +100,10 @@ class Success(Action):
         return self.action_result(result=self.get_result(data), data=data)
 
 
-class Not(Action):
+class Fail(Action):
     """ acts like negation """
 
-    _not: str = "not"
+    fail: str = "fail"
     operand: Action
 
     def description(self):
@@ -127,8 +127,8 @@ class Not(Action):
 
 class ListOpMode(str, Enum):
     ALL = "all"
-    OR = "or"
-    AND = "and"
+    UNTIL_SUCCESS = "until_success"
+    UNTIL_FAILURE = "until_failure"
 
 
 class ListAction(Action):
@@ -136,8 +136,8 @@ class ListAction(Action):
     executes actions based on:
 
         ListOpMode.ALL:   executes all, irrespective of individual outcomes
-        ListOpMode.OR:    executes until the first successful action (no exception)
-        ListOpMode.AND:   executes until the first exception (failure)
+        ListOpMode.UNTIL_SUCCESS:    executes until the first successful action (no exception)
+        ListOpMode.UNTIL_FAILURE:   executes until the first exception (failure)
 
     Intended to be abstract class; not intended to be instantiated. Its subclasses,
     All, Or, and And, should be used instead.
@@ -188,13 +188,13 @@ class All(ListAction):
         return super().execute(tag=tag, data=data)
 
 
-class Or(ListAction):
+class UntilSuccess(ListAction):
     """
     executes actions until first success
     """
 
-    _or: str = "or"
-    op_mode: ListOpMode = ListOpMode.OR
+    until_success: str = "until_success"
+    op_mode: ListOpMode = ListOpMode.UNTIL_SUCCESS
 
     def description(self):
         return f"This action executes all of these actions in order until the first success: ({self.actions}). It serves a role similar to logical or."
@@ -203,13 +203,13 @@ class Or(ListAction):
         return super().execute(tag=tag, data=data)
 
 
-class And(ListAction):
+class UntilFailure(ListAction):
     """
     executes actions until first failure
     """
 
-    _and: str = "and"
-    op_mode: ListOpMode = ListOpMode.AND
+    until_failure: str = "until_failure"
+    op_mode: ListOpMode = ListOpMode.UNTIL_FAILURE
 
     def description(self):
         return f"This action executes all of these actions in order until the first failure: ({self.actions}). It serves a role similar to logical and."
@@ -230,7 +230,7 @@ def process_actions(
     exception_count: int = 0,
 ):
     """
-    services the three action list classes, ALL, OR, and AND
+    services the three action list classes, ALL, UNTIL_SUCCESS, and UNTIL_FAILURE
     """
     exceptions: List[Exception] = []
     loop_data = data
@@ -262,14 +262,14 @@ def process_actions(
                     exception_actions,
                 )
                 raise result
-            if op_mode == ListOpMode.AND:  # stop after first failure
+            if op_mode == ListOpMode.UNTIL_FAILURE:  # stop after first failure
                 break
             loop_data = exception_dict
         else:
             success_count += 1
             successful_actions.append(action.dict())
             loop_data = result
-            if op_mode == ListOpMode.OR:  # stop after first success
+            if op_mode == ListOpMode.UNTIL_SUCCESS:  # stop after first success
                 break
     return processing_results(
         loop_data,

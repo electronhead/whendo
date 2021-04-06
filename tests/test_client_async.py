@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from httpx import AsyncClient
 from whendo.core.action import Action
 import whendo.core.actions.file_action as file_x
-from whendo.core.actions.logic_action import All, Success
+from whendo.core.actions.list_action import All, Success
 from whendo.core.actions.sys_action import SysInfo
 from whendo.core.scheduler import Scheduler, Immediately
 from whendo.core.schedulers.timed_scheduler import Timely

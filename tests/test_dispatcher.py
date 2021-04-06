@@ -4,7 +4,7 @@ from datetime import timedelta
 import whendo.core.util as util
 from typing import Optional, Dict, Any
 from whendo.core.action import Action
-from whendo.core.actions.logic_action import And, Or, All, Terminate
+from whendo.core.actions.list_action import UntilFailure, All, Terminate
 from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.scheduler import Immediately
 from whendo.core.dispatcher import Dispatcher
@@ -509,7 +509,7 @@ def test_terminate_scheduler_and(friends):
     action2 = FleaCount(flea_count=100)
     actions = [action, Terminate(), action2]
     action3 = (
-        And()
+        UntilFailure()
     )  # add actions on next line to use them directly below; pydantic deep copies field values
     action3.actions = actions
     dispatcher.add_action("foo", action3)
