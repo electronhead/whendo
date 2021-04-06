@@ -697,7 +697,6 @@ async def test_success(startup_and_shutdown_uvicorn, base_url, tmp_path):
     result = await execute_action_with_data(
         base_url=base_url, action_name="success", data=data
     )
-
     assert result["result"] == data
 
 

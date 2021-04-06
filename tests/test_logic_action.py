@@ -198,15 +198,6 @@ def test_composition_all_1():
     """
     Show that Actions execute methods are composed.
     """
-
-    class Add1(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            if isinstance(data, dict):
-                value = data["result"] if "result" in data else 0
-                if isinstance(value, int) or isinstance(value, float):
-                    return self.action_result(result=1 + value, data=data)
-            return self.action_result(result=1, data=data)
-
     add1 = Add1()
     sum_all = logic_x.All(actions=[add1, add1, add1, add1]).execute(
         data={"result": 10.1}
@@ -219,15 +210,6 @@ def test_composition_all_2():
     Show that introduction of a Failure in All essentially starts
     things over again.
     """
-
-    class Add1(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            if isinstance(data, dict):
-                value = data["result"] if "result" in data else 0
-                if isinstance(value, int) or isinstance(value, float):
-                    return self.action_result(result=1 + value, data=data)
-            return self.action_result(result=1, data=data)
-
     add1 = Add1()
     sum_all = logic_x.All(actions=[add1, add1, logic_x.Failure(), add1, add1]).execute(
         data={"result": 10.1}
@@ -239,15 +221,6 @@ def test_composition_all_3():
     """
     Show that introduction of Success does not impact the result.
     """
-
-    class Add1(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            if isinstance(data, dict):
-                value = data["result"] if "result" in data else 0
-                if isinstance(value, int) or isinstance(value, float):
-                    return self.action_result(result=1 + value, data=data)
-            return self.action_result(result=1, data=data)
-
     add1 = Add1()
     sum_all = logic_x.All(actions=[add1, add1, logic_x.Success(), add1, add1]).execute(
         data={"result": 10.1}
@@ -259,15 +232,6 @@ def test_composition_and():
     """
     Show that composition stops at the first failure.
     """
-
-    class Add1(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            if isinstance(data, dict):
-                value = data["result"] if "result" in data else 0
-                if isinstance(value, int) or isinstance(value, float):
-                    return self.action_result(result=1 + value, data=data)
-            return self.action_result(result=1, data=data)
-
     add1 = Add1()
     sum_and = logic_x.And(actions=[add1, add1, logic_x.Failure(), add1, add1]).execute(
         data={"result": 10.1}
@@ -280,15 +244,6 @@ def test_composition_or():
     """
     Show that composition stops at the first success.
     """
-
-    class Add1(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            if isinstance(data, dict):
-                value = data["result"] if "result" in data else 0
-                if isinstance(value, int) or isinstance(value, float):
-                    return self.action_result(result=1 + value, data=data)
-            return self.action_result(result=1, data=data)
-
     add1 = Add1()
     sum_or = logic_x.Or(actions=[add1, add1, logic_x.Failure(), add1, add1]).execute(
         data={"result": 10.1}
@@ -300,15 +255,6 @@ def test_composition_arg():
     """
     Show that inserting Arg has same effect as passing a value to the execute method.
     """
-
-    class Add1(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            if isinstance(data, dict):
-                value = data["result"] if "result" in data else 0
-                if isinstance(value, int) or isinstance(value, float):
-                    return self.action_result(result=1 + value, data=data)
-            return self.action_result(result=1, data=data)
-
     add1 = Add1()
     sum_all = logic_x.All(
         actions=[logic_x.Arg(data={"result": 10.1}), add1, add1, add1]
@@ -321,15 +267,6 @@ def test_compose():
     """
     Show that Compose composes function results.
     """
-
-    class Add1(Action):
-        def execute(self, tag: str = None, data: dict = None):
-            if isinstance(data, dict):
-                value = self.get_result(data)
-                if isinstance(value, int) or isinstance(value, float):
-                    return self.action_result(result=1 + value, data=data)
-            return self.action_result(result=1, data=data)
-
     add1 = Add1()
     result = logic_x.Compose(actions=[add1, add1, logic_x.Success(), add1]).execute()
     assert result["result"] == 3
@@ -352,3 +289,73 @@ def test_terminate():
         result = action3.execute()
     assert action1.flea_count == 1
     assert action2.flea_count == 0
+
+
+def test_raise_if_equal_1():
+    """
+    Show that raising stops processing of the list action.
+    """
+    add1 = Add1()
+    result = logic_x.And(
+        include_processing_info=True,
+        actions=[add1, add1, logic_x.RaiseIfEqual(value=2), add1, add1],
+    ).execute()
+    print(result)
+    assert result["result"] == 2
+
+
+def test_raise_if_equal_2():
+    """
+    Show that not raising has no effect on the passing of results to the last action.
+    """
+    add1 = Add1()
+    result = logic_x.And(
+        actions=[add1, add1, logic_x.RaiseIfEqual(value=1), add1, add1]
+    ).execute()
+    assert result["result"] == 4
+
+
+def test_raise_if_equal_3():
+    """
+    Show that not raising has no effect on the passing of results to the last action.
+    """
+    add1 = Add1()
+    result = logic_x.And(
+        actions=[
+            logic_x.Arg(data={"result": 2}),
+            logic_x.RaiseIfEqual(value=2),
+            add1,
+            add1,
+        ]
+    ).execute()
+    assert result["result"] == 2
+
+
+def test_raise_if_equal_4():
+    """
+    Show that not raising has no effect on the passing of results to the last action.
+    """
+    add1 = Add1()
+    result = logic_x.And(
+        actions=[
+            logic_x.Arg(data={"result": 2}),
+            logic_x.RaiseIfEqual(value=1),
+            add1,
+            add1,
+        ]
+    ).execute()
+    assert result["result"] == 4
+
+
+# helpers
+
+
+class Add1(Action):
+    add_1: str = "add_1"
+
+    def execute(self, tag: str = None, data: dict = None):
+        if isinstance(data, dict):
+            value = self.get_result(data)
+            if isinstance(value, int) or isinstance(value, float):
+                return self.action_result(result=1 + value, data=data)
+        return self.action_result(result=1, data=data)

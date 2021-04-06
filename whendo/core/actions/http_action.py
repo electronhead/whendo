@@ -32,10 +32,7 @@ class SendPayload(Action):
         response = requests.post(self.url, payload)
         if response.status_code != requests.codes.ok:
             raise Exception(response)
-        result = {"result": response.json(), "action_info": self.info()}
-        if data:
-            result.update({"data": data})
-        return result
+        return self.action_result(result=response.json(), data=data)
 
 
 class ExecuteAction(Action):

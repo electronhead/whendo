@@ -8,8 +8,7 @@ router = APIRouter(prefix="/actions", tags=["Actions"])
 @router.get("/{action_name}", status_code=status.HTTP_200_OK)
 def get_action(action_name: str):
     try:
-        action = get_dispatcher(router).get_action(action_name=action_name)
-        return return_success(action)
+        return get_dispatcher(router).get_action(action_name=action_name)
     except Exception as e:
         raise raised_exception(f"failed to retrieve the action ({action_name})", e)
 
@@ -61,12 +60,7 @@ def execute_action(action_name: str):
     try:
         result = get_dispatcher(router).execute_action(action_name=action_name)
         if not isinstance(result, Exception):
-            return return_success(
-                {
-                    "msg": f"action ({action_name}) was successfully executed",
-                    "result": result,
-                }
-            )
+            return result
         else:
             exception = raised_exception(
                 f"failed to execute action ({action_name})", result
@@ -89,12 +83,7 @@ def execute_action_with_data(action_name: str, data: dict):
             action_name=action_name, data=data
         )
         if not isinstance(result, Exception):
-            return return_success(
-                {
-                    "msg": f"action ({action_name}) with data ({data}) was successfully executed",
-                    "result": result,
-                }
-            )
+            return result
         else:
             exception = raised_exception(
                 f"failed to execute action ({action_name}) with data ({data})", result

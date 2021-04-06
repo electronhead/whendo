@@ -45,10 +45,7 @@ class FileAppend(Action):
         with open(file, "a") as outfile:
             PP.pprint(payload, stream=outfile)
             outfile.write("\n")
-        # return {"result": payload, "action_info": self.info()}
-        return self.action_result(
-            result=f"file ({self.file}) appended", data=data, extra=self.info()
-        )
+        return self.action_result(result=f"file ({self.file}) appended", data=data)
 
     def compute_payload(
         self, mode: str, payload: Optional[dict] = None, data: dict = None

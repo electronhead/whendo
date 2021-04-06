@@ -52,14 +52,11 @@ class Action(BaseModel):
             output["data"] = data
         if extra is not None:
             output["extra"] = extra
+        output["info"] = self.info()
         return output
 
-    @classmethod
-    def get_result(cls, something: Any):
-        if isinstance(something, dict):
-            if "result" in something:
-                return something["result"]
-            else:
-                return something
-        else:
-            return {"result": something}
+    def get_result(self, x):
+        if isinstance(x, dict):
+            if "result" in x:
+                return x["result"]
+        return x

@@ -33,10 +33,35 @@ class Arg(Action):
     data: dict
 
     def description(self):
-        return f"This action returns ({self.data})."
+        return f"This action returns ({self.payload})."
 
     def execute(self, tag: str = None, data: dict = None):
-        return self.data
+        return self.action_result(result=self.get_result(self.data), data=data)
+
+
+class RaiseIfEqual(Action):
+    """
+    If fails to raise, pass through the supplied the result value
+    from the supplied execute argument, data.
+    """
+
+    raise_if_equal: str = "raise_if_equal"
+    value: Any
+
+    def description(self):
+        return f"This action raises an exception if the result in the supplied argument, data, is equal to ({self.value}). Otherwise it returns the value untouched."
+
+    def execute(self, tag: str = None, data: dict = None):
+        value = self.value
+        data_value = self.get_result(data)
+        should_raise = data_value == value
+        result = self.action_result(result=data_value == value, data=data)
+        if should_raise:
+            raise ValueError(
+                f"exception thrown because ({value}) == ({data_value}); info ({self.info()})"
+            )
+        else:
+            return self.action_result(result=data_value, data=data)
 
 
 class Terminate(Action):
@@ -72,7 +97,7 @@ class Success(Action):
         )
 
     def execute(self, tag: str = None, data: dict = None):
-        return data
+        return self.action_result(result=self.get_result(data), data=data)
 
 
 class Not(Action):
@@ -91,10 +116,7 @@ class Not(Action):
         except Exception as exception:
             operand_result = exception
         if isinstance(operand_result, Exception):
-            extra = {
-                "exception": str(operand_result),
-                "action": self.info(),
-            }
+            extra = {"execption": str(operand_result)}
             return self.action_result(result=True, data=data, extra=extra)
         else:
             raise Exception(
@@ -124,7 +146,7 @@ class ListAction(Action):
     op_mode: ListOpMode
     actions: List[Action] = []
     exception_on_no_success: bool = False
-    result_only: bool = True
+    include_processing_info: bool = False
 
     def execute(self, tag: str = None, data: dict = None):
         processing_info = process_actions(
@@ -145,7 +167,10 @@ class ListAction(Action):
                 json.dumps(self.dict()),
                 json.dumps(processing_info),
             )
-        return processing_info["result"] if self.result_only else processing_info
+        extra = processing_info if self.include_processing_info else None
+        return self.action_result(
+            result=self.get_result(processing_info["result"]), data=data, extra=extra
+        )
 
 
 class All(ListAction):
@@ -272,4 +297,4 @@ class Compose(Action):
         loop_data = data
         for action in self.actions:
             loop_data = action.execute(tag=tag, data=loop_data)
-        return loop_data
+        return self.action_result(result=self.get_result(loop_data), data=data)
