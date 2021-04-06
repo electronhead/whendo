@@ -1,1 +1,1 @@
-version = "0.0.3.alpha5"
+version = "0.0.3.alpha6"
