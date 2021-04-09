@@ -9,6 +9,13 @@ from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.scheduler import Immediately
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.programs.simple_program import PBEProgram
+from whendo.core.actions.dispatch_action import (
+    ScheduleProgram,
+    UnscheduleProgram,
+    ScheduleAction,
+    DeferAction,
+    ExpireAction,
+)
 from whendo.core.timed import Timed
 
 pause = 3
@@ -23,6 +30,7 @@ def test_schedule_action(friends):
     dispatcher.add_action("foo", action)
     dispatcher.add_scheduler("bar", scheduler)
     dispatcher.schedule_action("bar", "foo")
+    print("FLOWMEENEE", dispatcher.scheduled_actions)
 
     assert dispatcher.get_scheduled_action_count() == 1
 
@@ -32,6 +40,51 @@ def test_schedule_action(friends):
     dispatcher.clear_jobs()
 
     assert action.flea_count > 0
+
+
+def test_schedule_action_action(friends):
+    """
+    Tests Dispatcher and Timed objects running a scheduled action.
+    """
+    dispatcher, scheduler, action = friends()
+
+    dispatcher.add_action("foo", action)
+    dispatcher.add_scheduler("bar", scheduler)
+    schedule_action = ScheduleAction(scheduler_name="bar", action_name="foo")
+    schedule_action.execute()
+
+
+    assert dispatcher.get_scheduled_action_count() == 1
+
+    dispatcher.run_jobs()
+    time.sleep(pause)
+    dispatcher.stop_jobs()
+    dispatcher.clear_jobs()
+
+    assert action.flea_count > 0
+
+def test_schedule_action_action_data(friends):
+    """
+    Tests Dispatcher and Timed objects running a scheduled action.
+    """
+    dispatcher, scheduler, action = friends()
+    action2 = FleaCount100()
+
+    dispatcher.add_action("foo", action)
+    dispatcher.add_action("flea", action2)
+    dispatcher.add_scheduler("bar", scheduler)
+    schedule_action = ScheduleAction(scheduler_name="bar", action_name="foo")
+    print(schedule_action.execute(data={"action_name":"flea"}))
+
+    assert dispatcher.get_scheduled_action_count() == 1
+
+    dispatcher.run_jobs()
+    time.sleep(pause)
+    dispatcher.stop_jobs()
+    dispatcher.clear_jobs()
+
+    assert action.flea_count == 0
+    assert action2.flea_count > 100
 
 
 def test_unschedule_scheduler(friends):
@@ -232,6 +285,33 @@ def test_defer_action(friends):
     assert 1 == dispatcher.get_scheduled_action_count()
 
 
+def test_defer_action_action(friends):
+    """
+    Want to observe the scheduling move from deferred state to ready state.
+    """
+    dispatcher, scheduler, action = friends()
+    dispatcher.add_action("foo", action)
+    dispatcher.add_scheduler("bar", scheduler)
+
+    assert 0 == dispatcher.get_deferred_action_count()
+    assert 0 == dispatcher.get_scheduled_action_count()
+
+    defer_action = DeferAction(
+        scheduler_name="bar", action_name="foo", wait_until=util.Now.dt()
+    )
+    defer_action.execute()
+
+    # deferred state -- can run jobs and actions will _not_ be executed
+    assert 1 == dispatcher.get_deferred_action_count()
+    assert 0 == dispatcher.get_scheduled_action_count()
+
+    time.sleep(6)  # the out-of-band job runs every five seconds
+
+    # ready state -- can run jobs and actions will be executed
+    assert 0 == dispatcher.get_deferred_action_count()
+    assert 1 == dispatcher.get_scheduled_action_count()
+
+
 def test_expire_action(friends):
     """
     Want to observe the scheduling move from deferred state to ready state.
@@ -253,6 +333,38 @@ def test_expire_action(friends):
         action_name="foo",
         expire_on=util.Now.dt() + timedelta(seconds=1),
     )
+
+    assert 1 == dispatcher.get_expiring_action_count()
+    assert 1 == dispatcher.get_scheduled_action_count()
+
+    time.sleep(6)  # the out-of-band job runs every 2-5 seconds
+
+    assert 0 == dispatcher.get_expiring_action_count()
+    assert 0 == dispatcher.get_scheduled_action_count()
+
+
+def test_expire_action_action(friends):
+    """
+    Want to observe the scheduling move from deferred state to ready state.
+    """
+    dispatcher, scheduler, action = friends()
+    dispatcher.add_action("foo", action)
+    dispatcher.add_scheduler("bar", scheduler)
+
+    assert 0 == dispatcher.get_expiring_action_count()
+    assert 0 == dispatcher.get_scheduled_action_count()
+
+    dispatcher.schedule_action(scheduler_name="bar", action_name="foo")
+
+    assert 0 == dispatcher.get_expiring_action_count()
+    assert 1 == dispatcher.get_scheduled_action_count()
+
+    expire_action = ExpireAction(
+        scheduler_name="bar",
+        action_name="foo",
+        expire_on=util.Now.dt() + timedelta(seconds=2),
+    )
+    expire_action.execute()
 
     assert 1 == dispatcher.get_expiring_action_count()
     assert 1 == dispatcher.get_scheduled_action_count()
@@ -408,6 +520,71 @@ def test_unschedule_program(friends):
     assert action3.fleas == 0
 
 
+def test_unschedule_program_action(friends):
+    """
+    Want to observe that a Program's actions are not executed
+    after being unscheduled prior to the deferral time.
+    """
+
+    dispatcher, scheduler, action = friends()
+
+    class TestAction1(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, data: dict = None):
+            self.fleas += 1
+            return "BLING"
+
+    class TestAction2(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, data: dict = None):
+            self.fleas += 1
+            return "BLING"
+
+    class TestAction3(Action):
+        fleas: int = 0
+
+        def execute(self, tag: str = None, data: dict = None):
+            self.fleas += 1
+            return "BLING"
+
+    action1 = TestAction1()
+    action2 = TestAction2()
+    action3 = TestAction3()
+
+    dispatcher.add_action("foo1", action1)
+    dispatcher.add_action("foo2", action2)
+    dispatcher.add_action("foo3", action3)
+    dispatcher.add_scheduler("bar", scheduler)
+    dispatcher.add_scheduler("immediately", Immediately())
+
+    program = PBEProgram().prologue("foo1").body_element("bar", "foo2").epilogue("foo3")
+    dispatcher.add_program("baz", program)
+    start = util.Now().dt() + timedelta(seconds=4)
+    stop = start + timedelta(seconds=4)
+
+    dispatcher.run_jobs()
+    dispatcher.schedule_program("baz", start, stop)
+    assert dispatcher.get_deferred_program_count() == 1
+    assert dispatcher.get_scheduled_action_count() == 0
+
+    unschedule_program = UnscheduleProgram(program_name="baz")
+    unschedule_program.execute()
+    time.sleep(1)
+
+    assert len(dispatcher.get_programs()) == 1
+    assert dispatcher.get_deferred_program_count() == 0
+
+    assert action1.fleas == 0
+    time.sleep(3)
+    assert action1.fleas == 0
+    time.sleep(4)
+    assert action2.fleas == 0
+    time.sleep(2)
+    assert action3.fleas == 0
+
+
 def test_delete_program(friends):
     """
     Want to observe that a Program's actions are not executed
@@ -524,6 +701,15 @@ def test_terminate_scheduler_and(friends):
 
 class FleaCount(Action):
     flea_count: int = 0
+    data: Optional[Dict[Any, Any]]
+
+    def execute(self, tag: str = None, data: dict = None):
+        self.flea_count += 1
+        self.data = data
+        return self.action_result(result=self.flea_count, data=data)
+
+class FleaCount100(Action):
+    flea_count: int = 100
     data: Optional[Dict[Any, Any]]
 
     def execute(self, tag: str = None, data: dict = None):

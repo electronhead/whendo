@@ -14,7 +14,7 @@ import os
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from .util import PP, Dirs, Now, str_to_dt, dt_to_str, DateTime2
+from .util import PP, Dirs, Now, str_to_dt, dt_to_str, DateTime2, DispatcherHooks
 from .action import Action
 from .program import Program, ProgramItem
 from .scheduler import Scheduler, TimedScheduler, ThresholdScheduler, Immediately
@@ -119,6 +119,23 @@ class Dispatcher(BaseModel):
             self.check_for_expirations_and_deferrals
         ).tag("check_for_expirations_and_deferrals")
         self._timed_for_out_of_band.run()
+        DispatcherHooks.init(
+            schedule_program_thunk=lambda program_name, start, stop: self.schedule_program(
+                program_name, start, stop
+            ),
+            unschedule_program_thunk=lambda program_name: self.unschedule_program(
+                program_name
+            ),
+            schedule_action_thunk=lambda scheduler_name, action_name: self.schedule_action(
+                scheduler_name, action_name
+            ),
+            defer_action_thunk=lambda scheduler_name, action_name, wait_until: self.defer_action(
+                scheduler_name, action_name, wait_until
+            ),
+            expire_action_thunk=lambda scheduler_name, action_name, expire_on: self.expire_action(
+                scheduler_name, action_name, expire_on
+            ),
+        )
 
     def pprint(self):
         PP.pprint(self.dict())
@@ -530,7 +547,6 @@ class Dispatcher(BaseModel):
                 scheduler_name in self.schedulers
             ), f"scheduler ({scheduler_name}) does not exist"
             assert action_name in self.actions, f"action ({action_name}) does not exist"
-            assert not action_name in self.scheduled_actions[scheduler_name]
             scheduler = self.get_scheduler(scheduler_name)
             if isinstance(scheduler, TimedScheduler):
                 scheduler.set_timed(self._timed)
@@ -548,14 +564,19 @@ class Dispatcher(BaseModel):
                         exc_info=exception,
                     )
                 return
-            self.scheduled_actions[scheduler_name].append(action_name)
-            if len(self.scheduled_actions[scheduler_name]) == 1:
-                scheduler.schedule(
-                    scheduler_name,
-                    Executor(
-                        self.get_actions_for_scheduler, self.unschedule_scheduler_thunk
-                    ),
-                )  # have an action to trigger
+            action_names = self.scheduled_actions[scheduler_name]
+            if action_name in action_names:
+                return  # don't need to schedule
+            else:
+                action_names.append(action_name)
+                if len(action_names) == 1:  # > 1 implies already scheduled
+                    scheduler.schedule(
+                        scheduler_name,
+                        Executor(
+                            self.get_actions_for_scheduler,
+                            self.unschedule_scheduler_thunk,
+                        ),
+                    )
             self.save_current()
 
     def unschedule_scheduler_action(self, scheduler_name: str, action_name: str):
@@ -638,9 +659,11 @@ class Dispatcher(BaseModel):
             if scheduler_name not in scheduled_actions:
                 scheduled_actions[scheduler_name] = []  # initialize list of Actions
             deferred_actions = scheduled_actions[scheduler_name]
-            assert (
-                action_name not in deferred_actions
-            ), f"({action_name}) already scheduled using ({scheduler_name}) as of ({wait_until_str})"
+            if action_name in deferred_actions:
+                logger.info(
+                    f"action ({action_name}) already scheduled using ({scheduler_name}) as of ({wait_until_str})"
+                )
+                return
             deferred_actions.append(action_name)
             self.save_current()
 
@@ -710,9 +733,11 @@ class Dispatcher(BaseModel):
             if scheduler_name not in scheduled_actions:
                 scheduled_actions[scheduler_name] = []  # initialize list of Actions
             expiring_actions = scheduled_actions[scheduler_name]
-            assert (
-                action_name not in expiring_actions
-            ), f"({action_name}) already scheduled for expiration under ({scheduler_name}) as of ({expire_on_str})"
+            if action_name in expiring_actions:
+                logger.info(
+                    f"action ({action_name}) already scheduled for expiration under ({scheduler_name}) as of ({expire_on_str})"
+                )
+                return
             expiring_actions.append(action_name)
             self.save_current()
 
