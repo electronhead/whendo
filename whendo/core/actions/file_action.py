@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 class FileAppend(Action):
     """
     This action appends supplied stuff to a file. The mode field
-    determines what to do with the field, payload, and the argument,
-    data.
+    determines what to do with the field, 'payload', and the argument,
+    'data'.
 
     P -- use payload (P). if absent use data (D).
     D -- use D. if absent use P.

@@ -194,6 +194,115 @@ def test_list_action_uf_3():
     assert computes_exception(uf_action.execute)
 
 
+def test_if_else_action_else_1():
+    dictionary = {"value": None}
+
+    class Action1(Action):
+        def execute(self, tag: str = None, data: dict = None):
+            return Exception()
+
+    class Action2(Action):
+        def execute(self, tag: str = None, data: dict = None):
+            dictionary["value"] = self.__class__
+            return True
+
+    class Action3(Action):
+        def execute(self, tag: str = None, data: dict = None):
+            dictionary["value"] = self.__class__
+            return True
+
+    if_else_action = list_x.IfElse(
+        test_action=Action1(),
+        else_action=Action2(),
+        if_action=Action3(),
+        exception_on_no_success=False,
+    )
+    result = if_else_action.execute()
+    assert dictionary["value"] == Action2
+
+
+def test_if_else_action_else_2():
+    """
+    Show that, in the absence of an if_action,
+    if test action succeeds, its result
+    is the result of if_then_else.
+    """
+    dictionary = {"value": None}
+
+    class Action1(Action):
+        def execute(self, tag: str = None, data: dict = None):
+            dictionary["value"] = self.__class__
+            return Exception()
+
+    class Action2(Action):
+        def execute(self, tag: str = None, data: dict = None):
+            dictionary["value"] = self.__class__
+            return True
+
+    if_else_action = list_x.IfElse(
+        test_action=Action1(),
+        else_action=Action2(),
+        exception_on_no_success=False,
+    )
+    result = if_else_action.execute()
+    assert dictionary["value"] == Action2
+
+
+def test_if_else_action_else_3():
+    """
+    Show that, in the absence of an if_action,
+    if test action fails, the else result
+    is the result of if_then_else.
+    """
+    dictionary = {"value": None}
+
+    class Action1(Action):
+        def execute(self, tag: str = None, data: dict = None):
+            dictionary["value"] = self.__class__
+            return True
+
+    class Action2(Action):
+        def execute(self, tag: str = None, data: dict = None):
+            dictionary["value"] = self.__class__
+            return True
+
+    if_else_action = list_x.IfElse(
+        test_action=Action1(),
+        else_action=Action2(),
+        exception_on_no_success=False,
+    )
+    result = if_else_action.execute()
+    assert dictionary["value"] == Action1
+
+
+def test_if_else_action_4():
+    dictionary = {"value": None}
+
+    class Action1(Action):
+        def execute(self, tag: str = None, data: dict = None):
+            dictionary["value"] = self.__class__
+            return True
+
+    class Action2(Action):
+        def execute(self, tag: str = None, data: dict = None):
+            dictionary["value"] = self.__class__
+            return True
+
+    class Action3(Action):
+        def execute(self, tag: str = None, data: dict = None):
+            dictionary["value"] = self.__class__
+            return True
+
+    if_else_action = list_x.IfElse(
+        test_action=Action1(),
+        else_action=Action2(),
+        if_action=Action3(),
+        exception_on_no_success=False,
+    )
+    result = if_else_action.execute()
+    assert dictionary["value"] == Action3
+
+
 def test_composition_all_1():
     """
     Show that Actions execute methods are composed.

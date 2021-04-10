@@ -369,9 +369,9 @@ class SharedRWs:
 
 
 class SystemInfo:
-
     @classmethod
     def init(cls, host: str, port: int):
+        SharedRWs.clear()
         dt, s, t, st = Now.quad()
         SharedRWs.get(
             "system_info",

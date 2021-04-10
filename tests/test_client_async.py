@@ -607,8 +607,9 @@ async def test_delete_program(startup_and_shutdown_uvicorn, host, port, tmp_path
 
     program = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
     await add_program(client=client, program_name="baz", program=program)
-    start = Now().dt()
-    stop = start + timedelta(seconds=4)
+    now = Now().dt()
+    start = now + timedelta(seconds=2)
+    stop = start + timedelta(seconds=2)
     datetime2 = DateTime2(dt1=start, dt2=stop)
     await schedule_program(client=client, program_name="baz", datetime2=datetime2)
 
@@ -618,7 +619,7 @@ async def test_delete_program(startup_and_shutdown_uvicorn, host, port, tmp_path
     await assert_deferred_program_count(client=client, n=0)
 
     # action1,2,3 not doing their things
-    await run_and_stop_jobs(client=client, pause=6)
+    await run_and_stop_jobs(client=client, pause=2)
     with pytest.raises(FileNotFoundError):
         with open(action1.file, "r") as fid:
             lines = fid.readlines()

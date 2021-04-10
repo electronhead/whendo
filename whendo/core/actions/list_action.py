@@ -163,7 +163,7 @@ class ListAction(Action):
             and self.exception_on_no_success
         ):
             raise Exception(
-                "exception generated; all actions failiing treated as a list action failure",
+                "exception generated; all actions failing treated as a list action failure",
                 json.dumps(self.dict()),
                 json.dumps(processing_info),
             )
@@ -238,12 +238,12 @@ def process_actions(
         try:
             result = action.execute(tag=tag, data=loop_data)
             logger.info(
-                f"Execution: tag ({tag}); executed action ({action}); loop data ({loop_data})"
+                f"ListAction: tag ({tag}); executed action ({action}); loop data ({loop_data})"
             )
         except Exception as exception:
             result = exception
             logger.exception(
-                f"Execution: tag ({tag}); error while executing action ({action}); loop data ({loop_data})",
+                f"ListAction: tag ({tag}); error while executing action ({action}); loop data ({loop_data})",
                 exc_info=exception,
             )
         processing_count += 1
@@ -279,6 +279,155 @@ def process_actions(
         successful_actions,
         exception_actions,
     )
+
+
+class IfElse(Action):
+    """
+    executes actions based on:
+
+        if test_action is successful, executes if_action
+        otherwise executes else_action
+
+    """
+
+    if_else: str = "if_else"
+    test_action: Action
+    else_action: Action
+    if_action: Optional[Action]
+    exception_on_no_success: bool = False
+    include_processing_info: bool = False
+
+    def description(self):
+        return f"If  action ({self.test_action}) succeeds, then IfElse executes ({self.if_action}), otherwise executes ({self.else_action})"
+
+    def execute(self, tag: str = None, data: dict = None):
+        try:
+            test_result = self.test_action.execute(tag=tag, data=data)
+            logger.info(
+                f"IfElse: tag ({tag}); successfully executed 'test' action ({self.test_action})"
+            )
+        except Exception as exception:
+            test_result = exception
+            logger.exception(
+                f"IfElse: tag ({tag}); error while executing 'test' action ({self.test_action})",
+                exc_info=exception,
+            )
+        processing_count = 1
+        success_count = 0
+        exception_count = 0
+        successful_actions: List[Dict[Any, Any]] = []
+        exception_actions: List[Dict[Any, Any]] = []
+        else_test = isinstance(test_result, Exception)
+        if else_test:  # execute the else action
+            exception_count = 1
+            exception_dict = self.test_action.dict().copy()
+            exception_dict.update({"exception": str(test_result)})
+            exception_actions.append(exception_dict)
+            if isinstance(test_result, TerminateSchedulerException):
+                test_result.value = processing_results(
+                    data,
+                    processing_count,
+                    success_count,
+                    exception_count,
+                    successful_actions,
+                    exception_actions,
+                )
+                raise test_result
+
+            try:
+                else_result = self.else_action.execute(tag=tag, data=data)
+                logger.info(
+                    f"IfElse: tag ({tag}); successfully executed 'else' action ({self.else_action})"
+                )
+            except Exception as exception:
+                else_result = exception
+                logger.exception(
+                    f"IfElse: tag ({tag}); error while executing 'else' action ({self.else_action})",
+                    exc_info=exception,
+                )
+            processing_count += 1
+            if isinstance(else_result, Exception):
+                exception_count += 1
+                exception_dict = self.else_action.dict().copy()
+                exception_dict.update({"exception": str(else_result)})
+                exception_actions.append(exception_dict)
+                if isinstance(else_result, TerminateSchedulerException):
+                    else_result.value = processing_results(
+                        data,
+                        processing_count,
+                        success_count,
+                        exception_count,
+                        successful_actions,
+                        exception_actions,
+                    )
+                    raise else_result
+                result = exception_dict
+            else:
+                success_count += 1
+                successful_actions.append(self.else_action.dict())
+                result = else_result
+        else:
+            success_count += 1
+            successful_actions.append(self.test_action.dict())
+
+            if self.if_action:  # execute the if_action
+                try:
+                    if_result = self.if_action.execute(tag=tag, data=data)
+                    logger.info(
+                        f"IfElse: tag ({tag}); successfully executed 'if' action ({self.if_action})"
+                    )
+                except Exception as exception:
+                    if_result = exception
+                    logger.exception(
+                        f"IfElse: tag ({tag}); error while executing 'if' action ({self.else_action})",
+                        exc_info=exception,
+                    )
+                processing_count += 1
+                if isinstance(if_result, Exception):
+                    exception_count += 1
+                    exception_dict = self.if_action.dict().copy()
+                    exception_dict.update({"exception": str(if_result)})
+                    exception_actions.append(exception_dict)
+                    if isinstance(else_result, TerminateSchedulerException):
+                        else_result.value = processing_results(
+                            data,
+                            processing_count,
+                            success_count,
+                            exception_count,
+                            successful_actions,
+                            exception_actions,
+                        )
+                        raise else_result
+                    result = exception_dict
+                else:
+                    success_count += 1
+                    successful_actions.append(self.if_action.dict())
+                    result = if_result
+            else:  # just use test_result since there is no if_action
+                result = test_result
+
+        processing_info = processing_results(
+            result,
+            processing_count,
+            success_count,
+            exception_count,
+            successful_actions,
+            exception_actions,
+        )
+        if (
+            processing_info["processing_count"] > 0
+            and processing_info["success_count"] == 0
+            and self.exception_on_no_success
+        ):
+            raise Exception(
+                "exception generated; all actions failing treated as an if-else action failure",
+                json.dumps(self.dict()),
+                json.dumps(processing_info),
+            )
+        extra = processing_info if self.include_processing_info else None
+        return self.action_result(
+            result=self.get_result(processing_info["result"]), data=data, extra=extra
+        )
 
 
 # experimental
