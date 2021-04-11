@@ -55,7 +55,6 @@ class RaiseIfEqual(Action):
         value = self.value
         data_value = self.get_result(data)
         should_raise = data_value == value
-        result = self.action_result(result=data_value == value, data=data)
         if should_raise:
             raise ValueError(
                 f"exception thrown because ({value}) == ({data_value}); info ({self.info()})"
@@ -297,19 +296,28 @@ class IfElse(Action):
     exception_on_no_success: bool = False
     include_processing_info: bool = False
 
+    def logger_info(self, s: str):
+        logger.info(s)
+        print(s)
+
+    def logger_exception(self, s: str, exc_info: object):
+        logger.info(s, exc_info)
+        print(s)
+
     def description(self):
         return f"If  action ({self.test_action}) succeeds, then IfElse executes ({self.if_action}), otherwise executes ({self.else_action})"
 
     def execute(self, tag: str = None, data: dict = None):
+        print(f"IfElse::execute::data=({data})")
         try:
             test_result = self.test_action.execute(tag=tag, data=data)
-            logger.info(
+            self.logger_info(
                 f"IfElse: tag ({tag}); successfully executed 'test' action ({self.test_action})"
             )
         except Exception as exception:
             test_result = exception
-            logger.exception(
-                f"IfElse: tag ({tag}); error while executing 'test' action ({self.test_action})",
+            self.logger_exception(
+                f"IfElse: tag ({tag}); error while executing 'test' action ({self.test_action}) exception ({exception})",
                 exc_info=exception,
             )
         processing_count = 1
@@ -336,13 +344,13 @@ class IfElse(Action):
 
             try:
                 else_result = self.else_action.execute(tag=tag, data=data)
-                logger.info(
+                self.logger_info(
                     f"IfElse: tag ({tag}); successfully executed 'else' action ({self.else_action})"
                 )
             except Exception as exception:
                 else_result = exception
-                logger.exception(
-                    f"IfElse: tag ({tag}); error while executing 'else' action ({self.else_action})",
+                self.logger_exception(
+                    f"IfElse: tag ({tag}); error while executing 'else' action ({self.else_action}) exception ({exception})",
                     exc_info=exception,
                 )
             processing_count += 1
@@ -373,13 +381,13 @@ class IfElse(Action):
             if self.if_action:  # execute the if_action
                 try:
                     if_result = self.if_action.execute(tag=tag, data=data)
-                    logger.info(
+                    self.logger_info(
                         f"IfElse: tag ({tag}); successfully executed 'if' action ({self.if_action})"
                     )
                 except Exception as exception:
                     if_result = exception
-                    logger.exception(
-                        f"IfElse: tag ({tag}); error while executing 'if' action ({self.else_action})",
+                    self.logger_exception(
+                        f"IfElse: tag ({tag}); error while executing 'if' action ({self.else_action}) exception ({exception})",
                         exc_info=exception,
                     )
                 processing_count += 1
@@ -388,8 +396,8 @@ class IfElse(Action):
                     exception_dict = self.if_action.dict().copy()
                     exception_dict.update({"exception": str(if_result)})
                     exception_actions.append(exception_dict)
-                    if isinstance(else_result, TerminateSchedulerException):
-                        else_result.value = processing_results(
+                    if isinstance(if_result, TerminateSchedulerException):
+                        if_result.value = processing_results(
                             data,
                             processing_count,
                             success_count,
@@ -397,7 +405,7 @@ class IfElse(Action):
                             successful_actions,
                             exception_actions,
                         )
-                        raise else_result
+                        raise if_result
                     result = exception_dict
                 else:
                     success_count += 1

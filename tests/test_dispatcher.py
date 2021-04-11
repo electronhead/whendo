@@ -4,7 +4,17 @@ from datetime import timedelta
 import whendo.core.util as util
 from typing import Optional, Dict, Any
 from whendo.core.action import Action
-from whendo.core.actions.list_action import UntilFailure, All, Terminate
+from whendo.core.actions.list_action import (
+    UntilFailure,
+    All,
+    Terminate,
+    IfElse,
+    RaiseIfEqual,
+    Arg,
+    Success,
+    Failure,
+)
+from whendo.core.actions.dispatch_action import ScheduleAction
 from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.scheduler import Immediately
 from whendo.core.dispatcher import Dispatcher
@@ -69,7 +79,7 @@ def test_dispatcher_action_args_1(friends):
     Tests computation of args based on fields, data and mode (=field).
     """
     dispatcher, scheduler, action = friends()
-    action2 = FleaCount100()
+    action2 = FleaCount(flea_count=100)
 
     dispatcher.add_action("foo", action)
     dispatcher.add_action("flea", action2)
@@ -90,7 +100,7 @@ def test_dispatcher_action_args_2(friends):
     Tests computation of args based on fields, data and mode (=data).
     """
     dispatcher, scheduler, action = friends()
-    action2 = FleaCount100()
+    action2 = FleaCount(flea_count=100)
 
     dispatcher.add_action("foo", action)
     dispatcher.add_action("flea", action2)
@@ -111,7 +121,7 @@ def test_dispatcher_action_args_3(friends):
     Tests computation of args based on fields, data and mode (=field).
     """
     dispatcher, scheduler, action = friends()
-    action2 = FleaCount100()
+    action2 = FleaCount(flea_count=100)
 
     dispatcher.add_action("foo", action)
     dispatcher.add_action("flea", action2)
@@ -127,12 +137,12 @@ def test_dispatcher_action_args_3(friends):
     assert args["action_name"] == "foo"
 
 
-def test_dispatcher_action_args_4z(friends):
+def test_dispatcher_action_args_4(friends):
     """
     Tests computation of args based on fields, data and mode (=data).
     """
     dispatcher, scheduler, action = friends()
-    action2 = FleaCount100()
+    action2 = FleaCount(flea_count=100)
 
     dispatcher.add_action("foo", action)
     dispatcher.add_action("flea", action2)
@@ -153,7 +163,7 @@ def test_schedule_action_action_data_1(friends):
     Tests Dispatcher and Timed objects running a scheduled action.
     """
     dispatcher, scheduler, action = friends()
-    action2 = FleaCount100()
+    action2 = FleaCount(flea_count=100)
 
     dispatcher.add_action("foo", action)
     dispatcher.add_action("flea", action2)
@@ -179,7 +189,7 @@ def test_schedule_action_action_data_2(friends):
     Tests Dispatcher and Timed objects running a scheduled action.
     """
     dispatcher, scheduler, action = friends()
-    action2 = FleaCount100()
+    action2 = FleaCount(flea_count=100)
 
     dispatcher.add_action("foo", action)
     dispatcher.add_action("flea", action2)
@@ -812,6 +822,59 @@ def test_terminate_scheduler_and(friends):
     assert action2.flea_count == 100
 
 
+def test_if_else_1(friends):
+    """
+    Want to terminate scheduler using TerminateScheduler action.
+    """
+    dispatcher, scheduler, action = friends()
+    action2 = FleaCount(flea_count=100)
+    immediately = Immediately()
+    dispatcher.add_action("foo1", action)
+    dispatcher.add_action("foo2", action2)
+    dispatcher.add_scheduler("immediately", immediately)
+
+    if_else = IfElse(
+        test_action=RaiseIfEqual(value=1),
+        if_action=ScheduleAction(scheduler_name="immediately", action_name="foo1"),
+        else_action=ScheduleAction(scheduler_name="immediately", action_name="foo2"),
+    )
+    schedule_action = All(actions=[Arg(data={"result": 2}), if_else])
+
+    dispatcher.add_action("schedule_action", schedule_action)
+    dispatcher.schedule_action("immediately", "schedule_action")
+
+    assert action.flea_count == 1
+    assert action2.flea_count == 100
+
+
+def test_if_else_2(friends):
+    """
+    Want to terminate scheduler using TerminateScheduler action.
+    """
+    dispatcher, scheduler, action = friends()
+    action2 = FleaCount(flea_count=100)
+    immediately = Immediately()
+    dispatcher.add_action("foo1", action)
+    dispatcher.add_action("foo2", action2)
+    dispatcher.add_scheduler("immediately", immediately)
+
+    if_else = IfElse(
+        test_action=RaiseIfEqual(value=2),
+        if_action=ScheduleAction(scheduler_name="immediately", action_name="foo1"),
+        else_action=ScheduleAction(scheduler_name="immediately", action_name="foo2"),
+    )
+    schedule_action = All(actions=[Arg(data={"result": 2}), if_else])
+
+    dispatcher.add_action("schedule_action", schedule_action)
+    dispatcher.schedule_action("immediately", "schedule_action")
+
+    assert action.flea_count == 0
+    assert action2.flea_count == 101
+
+
+# ====================================
+
+
 class FleaCount(Action):
     flea_count: int = 0
     data: Optional[Dict[Any, Any]]
@@ -819,17 +882,9 @@ class FleaCount(Action):
     def execute(self, tag: str = None, data: dict = None):
         self.flea_count += 1
         self.data = data
-        return self.action_result(result=self.flea_count, data=data)
-
-
-class FleaCount100(Action):
-    flea_count: int = 100
-    data: Optional[Dict[Any, Any]]
-
-    def execute(self, tag: str = None, data: dict = None):
-        self.flea_count += 1
-        self.data = data
-        return self.action_result(result=self.flea_count, data=data)
+        result = self.action_result(result=self.flea_count, data=data)
+        print("INSIDE FleaCount execute", result)
+        return result
 
 
 @pytest.fixture

@@ -56,18 +56,19 @@ class DispatcherAction(Action):
 
     def compute_args(self, args: dict, data: dict = None):
         """
-        Implements field vs. data mode logic.
+        Implements field vs. data mode arg construction logic.
         """
         if data:
             data_result = self.get_result(data)
-            data_args = {
-                arg: data_result[arg] for arg in args.keys() if arg in data_result
-            }
-            if self.mode == DispActionMode.data:
-                args.update(data_args)
-            else:
-                data_args.update(args)
-                args = data_args
+            if isinstance(data_result, dict):
+                data_args = {
+                    arg: data_result[arg] for arg in args.keys() if arg in data_result
+                }
+                if self.mode == DispActionMode.data:
+                    args.update(data_args)
+                else:
+                    data_args.update(args)
+                    args = data_args
         return args
 
 
@@ -77,7 +78,7 @@ class ScheduleProgram(DispatcherAction):
     stop: Optional[datetime] = None
 
     def description(self):
-        pass
+        return f"This action unschedules a program with mode ({self.mode}) and fields: program_name ({self.program_name}), start ({self.start}), stop ({self.stop})."
 
     def execute(self, tag: str = None, data: dict = None):
         args = {
@@ -95,7 +96,7 @@ class UnscheduleProgram(DispatcherAction):
     program_name: Optional[str] = None
 
     def description(self):
-        pass
+        return f"This action unschedules a program with mode ({self.mode}) and field: program_name ({self.program_name})."
 
     def execute(self, tag: str = None, data: dict = None):
         args = {
@@ -112,7 +113,7 @@ class ScheduleAction(DispatcherAction):
     action_name: Optional[str] = None
 
     def description(self):
-        return f""
+        return f"This action schedules and action with mode ({self.mode}) and fields: scheduler_name ({self.scheduler_name}), action_name ({self.action_name})."
 
     def execute(self, tag: str = None, data: dict = None):
         # gather all of the args that can participate
@@ -129,7 +130,7 @@ class DeferAction(DispatcherAction):
     wait_until: Optional[datetime] = None
 
     def description(self):
-        return f""
+        return f"This action defers a schedule/action with mode ({self.mode}) and fields: scheduler_name ({self.scheduler_name}), action_name ({self.action_name}), wait_until ({self.wait_until})."
 
     def execute(self, tag: str = None, data: dict = None):
         # gather all of the args that can participate
@@ -151,7 +152,7 @@ class ExpireAction(DispatcherAction):
     expire_on: Optional[datetime] = None
 
     def description(self):
-        return f""
+        return f"This action expires a schedule/action with mode ({self.mode}) and fields: scheduler_name ({self.scheduler_name}), action_name ({self.action_name}), expire_on ({self.expire_on})."
 
     def execute(self, tag: str = None, data: dict = None):
         # gather all of the args that can participate
