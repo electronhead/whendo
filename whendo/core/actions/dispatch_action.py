@@ -73,6 +73,7 @@ class DispatcherAction(Action):
 
 
 class ScheduleProgram(DispatcherAction):
+    schedule_program: str = "schedule_program"
     program_name: Optional[str] = None
     start: Optional[datetime] = None
     stop: Optional[datetime] = None
@@ -93,6 +94,7 @@ class ScheduleProgram(DispatcherAction):
 
 
 class UnscheduleProgram(DispatcherAction):
+    unschedule_program: str = "unschedule_program"
     program_name: Optional[str] = None
 
     def description(self):
@@ -109,11 +111,12 @@ class UnscheduleProgram(DispatcherAction):
 
 
 class ScheduleAction(DispatcherAction):
+    schedule_action: str = "schedule_action"
     scheduler_name: Optional[str] = None
     action_name: Optional[str] = None
 
     def description(self):
-        return f"This action schedules and action with mode ({self.mode}) and fields: scheduler_name ({self.scheduler_name}), action_name ({self.action_name})."
+        return f"This action schedules an action with mode ({self.mode}) and fields: scheduler_name ({self.scheduler_name}), action_name ({self.action_name})."
 
     def execute(self, tag: str = None, data: dict = None):
         # gather all of the args that can participate
@@ -124,7 +127,41 @@ class ScheduleAction(DispatcherAction):
         return self.action_result(result=result, data=data, extra=args)
 
 
+class UnscheduleSchedulerAction(DispatcherAction):
+    unschedule_scheduler_action: str = "unschedule_scheduler_action"
+    scheduler_name: Optional[str] = None
+    action_name: Optional[str] = None
+
+    def description(self):
+        return f"This action unschedules a scheduler/action with mode ({self.mode}) and fields: scheduler_name ({self.scheduler_name}), action_name ({self.action_name})."
+
+    def execute(self, tag: str = None, data: dict = None):
+        # gather all of the args that can participate
+        args = {"scheduler_name": self.scheduler_name, "action_name": self.action_name}
+        args = self.compute_args(args, data)
+        DispatcherHooks.unschedule_scheduler_action(**args)
+        result = f"action ({args['action_name']}) unscheduled from scheduler ({args['scheduler_name']})"
+        return self.action_result(result=result, data=data, extra=args)
+
+
+class UnscheduleScheduler(DispatcherAction):
+    unschedule_scheduler: str = "unschedule_scheduler"
+    scheduler_name: Optional[str] = None
+
+    def description(self):
+        return f"This action unschedules a scheduler with mode ({self.mode}) and field: scheduler_name ({self.scheduler_name})."
+
+    def execute(self, tag: str = None, data: dict = None):
+        # gather all of the args that can participate
+        args = {"scheduler_name": self.scheduler_name}
+        args = self.compute_args(args, data)
+        DispatcherHooks.unschedule_scheduler(*args)
+        result = f"scheduler ({args['scheduler_name']}) unscheduled"
+        return self.action_result(result=result, data=data, extra=args)
+
+
 class DeferAction(DispatcherAction):
+    defer_action: str = "defer_action"
     scheduler_name: Optional[str] = None
     action_name: Optional[str] = None
     wait_until: Optional[datetime] = None
@@ -147,6 +184,7 @@ class DeferAction(DispatcherAction):
 
 
 class ExpireAction(DispatcherAction):
+    expire_action: str = "expire_action"
     scheduler_name: Optional[str] = None
     action_name: Optional[str] = None
     expire_on: Optional[datetime] = None
@@ -165,3 +203,27 @@ class ExpireAction(DispatcherAction):
         DispatcherHooks.expire_action(**args)
         result = f"action ({args['action_name']}) using scheduler ({args['scheduler_name']}) expiring on ({args['expire_on']})"
         return self.action_result(result=result, data=data, extra=args)
+
+
+class ClearAllDeferredActions(DispatcherAction):
+    clear_all_deferred_actions: str = "clear_all_deferred_actions"
+
+    def description(self):
+        return "Removes all deferred scheduled actions."
+
+    def execute(self, tag: str = None, data: dict = None):
+        DispatcherHooks.clear_all_deferred_actions()
+        result = "All deferred scheduled actions removed."
+        return self.action_result(result=result, data=data)
+
+
+class ClearAllExpiringActions(DispatcherAction):
+    clear_all_expiring_actions: str = "clear_all_expiring_actions"
+
+    def description(self):
+        return "Removes all expiring scheduled actions."
+
+    def execute(self, tag: str = None, data: dict = None):
+        DispatcherHooks.clear_all_expiring_actions()
+        result = "All expiring scheduled actions removed."
+        return self.action_result(result=result, data=data)

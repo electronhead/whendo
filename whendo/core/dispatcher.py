@@ -129,12 +129,20 @@ class Dispatcher(BaseModel):
             schedule_action_thunk=lambda scheduler_name, action_name: self.schedule_action(
                 scheduler_name, action_name
             ),
+            unschedule_scheduler_action_thunk=lambda scheduler_name, action_name: self.unschedule_scheduler_action(
+                scheduler_name, action_name
+            ),
+            unschedule_scheduler_thunk=lambda scheduler_name, action_name: self.unschedule_scheduler(
+                scheduler_name
+            ),
             defer_action_thunk=lambda scheduler_name, action_name, wait_until: self.defer_action(
                 scheduler_name, action_name, wait_until
             ),
             expire_action_thunk=lambda scheduler_name, action_name, expire_on: self.expire_action(
                 scheduler_name, action_name, expire_on
             ),
+            clear_all_deferred_actions_thunk=lambda scheduler_name, action_name, expire_on: self.clear_all_deferred_actions(),
+            clear_all_expiring_actions_thunk=lambda scheduler_name, action_name, expire_on: self.clear_all_expiring_actions(),
         )
 
     def pprint(self):
@@ -283,6 +291,36 @@ class Dispatcher(BaseModel):
                     action_names.remove(action_name)
                 self.check_scheduler(scheduler_name)
             self.actions.pop(action_name, None)
+
+            # remove associated schedulers from deferred scheduled actions
+            wait_until_str_to_remove = []
+            for wait_until_str in self.deferred_scheduled_actions:
+                scheduler_dictionaries = self.deferred_scheduled_actions[wait_until_str]
+                if scheduler_name in scheduler_dictionaries:
+                    if action_name in scheduler_dictionaries[scheduler_name]:
+                        wait_until_str_to_remove.append(wait_until_str)
+            for wait_until_str in wait_until_str_to_remove:
+                self.deferred_scheduled_actions.pop(wait_until_str)
+
+            # remove associated schedulers from expiring scheduled actions
+            expire_on_str_to_remove = []
+            for expire_on_str in self.expiring_scheduled_actions:
+                scheduler_dictionaries = self.deferred_scheduled_actions[expire_on_str]
+                if scheduler_name in scheduler_dictionaries:
+                    if action_name in scheduler_dictionaries[scheduler_name]:
+                        expire_on_str_to_remove.append(expire_on_str)
+            for expire_on_str in expire_on_str_to_remove:
+                self.deferred_scheduled_actions.pop(expire_on_str)
+
+            # delete programs referencing action_name
+            programs_copy = self.programs.copy()
+            for program_name in programs_copy:
+                program_items = programs_copy[program_name].compute_program_items()
+                for program_item in program_items:
+                    if program_item.action_name == action_name:
+                        self.delete_program(program_name)
+                        break
+
             self.save_current()
 
     def execute_action(self, action_name: str):
@@ -338,10 +376,39 @@ class Dispatcher(BaseModel):
             ), f"scheduler ({scheduler_name}) does not exist"
             self.unschedule_scheduler(scheduler_name)
             self.schedulers.pop(scheduler_name)
-            self.scheduled_actions[
-                scheduler_name
-            ].clear()  # pro-actively clean up. less work for GC.
             self.scheduled_actions.pop(scheduler_name)
+
+            # remove from deferred scheduled actions
+            wait_until_str_to_remove = []
+            for wait_until_str in self.deferred_scheduled_actions:
+                scheduler_dictionaries = self.deferred_scheduled_actions[wait_until_str]
+                if scheduler_name in scheduler_dictionaries:
+                    scheduler_dictionaries.pop(scheduler_name)
+                    if len(scheduler_dictionaries) == 0:
+                        wait_until_str_to_remove.append(wait_until_str)
+            for wait_until_str in wait_until_str_to_remove:
+                self.deferred_scheduled_actions.pop(wait_until_str)
+
+            # remove from expiring scheduled actions
+            expire_on_str_to_remove = []
+            for expire_on_str in self.expiring_scheduled_actions:
+                scheduler_dictionaries = self.deferred_scheduled_actions[expire_on_str]
+                if scheduler_name in scheduler_dictionaries:
+                    scheduler_dictionaries.pop(scheduler_name)
+                    if len(scheduler_dictionaries) == 0:
+                        expire_on_str_to_remove.append(expire_on_str)
+            for expire_on_str in expire_on_str_to_remove:
+                self.deferred_scheduled_actions.pop(expire_on_str)
+
+            # delete programs referencing scheduler_name
+            programs_copy = self.programs.copy()
+            for program_name in programs_copy:
+                program_items = programs_copy[program_name].compute_program_items()
+                for program_item in program_items:
+                    if program_item.scheduler_name == scheduler_name:
+                        self.delete_program(program_name)
+                        break
+
             self.save_current()
 
     def check_scheduler(self, scheduler_name: str):

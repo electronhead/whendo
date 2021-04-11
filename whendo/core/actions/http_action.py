@@ -61,4 +61,6 @@ class ExecuteAction(Action):
 
     def check_host_port(self, host: str, port: int):
         if host == self.local_host() and port == self.local_port():
-            raise ValueError(f"supplied host:port ({host}:{port}) must be different from local host:port ({self.local_host()}:{self.local_port()})")
+            raise ValueError(
+                f"supplied host:port ({host}:{port}) must be different from local host:port ({self.local_host()}:{self.local_port()})"
+            )
