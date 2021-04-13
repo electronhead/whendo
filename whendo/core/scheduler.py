@@ -111,6 +111,3 @@ class Immediately(Scheduler):
         return (
             f"This scheduler executes its actions immediately. {super().description()}"
         )
-
-    def schedule(self, scheduler_name: str, executor: Executor):
-        pass  # self.executor.push(scheduler_name=scheduler_name)

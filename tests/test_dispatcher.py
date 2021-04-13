@@ -567,6 +567,7 @@ def test_program_1(friends):
 
     program = PBEProgram().prologue("foo1").body_element("bar", "foo2").epilogue("foo3")
     dispatcher.add_program("baz", program)
+
     start = util.Now().dt() + timedelta(seconds=1)
     stop = start + timedelta(seconds=4)
 
