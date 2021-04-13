@@ -150,6 +150,17 @@ def object_info(obj):
     }
 
 
+def add_to_list(a_list: list, element: object):
+    """
+    Attempts to append element to a list. If already contained,
+    returns 0. Else 1.
+    """
+    if element not in a_list:
+        a_list.append(element)
+        return 1
+    return 0
+
+
 # classes
 
 

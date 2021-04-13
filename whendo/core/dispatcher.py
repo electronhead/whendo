@@ -21,7 +21,7 @@ from .scheduler import Scheduler, TimedScheduler, ThresholdScheduler, Immediatel
 from .timed import Timed
 from .resolver import resolve_action, resolve_scheduler, resolve_program
 from .executor import Executor
-from .scheduling import DeferredPrograms, DeferredProgram
+from .scheduling import DeferredPrograms, DeferredProgram, ScheduledActions
 
 logger = logging.getLogger(__name__)
 
@@ -35,13 +35,11 @@ class Dispatcher(BaseModel):
     actions: Dict[str, Action] = {}
     schedulers: Dict[str, Scheduler] = {}
     programs: Dict[str, Program] = {}
-    scheduled_actions: Dict[str, List[str]] = {}
     deferred_scheduled_actions: Dict[str, Dict[str, List[str]]] = {}
     expiring_scheduled_actions: Dict[str, Dict[str, List[str]]] = {}
-    # deferred_scheduled_programs: Dict[str, Dict[str, List[DateTime2]]] = {}
     saved_dir: Optional[str] = None
 
-    # scheduled_actions: ScheduledActions = ScheduledActions()
+    scheduled_actions: ScheduledActions = ScheduledActions()
     deferred_programs: DeferredPrograms = DeferredPrograms()
 
     # not treated as a model attrs
@@ -92,10 +90,6 @@ class Dispatcher(BaseModel):
         with Lok.lock:
             return self.expiring_scheduled_actions
 
-    # def get_deferred_scheduled_programs(self):
-    #     with Lok.lock:
-    #         return self.deferred_scheduled_programs
-
     def get_deferred_programs(self):
         return self.deferred_programs
 
@@ -104,7 +98,7 @@ class Dispatcher(BaseModel):
 
     def get_actions_for_scheduler(self, scheduler_name: str):
         with Lok.lock:
-            action_names = self.scheduled_actions[scheduler_name]
+            action_names = self.scheduled_actions.actions(scheduler_name)
             return {
                 action_name: self.actions[action_name] for action_name in action_names
             }
@@ -195,7 +189,6 @@ class Dispatcher(BaseModel):
             self.scheduled_actions.clear()
             self.deferred_scheduled_actions.clear()
             self.expiring_scheduled_actions.clear()
-            # self.deferred_scheduled_programs.clear()
             self.deferred_programs.clear()
             self.actions.clear()
             self.schedulers.clear()
@@ -233,9 +226,6 @@ class Dispatcher(BaseModel):
                     replacement.get_expiring_scheduled_actions()
                 )
                 self.deferred_programs = replacement.get_deferred_programs()
-                # self.deferred_scheduled_programs = (
-                #     replacement.get_deferred_scheduled_programs()
-                # )
                 self.save_current()
 
         typed_replace_all(replacement)
@@ -294,18 +284,16 @@ class Dispatcher(BaseModel):
     def delete_action(self, action_name: str):
         with Lok.lock:
             assert action_name in self.actions, f"action ({action_name}) does not exist"
-            for scheduler_name in self.schedulers:
-                action_names = self.scheduled_actions[scheduler_name]
-                if action_name in action_names:
-                    action_names.remove(action_name)
-                self.check_scheduler(scheduler_name)
+            deleted_schedulers = self.scheduled_actions.delete_action(action_name)
+            for ds in deleted_schedulers:
+                self.check_scheduler(ds)
             self.actions.pop(action_name, None)
 
             # remove associated schedulers from deferred scheduled actions
             wait_until_str_to_remove = []
             for wait_until_str in self.deferred_scheduled_actions:
                 scheduler_dictionaries = self.deferred_scheduled_actions[wait_until_str]
-                if scheduler_name in scheduler_dictionaries:
+                for scheduler_name in scheduler_dictionaries:
                     if action_name in scheduler_dictionaries[scheduler_name]:
                         wait_until_str_to_remove.append(wait_until_str)
             for wait_until_str in wait_until_str_to_remove:
@@ -315,7 +303,7 @@ class Dispatcher(BaseModel):
             expire_on_str_to_remove = []
             for expire_on_str in self.expiring_scheduled_actions:
                 scheduler_dictionaries = self.deferred_scheduled_actions[expire_on_str]
-                if scheduler_name in scheduler_dictionaries:
+                for scheduler_name in scheduler_dictionaries:
                     if action_name in scheduler_dictionaries[scheduler_name]:
                         expire_on_str_to_remove.append(expire_on_str)
             for expire_on_str in expire_on_str_to_remove:
@@ -366,7 +354,6 @@ class Dispatcher(BaseModel):
                 not scheduler_name in self.schedulers
             ), f"scheduler ({scheduler_name}) already exists"
             self.schedulers[scheduler_name] = scheduler
-            self.scheduled_actions[scheduler_name] = []
             self.save_current()
 
     def set_scheduler(self, scheduler_name: str, scheduler: Scheduler):
@@ -385,7 +372,7 @@ class Dispatcher(BaseModel):
             ), f"scheduler ({scheduler_name}) does not exist"
             self.unschedule_scheduler(scheduler_name)
             self.schedulers.pop(scheduler_name)
-            self.scheduled_actions.pop(scheduler_name)
+            self.scheduled_actions.delete_scheduler(scheduler_name)
 
             # remove from deferred scheduled actions
             wait_until_str_to_remove = []
@@ -424,7 +411,7 @@ class Dispatcher(BaseModel):
         assert (
             scheduler_name in self.schedulers
         ), f"scheduler ({scheduler_name}) does not exist"
-        if len(self.scheduled_actions[scheduler_name]) == 0:
+        if len(self.scheduled_actions.actions(scheduler_name)) == 0:
             scheduler = self.get_scheduler(scheduler_name)
             if isinstance(scheduler, TimedScheduler):
                 scheduler.set_timed(self._timed)
@@ -487,27 +474,6 @@ class Dispatcher(BaseModel):
             self.deferred_programs.clear_program(program_name)
             self.save_current()
 
-    # def unschedule_program(self, program_name: str):
-    #     """
-    #     Deletes program from programs and removes all references
-    #     in deferred_scheduled_programs.
-    #     """
-    #     with Lok.lock:
-    #         assert (
-    #             program_name in self.programs
-    #         ), f"program ({program_name}) does not exist"
-    #         to_remove = []
-    #         deferred_scheduled_programs = self.deferred_scheduled_programs
-    #         for wait_until_str in deferred_scheduled_programs:
-    #             wait_until_programs = deferred_scheduled_programs[wait_until_str]
-    #             if program_name in wait_until_programs:
-    #                 wait_until_programs.pop(program_name)
-    #                 if len(wait_until_programs) == 0:
-    #                     to_remove.append(wait_until_str)
-    #         for wait_until_str in to_remove:
-    #             deferred_scheduled_programs.pop(wait_until_str)
-    #         self.save_current()
-
     def check_program(self, program: Program):
         """
         Makes sure that actions and schedulers referenced in the program exist.
@@ -543,37 +509,6 @@ class Dispatcher(BaseModel):
             self.deferred_programs.add(DeferredProgram(program_name, start, stop))
             self.save_current()
 
-    # def schedule_program(self, program_name: str, start: datetime, stop: datetime):
-    #     """
-    #     This method defers the scheduling of a program by populating a dictionary.
-
-    #     This dictionary (deferred_scheduled_programs) has a structure similar to
-    #     deferred_scheduled_actions, except that the leaf arrays contain Datetime2
-    #     instances instead of Actions.
-    #     """
-    #     with Lok.lock:
-    #         assert (
-    #             program_name in self.programs
-    #         ), f"program ({program_name}) does not exist"
-    #         program = self.programs[program_name]
-    #         self.check_program(program)
-    #         # needs to be a str key because of Dispatcher json serialization and deserialization
-    #         wait_until_str = dt_to_str(start)
-    #         if wait_until_str not in self.deferred_scheduled_programs:
-    #             # initialize the key's value
-    #             self.deferred_scheduled_programs[wait_until_str] = {}
-    #         # same structure as scheduled_actions
-    #         deferred_programs = self.deferred_scheduled_programs[wait_until_str]
-    #         if program_name not in deferred_programs:
-    #             deferred_programs[program_name] = []  # initialize list of DateTime2s
-    #         datetime2s = deferred_programs[program_name]
-    #         datetime2 = DateTime2(dt1=start, dt2=stop)
-    #         assert (
-    #             datetime2 not in datetime2s
-    #         ), f"({program_name}) already scheduled using start ({start}), ({stop})"
-    #         datetime2s.append(datetime2)
-    #         self.save_current()
-
     def check_for_deferred_programs(self):
         """
         This gets run as a job in the out-of-band Timed instance.
@@ -592,36 +527,6 @@ class Dispatcher(BaseModel):
                         exception,
                     )
                 self.save_current()
-
-    # def check_for_deferred_programs(self):
-    #     """
-    #     This gets run as a job in the out-of-band Timed instance.
-
-    #     It looks for deferred programs whose start dates are prior to the current
-    #     time and 'disseminates' these programs. See the
-    #     schedule_program and initialize methods for more details.
-    #     """
-    #     with Lok.lock:
-    #         now = Now.dt()
-    #         to_remove = []
-    #         for wait_until_str in self.deferred_scheduled_programs:
-    #             wait_until = str_to_dt(wait_until_str)
-    #             if wait_until < now:
-    #                 deferred_programs = self.deferred_scheduled_programs[wait_until_str]
-    #                 for program_name in deferred_programs:
-    #                     for datetime2 in deferred_programs[program_name]:
-    #                         start, stop = datetime2.dt1, datetime2.dt2
-    #                         try:
-    #                             self.disseminate_program(program_name, start, stop)
-    #                         except Exception as exception:
-    #                             logger.error(
-    #                                 f"failed to dissemminate program ({program_name}) using start ({start}), ({stop})",
-    #                                 exception,
-    #                             )
-    #                 to_remove.append(wait_until_str)
-    #         for wait_until_str in to_remove:  # modify outside the previous for-loop
-    #             self.deferred_scheduled_programs.pop(wait_until_str)
-    #         self.save_current()
 
     def disseminate_program(self, program_name: str, start: datetime, stop: datetime):
         """
@@ -649,27 +554,10 @@ class Dispatcher(BaseModel):
         with Lok.lock:
             return self.deferred_programs.count()
 
-    # def get_deferred_program_count(self):
-    #     # returns the total number of datetime2s in the deferred programs dictionary (a dictionary
-    #     # of dictionaries)
-    #     with Lok.lock:
-    #         result = 0
-    #         for deferred_programs in self.deferred_scheduled_programs.values():
-    #             result += sum(
-    #                 len(datetime2_array)
-    #                 for datetime2_array in deferred_programs.values()
-    #             )
-    #         return result
-
     def clear_all_deferred_programs(self):
         with Lok.lock:
             self.deferred_programs.clear()
             self.save_current()
-
-    # def clear_all_deferred_programs(self):
-    #     with Lok.lock:
-    #         self.deferred_scheduled_programs.clear()
-    #         self.save_current()
 
     # scheduling
     def schedule_action(self, scheduler_name: str, action_name: str):
@@ -699,11 +587,12 @@ class Dispatcher(BaseModel):
                         exc_info=exception,
                     )
                 return
-            action_names = self.scheduled_actions[scheduler_name]
+            action_names = self.scheduled_actions.actions(scheduler_name)
             if action_name in action_names:
                 return  # don't need to schedule
             else:
-                action_names.append(action_name)
+                self.scheduled_actions.add(scheduler_name, action_name)
+                action_names = self.scheduled_actions.actions(scheduler_name)
                 if len(action_names) == 1:  # > 1 implies already scheduled
                     scheduler.schedule(
                         scheduler_name,
@@ -725,11 +614,9 @@ class Dispatcher(BaseModel):
             if isinstance(scheduler, TimedScheduler):
                 scheduler.set_timed(self._timed)
             # remove the action from the scheduler's actions
-            action_names = self.scheduled_actions[scheduler_name]
-            if action_name in action_names:
-                action_names.remove(action_name)
-            # unschedule the scheduler if there are no associated actions
-            if len(action_names) == 0:
+            scheduler_name = self.scheduled_actions.delete(scheduler_name, action_name)
+            # unschedule the scheduler if a non-None scheduler name is returned
+            if scheduler_name:
                 scheduler.unschedule(scheduler_name)
             self.save_current()
 
@@ -742,7 +629,7 @@ class Dispatcher(BaseModel):
             if isinstance(scheduler, TimedScheduler):
                 scheduler.set_timed(self._timed)
             scheduler.unschedule(scheduler_name)
-            self.scheduled_actions[scheduler_name].clear()
+            self.scheduled_actions.delete_scheduler(scheduler_name)
             self.save_current()
 
     def reschedule_scheduler(self, scheduler_name: str):
@@ -762,16 +649,14 @@ class Dispatcher(BaseModel):
 
     def reschedule_all_schedulers(self):
         with Lok.lock:
-            for scheduler_name in self.scheduled_actions:
+            for scheduler_name in self.scheduled_actions.scheduler_names():
                 self.reschedule_scheduler(scheduler_name)
 
     def get_scheduled_action_count(self):
         # returns the total number of actions in the scheduled_actions dictionary
         # should be equal to the number of jobs in related Timed instance
         with Lok.lock:
-            return sum(
-                len(action_array) for action_array in self.scheduled_actions.values()
-            )
+            return self.scheduled_actions.action_count()
 
     # defer scheduler/action
     def defer_action(self, scheduler_name: str, action_name: str, wait_until: datetime):
@@ -961,8 +846,7 @@ class Dispatcher(BaseModel):
                 programs=programs,
                 scheduled_actions=scheduled_actions,
                 deferred_scheduled_actions=deferred_scheduled_actions,
-                deferred_programs=deferred_programs
-                # deferred_scheduled_programs=deferred_scheduled_programs,
+                deferred_programs=deferred_programs,
             )
 
 

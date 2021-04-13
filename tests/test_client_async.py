@@ -289,8 +289,8 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, host, port, tmp_
     dispatcher = await load_dispatcher(client=client)
     assert "flea" in dispatcher.get_actions()
     assert "bath" in dispatcher.get_schedulers()
-    assert "bath" in dispatcher.get_scheduled_actions()
-    assert "flea" in dispatcher.get_scheduled_actions()["bath"]
+    assert "bath" in dispatcher.get_scheduled_actions().scheduler_names()
+    assert "flea" in dispatcher.get_scheduled_actions().actions("bath")
 
     # add the job
     await assert_scheduled_action_count(client=client, n=1)

@@ -2,30 +2,36 @@ from pydantic import BaseModel
 from typing import Dict, List, Set
 from datetime import datetime
 from collections import namedtuple
-from .util import Now, dt_to_str, str_to_dt
+from .util import Now, dt_to_str, str_to_dt, add_to_list
 
-ScheduledActions = namedtuple("ScheduledActions", ["scheduler_name", "action_names"])
+
 class SchedulerActions(BaseModel):
-    scheduled_actions:Set[ScheduledActions] = set()
+    scheduler_name: str
+    action_names: Set[str] = set()
 
-    def add(self, scheduler_name:str, action_name:str):
-        for sa in self.scheduled_actions:
+
+class ScheduledActions(BaseModel):
+    scheduler_actions: List[SchedulerActions] = []
+
+    def add(self, scheduler_name: str, action_name: str):
+        for sa in self.scheduler_actions:
             if sa.scheduler_name == scheduler_name:
                 sa.action_names.add(action_name)
                 return
-        self.scheduled_actions.add(ScheduledActions(scheduler_name, {action_name}))
-    
-    def actions(self, scheduler_name:str):
-        scheduler_actions = list(sa for sa in self.scheduled_actions if sa.scheduler_name == scheduler_name)
-        if len(scheduler_actions) > 0:
-            return scheduler_actions[0].action_names
-        else:
-            return set()
-        
-    
-    def remove(self, scheduler_name:str, action_name:str):
+        new_scheduler_action = SchedulerActions(
+            scheduler_name=scheduler_name, action_names={action_name}
+        )
+        self.scheduler_actions.append(new_scheduler_action)
+
+    def actions(self, scheduler_name: str):
+        for sa in self.scheduler_actions:
+            if sa.scheduler_name == scheduler_name:
+                return sa.action_names
+        return set()
+
+    def delete(self, scheduler_name: str, action_name: str):
         to_remove = None
-        for sa in self.scheduled_actions:
+        for sa in self.scheduler_actions:
             if sa.scheduler_name == scheduler_name:
                 if action_name in sa.action_names:
                     sa.action_names.remove(action_name)
@@ -33,18 +39,45 @@ class SchedulerActions(BaseModel):
                         to_remove = sa
                 break
         if to_remove:
-            self.scheduled_actions.remove(to_remove)
-    
-    def remove_scheduler(self, scheduler_name:str):
-        self.scheduled_actions = set(sa for sa in self.scheduled_actions if sa.scheduler_name != scheduler_name)
-    
+            self.scheduler_actions.remove(to_remove)
+            return to_remove.scheduler_name
+        else:
+            return None
+
+    def delete_action(self, action_name: str):
+        removed_scheduler_names: Set[str] = set()
+        for scheduler_name in self.scheduler_names():
+            to_remove = self.delete(scheduler_name, action_name)
+            if to_remove:
+                removed_scheduler_names.add(to_remove)
+        return removed_scheduler_names
+
+    def delete_scheduler(self, scheduler_name: str):
+        for sa in self.scheduler_actions:
+            if sa.scheduler_name == scheduler_name:
+                self.scheduler_actions.remove(sa)
+                return scheduler_name
+        return None
+
     def scheduler_names(self):
-        return set(sa.scheduler_name for sa in self.scheduled_actions)
-    
+        return set(sa.scheduler_name for sa in self.scheduler_actions)
+
+    def action_names(self):
+        action_names = set()
+        for sa in self.scheduler_actions:
+            action_names.update(sa.action_names)
+        return action_names
+
+    def action_count(self):
+        return len(self.action_names())
+
     def clear(self):
         self.scheduler_actions.clear()
-    
-DatetimeSchedulerActions = namedtuple("DatetimeSchedulerActions", ["datetime_str", "scheduler_actions"])
+
+
+# DatetimeSchedulerActions = namedtuple(
+#     "DatetimeSchedulerActions", ["datetime_str", "scheduler_actions"]
+# )
 # class ActionSchedule(BaseModel):
 #     scheduled: SchedulerActions = SchedulerActions()
 #     deferred: Dict[str, SchedulerActions] = {} # key is datetime string
@@ -54,13 +87,13 @@ DatetimeSchedulerActions = namedtuple("DatetimeSchedulerActions", ["datetime_str
 #         if scheduler_name not in self.scheduled:
 #             self.scheduled[scheduler_name] = set()
 #         self.scheduled[scheduler_name].add(action_name)
-    
+
 #     def delete_scheduled_scheduler(self, scheduler_name:str):
 #         try:
 #             self.scheduled.pop(scheduler_name)
 #         except KeyError:
 #             pass
-    
+
 #     def delete_scheduled_scheduler_action(self, scheduler_name:str, action_name:str):
 #         try:
 #             self.scheduled[scheduler_name].remove(action_name)

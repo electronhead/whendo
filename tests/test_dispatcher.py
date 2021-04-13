@@ -41,7 +41,6 @@ def test_schedule_action(friends):
     dispatcher.add_action("foo", action)
     dispatcher.add_scheduler("bar", scheduler)
     dispatcher.schedule_action("bar", "foo")
-    print("FLOWMEENEE", dispatcher.scheduled_actions)
 
     assert dispatcher.get_scheduled_action_count() == 1
 
@@ -342,8 +341,10 @@ def test_replace_dispatcher(friends):
     assert dispatcher.get_scheduler("bath")
     assert {"bath"} == set(k for k in dispatcher.get_schedulers())
     assert {"flea"} == set(k for k in dispatcher.get_actions())
-    assert {"bath"} == set(k for k in dispatcher.get_scheduled_actions())
-    assert {"flea"} == set(dispatcher.get_scheduled_actions()["bath"])
+    assert {"bath"} == set(
+        k for k in dispatcher.get_scheduled_actions().scheduler_names()
+    )
+    assert {"flea"} == dispatcher.get_scheduled_actions().actions("bath")
 
 
 def test_load_dispatcher(friends):
@@ -364,8 +365,8 @@ def test_load_dispatcher(friends):
     assert set(k for k in dispatcher.get_schedulers()) == set(
         k for k in dispatcher2.get_schedulers()
     )
-    assert set(k for k in dispatcher.get_scheduled_actions()) == set(
-        k for k in dispatcher2.get_scheduled_actions()
+    assert set(k for k in dispatcher.get_scheduled_actions().action_names()) == set(
+        k for k in dispatcher2.get_scheduled_actions().action_names()
     )
 
 
