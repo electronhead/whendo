@@ -25,11 +25,7 @@ from .scheduling import (
     DeferredPrograms,
     DeferredProgram,
     ScheduledActions,
-    check_for_dated_actions,
-    apply_action_date,
-    action_count,
-    delete_dated_action,
-    delete_dated_scheduler,
+    DatedScheduledActions,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,8 +41,8 @@ class Dispatcher(BaseModel):
     schedulers: Dict[str, Scheduler] = {}
     programs: Dict[str, Program] = {}
     scheduled_actions: ScheduledActions = ScheduledActions()
-    deferred_scheduled_actions: Dict[str, ScheduledActions] = {}
-    expiring_scheduled_actions: Dict[str, ScheduledActions] = {}
+    deferred_scheduled_actions: DatedScheduledActions = DatedScheduledActions()
+    expiring_scheduled_actions: DatedScheduledActions = DatedScheduledActions()
     deferred_programs: DeferredPrograms = DeferredPrograms()
     saved_dir: Optional[str] = None
 
@@ -294,18 +290,8 @@ class Dispatcher(BaseModel):
             for ds in deleted_schedulers:
                 self.check_scheduler(ds)
             self.actions.pop(action_name, None)
-
-            # remove associated schedulers from deferred scheduled actions
-            delete_dated_action(
-                action_name=action_name,
-                dated_scheduled_actions=self.deferred_scheduled_actions,
-            )
-
-            # remove associated schedulers from expiring scheduled actions
-            delete_dated_action(
-                action_name=action_name,
-                dated_scheduled_actions=self.expiring_scheduled_actions,
-            )
+            self.deferred_scheduled_actions.delete_dated_action(action_name=action_name)
+            self.expiring_scheduled_actions.delete_dated_action(action_name=action_name)
 
             # delete programs referencing action_name
             programs_copy = self.programs.copy()
@@ -365,17 +351,11 @@ class Dispatcher(BaseModel):
             self.unschedule_scheduler(scheduler_name)
             self.schedulers.pop(scheduler_name)
             self.scheduled_actions.delete_scheduler(scheduler_name)
-
-            # remove from deferred scheduled actions
-            delete_dated_scheduler(
-                scheduler_name=scheduler_name,
-                dated_scheduled_actions=self.deferred_scheduled_actions,
+            self.deferred_scheduled_actions.delete_dated_scheduler(
+                scheduler_name=scheduler_name
             )
-
-            # remove from expiring scheduled actions
-            delete_dated_scheduler(
-                scheduler_name=scheduler_name,
-                dated_scheduled_actions=self.expiring_scheduled_actions,
+            self.expiring_scheduled_actions.delete_dated_scheduler(
+                scheduler_name=scheduler_name
             )
 
             # delete programs referencing scheduler_name
@@ -466,11 +446,7 @@ class Dispatcher(BaseModel):
 
     def schedule_program(self, program_name: str, start: datetime, stop: datetime):
         """
-        This method defers the scheduling of a program by populating a dictionary.
-
-        This dictionary (deferred_scheduled_programs) has a structure similar to
-        deferred_scheduled_actions, except that the leaf arrays contain Datetime2
-        instances instead of Actions.
+        This method defers the scheduling of a program.
         """
         with Lok.lock:
             self.check_program_name(program_name)
@@ -627,12 +603,10 @@ class Dispatcher(BaseModel):
         with Lok.lock:
             self.check_scheduler_name(scheduler_name)
             self.check_action_name(action_name)
-
-            apply_action_date(
+            self.deferred_scheduled_actions.apply_date(
                 scheduler_name=scheduler_name,
                 action_name=action_name,
                 date_time=wait_until,
-                dated_scheduled_actions=self.deferred_scheduled_actions,
             )
             self.save_current()
 
@@ -645,8 +619,7 @@ class Dispatcher(BaseModel):
         defer_action and initialize methods for more details.
         """
         with Lok.lock:
-            check_for_dated_actions(
-                dated_scheduled_actions=self.deferred_scheduled_actions,
+            self.deferred_scheduled_actions.check_for_dated_actions(
                 schedule_update_thunk=self.schedule_action,
                 verb="schedule",
             )
@@ -656,7 +629,7 @@ class Dispatcher(BaseModel):
         # returns the total number of actions in the deferred actions dictionary (a dictionary
         # of dictionaries)
         with Lok.lock:
-            return action_count(self.deferred_scheduled_actions)
+            return self.deferred_scheduled_actions.action_count()
 
     def clear_all_deferred_actions(self):
         with Lok.lock:
@@ -672,11 +645,10 @@ class Dispatcher(BaseModel):
         with Lok.lock:
             self.check_scheduler_name(scheduler_name)
             self.check_action_name(action_name)
-            apply_action_date(
+            self.expiring_scheduled_actions.apply_date(
                 scheduler_name=scheduler_name,
                 action_name=action_name,
                 date_time=expire_on,
-                dated_scheduled_actions=self.expiring_scheduled_actions,
             )
 
             self.save_current()
@@ -690,8 +662,7 @@ class Dispatcher(BaseModel):
         See the expire_action and initialize methods for more details.
         """
         with Lok.lock:
-            check_for_dated_actions(
-                dated_scheduled_actions=self.expiring_scheduled_actions,
+            self.expiring_scheduled_actions.check_for_dated_actions(
                 schedule_update_thunk=self.unschedule_scheduler_action,
                 verb="unschedule",
             )
@@ -701,7 +672,7 @@ class Dispatcher(BaseModel):
         # returns the total number of actions in the deferred actions dictionary (a dictionary
         # of dictionaries)
         with Lok.lock:
-            return action_count(self.expiring_scheduled_actions)
+            return self.expiring_scheduled_actions.action_count()
 
     def clear_all_expiring_actions(self):
         with Lok.lock:

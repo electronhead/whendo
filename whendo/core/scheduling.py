@@ -105,72 +105,67 @@ class DeferredPrograms(BaseModel):
         return len(self.deferred_programs)
 
 
-# dispatcher helper functions
+class DatedScheduledActions(BaseModel):
+    dated_scheduled_actions: Dict[str, ScheduledActions] = {}
 
+    def check_for_dated_actions(
+        self,
+        schedule_update_thunk: Callable,
+        verb: str,
+    ):
+        now = Now.dt()
+        to_remove = []
+        for date_time_str in self.dated_scheduled_actions:
+            date_time = str_to_dt(date_time_str)
+            if date_time < now:
+                scheduled_actions = self.dated_scheduled_actions[date_time_str]
+                for scheduler_name in scheduled_actions.scheduler_names():
+                    for action_name in scheduled_actions.actions(scheduler_name):
+                        try:
+                            schedule_update_thunk(scheduler_name, action_name)
+                        except Exception as exception:
+                            logger.error(
+                                f"failed to {verb} action ({action_name}) under ({scheduler_name}) as of ({date_time_str})",
+                                exception,
+                            )
+                to_remove.append(date_time_str)
+        for date_time_str in to_remove:  # modify outside the previous for-loop
+            self.dated_scheduled_actions.pop(date_time_str)
 
-def check_for_dated_actions(
-    dated_scheduled_actions: Dict[str, ScheduledActions],
-    schedule_update_thunk: Callable,
-    verb: str,
-):
-    now = Now.dt()
-    to_remove = []
-    for date_time_str in dated_scheduled_actions:
-        date_time = str_to_dt(date_time_str)
-        if date_time < now:
-            scheduled_actions = dated_scheduled_actions[date_time_str]
-            for scheduler_name in scheduled_actions.scheduler_names():
-                for action_name in scheduled_actions.actions(scheduler_name):
-                    try:
-                        schedule_update_thunk(scheduler_name, action_name)
-                    except Exception as exception:
-                        logger.error(
-                            f"failed to {verb} action ({action_name}) under ({scheduler_name}) as of ({date_time_str})",
-                            exception,
-                        )
-            to_remove.append(date_time_str)
-    for date_time_str in to_remove:  # modify outside the previous for-loop
-        dated_scheduled_actions.pop(date_time_str)
+    def apply_date(
+        self,
+        scheduler_name: str,
+        action_name: str,
+        date_time: datetime,
+    ):
+        date_time_str = dt_to_str(date_time)
+        if date_time_str not in self.dated_scheduled_actions:
+            self.dated_scheduled_actions[date_time_str] = ScheduledActions()
+        scheduled_actions = self.dated_scheduled_actions[date_time_str]
+        scheduled_actions.add(scheduler_name, action_name)
 
+    def action_count(self):
+        return sum(sa.action_count() for sa in self.dated_scheduled_actions.values())
 
-def apply_action_date(
-    scheduler_name: str,
-    action_name: str,
-    date_time: datetime,
-    dated_scheduled_actions: Dict[str, ScheduledActions],
-):
-    date_time_str = dt_to_str(date_time)
-    if date_time_str not in dated_scheduled_actions:
-        dated_scheduled_actions[date_time_str] = ScheduledActions()
-    scheduled_actions = dated_scheduled_actions[date_time_str]
-    scheduled_actions.add(scheduler_name, action_name)
+    def delete_dated_action(self, action_name: str):
+        date_time_str_to_remove = []
+        for date_time_str in self.dated_scheduled_actions:
+            scheduled_actions = self.dated_scheduled_actions[date_time_str]
+            scheduled_actions.delete_action(action_name)
+            if len(scheduled_actions.scheduler_names()) == 0:
+                date_time_str_to_remove.append(date_time_str)
+        for date_time_str in date_time_str_to_remove:
+            self.dated_scheduled_actions.pop(date_time_str)
 
+    def delete_dated_scheduler(self, scheduler_name: str):
+        date_time_str_to_remove = []
+        for date_time_str in self.dated_scheduled_actions:
+            scheduled_actions = self.dated_scheduled_actions[date_time_str]
+            scheduled_actions.delete_scheduler(scheduler_name)
+            if len(scheduled_actions.scheduler_names()) == 0:
+                date_time_str_to_remove.append(date_time_str)
+        for date_time_str in date_time_str_to_remove:
+            self.dated_scheduled_actions.pop(date_time_str)
 
-def action_count(dated_scheduled_actions: Dict[str, ScheduledActions]):
-    return sum(sa.action_count() for sa in dated_scheduled_actions.values())
-
-
-def delete_dated_action(
-    action_name: str, dated_scheduled_actions: Dict[str, ScheduledActions]
-):
-    date_time_str_to_remove = []
-    for date_time_str in dated_scheduled_actions:
-        scheduled_actions = dated_scheduled_actions[date_time_str]
-        scheduled_actions.delete_action(action_name)
-        if len(scheduled_actions.scheduler_names()) == 0:
-            date_time_str_to_remove.append(date_time_str)
-    for date_time_str in date_time_str_to_remove:
-        dated_scheduled_actions.pop(date_time_str)
-
-
-def delete_dated_scheduler(
-    scheduler_name: str, dated_scheduled_actions: Dict[str, ScheduledActions]
-):
-    date_time_str_to_remove = []
-    for date_time_str in dated_scheduled_actions:
-        scheduled_actions = dated_scheduled_actions[date_time_str]
-        scheduled_actions.delete_scheduler(scheduler_name)
-        if len(scheduled_actions.scheduler_names()) == 0:
-            date_time_str_to_remove.append(date_time_str)
-    for date_time_str in date_time_str_to_remove:
-        dated_scheduled_actions.pop(date_time_str)
+    def clear(self):
+        self.dated_scheduled_actions.clear()
