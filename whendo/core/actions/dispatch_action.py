@@ -155,7 +155,7 @@ class UnscheduleScheduler(DispatcherAction):
         # gather all of the args that can participate
         args = {"scheduler_name": self.scheduler_name}
         args = self.compute_args(args, data)
-        DispatcherHooks.unschedule_scheduler(*args)
+        DispatcherHooks.unschedule_scheduler(**args)
         result = f"scheduler ({args['scheduler_name']}) unscheduled"
         return self.action_result(result=result, data=data, extra=args)
 
