@@ -3,7 +3,7 @@ This class implements a single process-based system for defining and scheduling 
 to the python runtime (api server, testing harness). The class implements all of the potential
 endpoints of a restful api and supports testing outside of the restful api implementation.
 
-Instances of this class contain Schedulers and Actions, which can at any point be submitted to and removed from the
+Instances of this class contain Schedulers, Actions and Programs, which can at any point be submitted to and removed from the
 job scheduling mechanism of the schedule library (refer to the 'timed' module).
 """
 from pydantic import BaseModel, PrivateAttr
@@ -14,7 +14,8 @@ import os
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from .util import PP, Dirs, Now, str_to_dt, dt_to_str, DateTime2, DispatcherHooks
+from .util import PP, Dirs, Now, str_to_dt, dt_to_str, DateTime2
+from .hooks import DispatcherHooks
 from .action import Action
 from .program import Program, ProgramItem
 from .scheduler import Scheduler, TimedScheduler, ThresholdScheduler, Immediately

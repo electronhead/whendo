@@ -10,6 +10,13 @@ logger = logging.getLogger(__name__)
 
 
 class SchedulerActions(BaseModel):
+    """
+    Objects of this class provide the fundamental mapping of schedulers to actions.
+
+    These objects also form the basis for the extended properties of schedulers
+    such as the deferral of starting a scheduler and the expiration of a running
+    scheduler. See the Dispatcher class for usage.
+    """
     scheduler_name: str
     action_names: Set[str] = set()
 

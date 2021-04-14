@@ -2,7 +2,8 @@ import logging
 from enum import Enum
 from typing import Optional
 from datetime import datetime, timedelta
-from whendo.core.util import DispatcherHooks, Now
+from whendo.core.util import Now
+from whendo.core.hooks import DispatcherHooks
 from whendo.core.action import Action
 
 
