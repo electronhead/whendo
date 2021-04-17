@@ -9,16 +9,20 @@ from .util import Now, str_to_dt, dt_to_str
 logger = logging.getLogger(__name__)
 
 
-class SchedulerActions(BaseModel):
-    """
-    Objects of this class provide the fundamental mapping of schedulers to actions.
+"""
+Instances of the namedtuple, SchedulerActions, provide the fundamental mappings of schedulers to actions.
 
-    These objects also form the basis for the extended properties of schedulers
-    such as the deferral of starting a scheduler and the expiration of a running
-    scheduler. See the Dispatcher class for usage.
-    """
-    scheduler_name: str
-    action_names: Set[str] = set()
+These objects also form the basis for the extended properties of schedulers
+such as the deferral of starting a scheduler and the expiration of a running
+scheduler. See the Dispatcher class for usage.
+"""
+SchedulerActions = namedtuple("SchedulerActions", ["scheduler_name", "action_names"])
+
+"""
+A ScheduledActions instance represents a set of active schedulers and their associated
+actions. If you want to know which schedulers and actions are active, this is the object
+tells the story.
+"""
 
 
 class ScheduledActions(BaseModel):
@@ -86,6 +90,10 @@ class ScheduledActions(BaseModel):
         self.scheduler_actions.clear()
 
 
+"""
+Instances of the namedtuple, DeferredProgram, contain the information necessary
+to schedule a program: the time at which to start and the time at which to stop.
+"""
 DeferredProgram = namedtuple("DeferredProgram", ["program_name", "start", "stop"])
 
 
@@ -112,6 +120,22 @@ class DeferredPrograms(BaseModel):
         return len(self.deferred_programs)
 
 
+"""
+Instances of DatedScheduledActions contains [1] a dictionary having values of
+ScheduledActions instances and keys representing datetime instances and [2]
+methods that support scheduling within the Dispatcher.
+
+This class has two uses:
+
+1. defer the initiation of schedulers in a ScheduledActions instance to a
+   time in the future. [see Dispatcher.deferred_scheduled_actions and
+   relevant Dispatcher methods]
+2. expire the schedulers in a ScheduledActions instance as of a time in
+   the future. [see Dispatcher.expiring_scheduled_actions and relevant
+   Dispatcher methods]
+"""
+
+
 class DatedScheduledActions(BaseModel):
     dated_scheduled_actions: Dict[str, ScheduledActions] = {}
 
@@ -120,6 +144,11 @@ class DatedScheduledActions(BaseModel):
         schedule_update_thunk: Callable,
         verb: str,
     ):
+        """
+        This method invokes a supplied thunk when the datetime represented
+        in the dictionary key precedes the current time. This thunk expects
+        scheduler and action names as arguments.
+        """
         now = Now.dt()
         to_remove = []
         for date_time_str in self.dated_scheduled_actions:
@@ -145,6 +174,10 @@ class DatedScheduledActions(BaseModel):
         action_name: str,
         date_time: datetime,
     ):
+        """
+        This method places the scheduler/action pair in the ScheduledActions
+        instance corresponding to the supplied datetime.
+        """
         date_time_str = dt_to_str(date_time)
         if date_time_str not in self.dated_scheduled_actions:
             self.dated_scheduled_actions[date_time_str] = ScheduledActions()
@@ -155,6 +188,10 @@ class DatedScheduledActions(BaseModel):
         return sum(sa.action_count() for sa in self.dated_scheduled_actions.values())
 
     def delete_dated_action(self, action_name: str):
+        """
+        This method deletes all dated ScheduledActions in the dictionary
+        that reference the named action.
+        """
         date_time_str_to_remove = []
         for date_time_str in self.dated_scheduled_actions:
             scheduled_actions = self.dated_scheduled_actions[date_time_str]
@@ -163,6 +200,11 @@ class DatedScheduledActions(BaseModel):
                 date_time_str_to_remove.append(date_time_str)
         for date_time_str in date_time_str_to_remove:
             self.dated_scheduled_actions.pop(date_time_str)
+
+        """
+        This method deletes all dated ScheduledActions in the dictionary
+        that reference the named scheduler.
+        """
 
     def delete_dated_scheduler(self, scheduler_name: str):
         date_time_str_to_remove = []

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 import os
 import pathlib
 from pydantic import BaseModel
@@ -34,6 +34,27 @@ def test_now_3():
     now1_str = now1.strftime("%H:%M:%S")
     now2 = util.Now.s()
     assert now1_str in now2
+
+def test_str_to_1():
+    now = datetime.now()
+    without_micro = datetime(
+        year=now.year,
+        month=now.month,
+        day=now.day,
+        hour=now.hour,
+        minute=now.minute,
+        second=now.second,
+    )
+    assert without_micro == util.str_to_dt(util.dt_to_str(now))
+
+def test_str_to_2():
+    now = datetime.now().time()
+    without_micro = time(
+        hour=now.hour,
+        minute=now.minute,
+        second=now.second,
+    )
+    assert without_micro == util.str_to_t(util.t_to_str(now))
 
 
 def test_all_visible_subclasses():

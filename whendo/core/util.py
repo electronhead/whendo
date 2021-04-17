@@ -10,7 +10,7 @@ from sys import stdout
 import socket
 import requests
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from typing import Callable
 import os
 from pathlib import Path
@@ -44,6 +44,14 @@ def dt_to_str(dt: datetime) -> str:
 
 def str_to_dt(dts: str) -> datetime:
     return datetime.strptime(dts, "%Y.%m.%d:%H.%M.%S")
+
+
+def t_to_str(t: time) -> str:
+    return t.isoformat(timespec="seconds")
+
+
+def str_to_t(ts: str) -> time:
+    return time.fromisoformat(ts)
 
 
 def ip_addrs():
@@ -517,4 +525,3 @@ class Http(BaseModel):
 
     def cmd(self, path: str):
         return f"http://{self.host}:{self.port}{path}"
-

@@ -147,6 +147,16 @@ class ListAction(Action):
     exception_on_no_success: bool = False
     include_processing_info: bool = False
 
+    def description(self):
+        if self.op_mode == ListOpMode.ALL:
+            return (
+                f"This action executes all of these actions in order: ({self.actions})."
+            )
+        if self.op_mode == ListOpMode.UNTIL_SUCCESS:
+            return f"This action executes all of these actions in order until the first success: ({self.actions}). It serves a role similar to logical or."
+        if self.op_mode == ListOpMode.UNTIL_FAILURE:
+            return f"This action executes all of these actions in order until the first failure: ({self.actions}). It serves a role similar to logical and."
+
     def execute(self, tag: str = None, data: dict = None):
         processing_info = process_actions(
             data=data,
@@ -180,9 +190,6 @@ class All(ListAction):
     _all: str = "all"
     op_mode: ListOpMode = ListOpMode.ALL
 
-    def description(self):
-        return f"This action executes all of these actions in order: ({self.actions})."
-
     def execute(self, tag: str = None, data: dict = None):
         return super().execute(tag=tag, data=data)
 
@@ -195,9 +202,6 @@ class UntilSuccess(ListAction):
     until_success: str = "until_success"
     op_mode: ListOpMode = ListOpMode.UNTIL_SUCCESS
 
-    def description(self):
-        return f"This action executes all of these actions in order until the first success: ({self.actions}). It serves a role similar to logical or."
-
     def execute(self, tag: str = None, data: dict = None):
         return super().execute(tag=tag, data=data)
 
@@ -209,9 +213,6 @@ class UntilFailure(ListAction):
 
     until_failure: str = "until_failure"
     op_mode: ListOpMode = ListOpMode.UNTIL_FAILURE
-
-    def description(self):
-        return f"This action executes all of these actions in order until the first failure: ({self.actions}). It serves a role similar to logical and."
 
     def execute(self, tag: str = None, data: dict = None):
         return super().execute(tag=tag, data=data)
