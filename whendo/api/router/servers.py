@@ -62,9 +62,10 @@ def describe_server(server_name: str):
 @router.post("/{server_name}/add_key_tags", status_code=status.HTTP_200_OK)
 def add_server_key_tags(server_name: str, key_tags: dict):
     try:
-        return get_dispatcher(router).add_server_key_tags(
+        get_dispatcher(router).add_server_key_tags(
             server_name=server_name, key_tags=key_tags
         )
+        return return_success(f"key tags ({key_tags}) were successfully added to server ({server_name}).")
     except Exception as e:
         raise raised_exception(
             f"failed to add key-tags ({key_tags}) to server ({server_name}))", e
