@@ -35,6 +35,11 @@ class TimeUnit(str, Enum):
     second = "second"
 
 
+class KeyTagMode(str, Enum):
+    ALL = "all"
+    ANY = "any"
+
+
 # functions
 
 

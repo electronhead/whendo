@@ -1,5 +1,6 @@
 from datetime import datetime
-from typing import Callable
+from typing import Callable, Dict, Set, Optional
+from .util import KeyTagMode
 
 
 class DispatcherHooks:
@@ -12,6 +13,10 @@ class DispatcherHooks:
     expire_action_thunk: Callable
     clear_all_deferred_actions_thunk: Callable
     clear_all_expiring_actions_thunk: Callable
+    get_server_thunk: Callable
+    get_servers_thunk: Callable
+    get_servers_by_tags_thunk: Callable
+    get_action_thunk: Callable
 
     @classmethod
     def init(
@@ -25,6 +30,10 @@ class DispatcherHooks:
         expire_action_thunk: Callable,
         clear_all_deferred_actions_thunk: Callable,
         clear_all_expiring_actions_thunk: Callable,
+        get_server_thunk: Callable,
+        get_servers_thunk: Callable,
+        get_servers_by_tags_thunk: Callable,
+        get_action_thunk: Callable,
     ):
         cls.schedule_program_thunk = schedule_program_thunk
         cls.unschedule_program_thunk = unschedule_program_thunk
@@ -35,6 +44,10 @@ class DispatcherHooks:
         cls.expire_action_thunk = expire_action_thunk
         cls.clear_all_deferred_actions_thunk = clear_all_deferred_actions_thunk
         cls.clear_all_expiring_actions_thunk = clear_all_expiring_actions_thunk
+        cls.get_server_thunk = get_server_thunk
+        cls.get_servers_thunk = get_servers_thunk
+        cls.get_servers_by_tags_thunk = get_servers_by_tags_thunk
+        cls.get_action_thunk = get_action_thunk
 
     @classmethod
     def schedule_program(cls, program_name: str, start: datetime, stop: datetime):
@@ -83,3 +96,25 @@ class DispatcherHooks:
     @classmethod
     def clear_all_expiring_actions(cls):
         return cls.clear_all_expiring_actions_thunk()
+
+    @classmethod
+    def get_server(cls, server_name: str):
+        return cls.get_server_thunk(server_name=server_name)
+
+    @classmethod
+    def get_servers(cls):
+        return cls.get_servers_thunk()
+
+    @classmethod
+    def get_servers_by_tags(
+        cls,
+        key_tags: Optional[Dict[str, Set[str]]] = None,
+        key_tag_mode: KeyTagMode = KeyTagMode.ANY,
+    ):
+        return cls.get_servers_by_tags_thunk(
+            key_tags=key_tags, key_tag_mode=key_tag_mode
+        )
+
+    @classmethod
+    def get_action(cls, action_name: str):
+        return cls.get_action_thunk(action_name=action_name)

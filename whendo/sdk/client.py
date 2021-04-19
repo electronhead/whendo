@@ -154,6 +154,8 @@ class Client(BaseModel):
     def deferred_program_count(self):
         return self.http().get(f"/programs/deferred_program_count")
 
+    # servers
+
     # deferrals and expirations
     def defer_action(self, scheduler_name: str, action_name: str, wait_until: DateTime):
         return self.http().post(

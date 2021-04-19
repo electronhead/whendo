@@ -8,19 +8,29 @@ job scheduling mechanism of the schedule library (refer to the 'timed' module).
 """
 from pydantic import BaseModel, PrivateAttr
 from threading import RLock
-from typing import Dict, List
+from typing import Dict, List, Set
 import json
 import os
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from .util import PP, Dirs, Now, str_to_dt, dt_to_str, DateTime2
+from .util import (
+    PP,
+    Dirs,
+    Now,
+    str_to_dt,
+    dt_to_str,
+    DateTime2,
+    Http,
+    SystemInfo,
+    KeyTagMode,
+)
 from .hooks import DispatcherHooks
 from .action import Action
 from .program import Program, ProgramItem
 from .scheduler import Scheduler, TimedScheduler, ThresholdScheduler, Immediately
 from .timed import Timed
-from .resolver import resolve_action, resolve_scheduler, resolve_program
+from .resolver import resolve_action, resolve_scheduler, resolve_program, resolve_server
 from .executor import Executor
 from .scheduling import (
     DeferredPrograms,
@@ -28,6 +38,7 @@ from .scheduling import (
     ScheduledActions,
     DatedScheduledActions,
 )
+from .server import Server
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +52,7 @@ class Dispatcher(BaseModel):
     actions: Dict[str, Action] = {}
     schedulers: Dict[str, Scheduler] = {}
     programs: Dict[str, Program] = {}
+    servers: Dict[str, Server] = {}
     scheduled_actions: ScheduledActions = ScheduledActions()
     deferred_scheduled_actions: DatedScheduledActions = DatedScheduledActions()
     expiring_scheduled_actions: DatedScheduledActions = DatedScheduledActions()
@@ -82,6 +94,10 @@ class Dispatcher(BaseModel):
     def get_programs(self):
         with Lok.lock:
             return self.programs
+
+    def get_servers(self):
+        with Lok.lock:
+            return self.servers
 
     def get_scheduled_actions(self):
         with Lok.lock:
@@ -147,8 +163,14 @@ class Dispatcher(BaseModel):
             expire_action_thunk=lambda scheduler_name, action_name, expire_on: self.expire_action(
                 scheduler_name, action_name, expire_on
             ),
-            clear_all_deferred_actions_thunk=lambda scheduler_name, action_name, expire_on: self.clear_all_deferred_actions(),
-            clear_all_expiring_actions_thunk=lambda scheduler_name, action_name, expire_on: self.clear_all_expiring_actions(),
+            clear_all_deferred_actions_thunk=lambda: self.clear_all_deferred_actions(),
+            clear_all_expiring_actions_thunk=lambda: self.clear_all_expiring_actions(),
+            get_server_thunk=lambda server_name: self.get_server(server_name),
+            get_servers_thunk=lambda: self.get_servers(),
+            get_servers_by_tags_thunk=lambda key_tags, key_tag_mode: self.get_servers_by_tags(
+                key_tags, key_tag_mode
+            ),
+            get_action_thunk=lambda action_name: self.get_action(action_name),
         )
 
     def pprint(self):
@@ -198,6 +220,7 @@ class Dispatcher(BaseModel):
             self.actions.clear()
             self.schedulers.clear()
             self.programs.clear()
+            self.servers.clear()
             self._timed.clear()
             if should_save:
                 self.save_current()
@@ -223,6 +246,8 @@ class Dispatcher(BaseModel):
                 self.clear_all(should_save=False)
                 self.actions = replacement.get_actions()
                 self.schedulers = replacement.get_schedulers()
+                self.programs = replacement.get_programs()
+                self.servers = replacement.get_servers()
                 self.scheduled_actions = replacement.get_scheduled_actions()
                 self.deferred_scheduled_actions = (
                     replacement.get_deferred_scheduled_actions()
@@ -504,6 +529,130 @@ class Dispatcher(BaseModel):
             self.deferred_programs.clear()
             self.save_current()
 
+    # servers
+    def add_server(self, server_name: str, server: Server):
+        with Lok.lock:
+            self.check_server_name(server_name, invert=True)
+            self.servers[server_name] = server
+            self.save_current()
+
+    def describe_server(self, server_name: str):
+        with Lok.lock:
+            server = self.get_server(server_name)
+            return (
+                server.description()
+                if server
+                else f"server ({server_name}) does not exist."
+            )
+
+    def set_server(self, server_name: str, server: Server):
+        with Lok.lock:
+            self.check_server_name(server_name)
+            self.servers[server_name] = server
+            self.save_current()
+
+    def delete_server(self, server_name: str):
+        with Lok.lock:
+            self.check_server_name(server_name)
+            self.servers.pop(server_name)
+            self.save_current()
+
+    def get_server(self, server_name: str):
+        self.check_server_name(server_name)
+        return self.servers[server_name]
+
+    def get_servers_by_tags(
+        self,
+        key_tags: Dict[str, Set[str]],
+        key_tag_mode: KeyTagMode,
+    ):
+        if key_tags:
+            result = []
+            for server in self.servers.values():
+                for key in key_tags:
+                    tags = key_tags[key]
+                    if key in server.get_keys(tags=tags, key_tag_mode=key_tag_mode):
+                        result.append(server)
+            return result
+        else:
+            return list(self.servers.values())
+
+    def execute_on_server(
+        self,
+        server_name: str,
+        action_name: str,
+    ):
+        server = self.get_server(server_name=server_name)
+        if (
+            server.host == SystemInfo.get()["host"]
+            and server.port == SystemInfo.get()["port"]
+        ):
+            return self.execute_action(action_name)
+        else:
+            return Http(host=server.host, port=server.port).get(
+                f"/actions/{action_name}/execute"
+            )
+
+    def execute_on_server_with_data(
+        self, server_name: str, action_name: str, data: dict
+    ):
+        server = self.get_server(server_name=server_name)
+        if (
+            server.host == SystemInfo.get()["host"]
+            and server.port == SystemInfo.get()["port"]
+        ):
+            return self.execute_action_with_data(action_name=action_name, data=data)
+        else:
+            return Http(host=server.host, port=server.port).post_dict(
+                f"/actions/{action_name}/execute", data
+            )
+
+    def execute_on_servers(
+        self, action_name: str, key_tags: Dict[str, Set[str]], key_tag_mode: KeyTagMode
+    ):
+        result = []
+        for server in self.get_servers_by_tags(
+            key_tags=key_tags, key_tag_mode=key_tag_mode
+        ):
+            if (
+                server.host == SystemInfo.get()["host"]
+                and server.port == SystemInfo.get()["port"]
+            ):
+                result.append(self.execute_action(action_name))
+            else:
+                result.append(
+                    Http(host=server.host, port=server.port).get(
+                        f"/actions/{action_name}/execute"
+                    )
+                )
+        return result
+
+    def execute_on_servers_with_data(
+        self,
+        action_name: str,
+        key_tags: Dict[str, Set[str]],
+        key_tag_mode: KeyTagMode,
+        data: dict,
+    ):
+        result = []
+        for server in self.get_servers_by_tags(
+            key_tags=key_tags, key_tag_mode=key_tag_mode
+        ):
+            if (
+                server.host == SystemInfo.get()["host"]
+                and server.port == SystemInfo.get()["port"]
+            ):
+                result.append(
+                    self.execute_action_with_data(action_name=action_name, data=data)
+                )
+            else:
+                result.append(
+                    Http(host=server.host, port=server.port).post_dict(
+                        f"/actions/{action_name}/execute", data
+                    )
+                )
+        return result
+
     # scheduling
     def schedule_action(self, scheduler_name: str, action_name: str):
         """
@@ -709,6 +858,14 @@ class Dispatcher(BaseModel):
                 program_name in self.programs
             ), f"program ({program_name}) does not exist"
 
+    def check_server_name(self, server_name: str, invert: bool = False):
+        if invert:
+            assert (
+                server_name not in self.servers
+            ), f"server ({server_name}) already exists"
+        else:
+            assert server_name in self.servers, f"server ({server_name}) does not exist"
+
     @classmethod
     def resolve(cls, dictionary: dict = {}):
         """
@@ -721,11 +878,11 @@ class Dispatcher(BaseModel):
             actions = dictionary["actions"]
             schedulers = dictionary["schedulers"]
             programs = dictionary["programs"]
+            servers = dictionary["servers"]
             scheduled_actions = dictionary["scheduled_actions"]
             deferred_scheduled_actions = dictionary["deferred_scheduled_actions"]
             expiring_scheduled_actions = dictionary["expiring_scheduled_actions"]
             deferred_programs = dictionary["deferred_programs"]
-            # deferred_scheduled_programs = dictionary["deferred_scheduled_programs"]
             # replace key's value for each key...
             for action_name in actions:
                 actions[action_name] = resolve_action(actions[action_name])
@@ -735,11 +892,14 @@ class Dispatcher(BaseModel):
                 )
             for program_name in programs:
                 programs[program_name] = resolve_program(programs[program_name])
+            for server_name in servers:
+                servers[server_name] = resolve_server(servers[server_name])
             return Dispatcher(
                 saved_dir=saved_dir,
                 actions=actions,
                 schedulers=schedulers,
                 programs=programs,
+                servers=servers,
                 scheduled_actions=scheduled_actions,
                 deferred_scheduled_actions=deferred_scheduled_actions,
                 expiring_scheduled_actions=expiring_scheduled_actions,

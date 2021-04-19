@@ -6,6 +6,7 @@ from pydantic import ValidationError
 from .action import Action
 from .scheduler import Scheduler
 from .program import Program
+from .server import Server
 from .util import FilePathe, resolve_instance
 
 
@@ -27,6 +28,12 @@ def resolve_scheduler(dictionary: dict, check_for_found_class: bool = True):
 def resolve_program(dictionary: dict, check_for_found_class: bool = True):
     return resolve_instance(
         Program, dictionary, check_for_found_class=check_for_found_class
+    )
+
+
+def resolve_server(dictionary: dict, check_for_found_class: bool = True):
+    return resolve_instance(
+        Server, dictionary, check_for_found_class=check_for_found_class
     )
 
 

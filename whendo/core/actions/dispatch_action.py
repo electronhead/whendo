@@ -1,8 +1,8 @@
 import logging
 from enum import Enum
-from typing import Optional
+from typing import Optional, Dict, Set, Any
 from datetime import datetime, timedelta
-from whendo.core.util import Now
+from whendo.core.util import Now, Http, KeyTagMode
 from whendo.core.hooks import DispatcherHooks
 from whendo.core.action import Action
 
@@ -227,4 +227,112 @@ class ClearAllExpiringActions(DispatcherAction):
     def execute(self, tag: str = None, data: dict = None):
         DispatcherHooks.clear_all_expiring_actions()
         result = "All expiring scheduled actions removed."
+        return self.action_result(result=result, data=data)
+
+
+class ExecuteActionServer(DispatcherAction):
+    """
+    Execute an action at server.
+    """
+
+    execute_action_server: str = "execute_action_server"
+
+    server_name: str
+    action_name: str
+
+    def description(self):
+        return f"This action executes ({self.action_name}) at the server ({self.server_name})."
+
+    def execute(self, tag: str = None, data: dict = None):
+        args = {"server_name": self.server_name, "action_name": self.action_name}
+        args = self.compute_args(args, data)
+        server_name = args["server_name"]
+        action_name = args["action_name"]
+
+        server = DispatcherHooks.get_server(server_name=server_name)
+        if data:
+            if server.host == self.local_host() and server.port == self.local_port():
+                # execute locally
+                result = DispatcherHooks.get_action(action_name).execute(
+                    tag=tag, data=data
+                )
+            else:
+                result = Http(host=server.host, port=server.port).post_dict(
+                    f"/actions/{action_name}/execute", data
+                )
+        else:
+            if server.host == self.local_host() and server.port == self.local_port():
+                # execute locally
+                result = DispatcherHooks.get_action(action_name).execute(tag=tag)
+            else:
+                result = Http(host=server.host, port=server.port).get(
+                    f"/actions/{action_name}/execute"
+                )
+        return self.action_result(result=result, data=data)
+
+
+class ExecuteActionServersKeyTag(DispatcherAction):
+    """
+    Execute an action at zero or more servers. If server_key_tag is not provided, executes action at all servers.
+    """
+
+    action_name: str
+    key_tags: Optional[Dict[str, Set[str]]] = None
+    key_tag_mode: KeyTagMode = KeyTagMode.ANY
+
+    def description(self):
+        return f"This action executes ({self.action_name}) at the servers with key:tags satisfying ({self.key_tags}) using key tag mode ({self.key_tag_mode})."
+
+    def execute(self, tag: str = None, data: dict = None):
+        args: Dict[str, Any] = {
+            "action_name": self.action_name,
+            "key_tags": self.key_tags,
+            "key_tag_mode": self.key_tag_mode,
+        }
+        args = self.compute_args(args, data)
+        action_name = args["action_name"]
+        key_tags = args["key_tags"]
+        key_tag_mode = args["key_tag_mode"]
+
+        if key_tags:
+            servers = DispatcherHooks.get_servers_by_tags(
+                key_tags=key_tags, key_tag_mode=key_tag_mode
+            )
+        else:
+            servers = DispatcherHooks.get_servers()
+        result = []
+        if data:
+            for server in servers:
+                if (
+                    server.host == self.local_host()
+                    and server.port == self.local_port()
+                ):
+                    # execute locally
+                    result.append(
+                        DispatcherHooks.get_action(action_name).execute(
+                            tag=tag, data=data
+                        )
+                    )
+                else:
+                    result.append(
+                        Http(host=server.host, port=server.port).post_dict(
+                            f"/actions/{action_name}/execute", data
+                        )
+                    )
+        else:
+            for server in servers:
+                if (
+                    server.host == self.local_host()
+                    and server.port == self.local_port()
+                ):
+                    # execute locally
+                    result.append(
+                        DispatcherHooks.get_action(action_name).execute(tag=tag)
+                    )
+                else:
+                    result.append(
+                        Http(host=server.host, port=server.port).get(
+                            f"/actions/{action_name}/execute"
+                        )
+                    )
         return self.action_result(result=result, data=data)
