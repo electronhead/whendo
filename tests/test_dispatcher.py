@@ -4,6 +4,7 @@ from datetime import timedelta
 import whendo.core.util as util
 from typing import Optional, Dict, Any
 from whendo.core.action import Action
+from whendo.core.server import Server
 from whendo.core.actions.list_action import (
     UntilFailure,
     All,
@@ -30,6 +31,98 @@ from whendo.core.actions.dispatch_action import (
 from whendo.core.timed import Timed
 
 pause = 3
+
+
+def test_server_all_1(friends, servers):
+    dispatcher, scheduler, action = friends()
+    aqua, teal = servers()
+    dispatcher.add_server(server_name="aqua", server=aqua)
+    dispatcher.add_server(server_name="teal", server=teal)
+    mode = util.KeyTagMode.ALL
+    result = dispatcher.get_servers_by_tags(
+        key_tags={"foo": ["bar", "baz"]}, key_tag_mode=mode
+    )
+    assert len(result) == 2
+
+
+def test_server_all_2(friends, servers):
+    dispatcher, scheduler, action = friends()
+    aqua, teal = servers()
+    dispatcher.add_server(server_name="aqua", server=aqua)
+    dispatcher.add_server(server_name="teal", server=teal)
+    mode = util.KeyTagMode.ALL
+    result = dispatcher.get_servers_by_tags(
+        key_tags={"foo": ["bar"]}, key_tag_mode=mode
+    )
+    assert len(result) == 1
+
+
+def test_server_all_3(friends, servers):
+    dispatcher, scheduler, action = friends()
+    aqua, teal = servers()
+    dispatcher.add_server(server_name="aqua", server=aqua)
+    dispatcher.add_server(server_name="teal", server=teal)
+    mode = util.KeyTagMode.ALL
+    result = dispatcher.get_servers_by_tags(key_tags={"foo": []}, key_tag_mode=mode)
+    assert len(result) == 0
+
+
+def test_server_all_4(friends, servers):
+    dispatcher, scheduler, action = friends()
+    aqua, teal = servers()
+    dispatcher.add_server(server_name="aqua", server=aqua)
+    dispatcher.add_server(server_name="teal", server=teal)
+    mode = util.KeyTagMode.ALL
+    result = dispatcher.get_servers_by_tags(
+        key_tags={"foo": ["clasp"]}, key_tag_mode=mode
+    )
+    assert len(result) == 0
+
+
+def test_server_any_1(friends, servers):
+    dispatcher, scheduler, action = friends()
+    aqua, teal = servers()
+    dispatcher.add_server(server_name="aqua", server=aqua)
+    dispatcher.add_server(server_name="teal", server=teal)
+    mode = util.KeyTagMode.ANY
+    result = dispatcher.get_servers_by_tags(
+        key_tags={"foo": ["bar", "baz"]}, key_tag_mode=mode
+    )
+    assert len(result) == 2
+
+
+def test_server_any_2(friends, servers):
+    dispatcher, scheduler, action = friends()
+    aqua, teal = servers()
+    dispatcher.add_server(server_name="aqua", server=aqua)
+    dispatcher.add_server(server_name="teal", server=teal)
+    mode = util.KeyTagMode.ANY
+    result = dispatcher.get_servers_by_tags(
+        key_tags={"foo": ["bar"]}, key_tag_mode=mode
+    )
+    assert len(result) == 2
+
+
+def test_server_any_3(friends, servers):
+    dispatcher, scheduler, action = friends()
+    aqua, teal = servers()
+    dispatcher.add_server(server_name="aqua", server=aqua)
+    dispatcher.add_server(server_name="teal", server=teal)
+    mode = util.KeyTagMode.ANY
+    result = dispatcher.get_servers_by_tags(key_tags={"foo": []}, key_tag_mode=mode)
+    assert len(result) == 0
+
+
+def test_server_any_4(friends, servers):
+    dispatcher, scheduler, action = friends()
+    aqua, teal = servers()
+    dispatcher.add_server(server_name="aqua", server=aqua)
+    dispatcher.add_server(server_name="teal", server=teal)
+    mode = util.KeyTagMode.ANY
+    result = dispatcher.get_servers_by_tags(
+        key_tags={"foo": ["clasp"]}, key_tag_mode=mode
+    )
+    assert len(result) == 0
 
 
 def test_schedule_action(friends):
@@ -903,5 +996,22 @@ def friends(tmp_path):
         scheduler = Timely(interval=1)
 
         return dispatcher, scheduler, action
+
+    return stuff
+
+
+@pytest.fixture
+def servers():
+    def stuff():
+        server1 = Server(host="localhost", port=8000)
+        server1.add_key_tag("foo", "bar")
+        server1.add_key_tag("foo", "baz")
+        server1.add_key_tag("fleas", "standdown")
+        server1.add_key_tag("krimp", "kramp")
+        server2 = Server(host="localhost", port=8000)
+        server2.add_key_tag("foo", "bar")
+        server2.add_key_tag("fleas", "riseup")
+        server2.add_key_tag("slip", "slide")
+        return (server1, server2)
 
     return stuff

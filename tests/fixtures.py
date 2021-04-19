@@ -4,6 +4,7 @@ pytest fixtures for unit testing
 
 import pytest
 from whendo.api import main_temp
+from whendo.core.server import Server
 from .uvicorn_server import UvicornTestServer
 
 
@@ -32,3 +33,20 @@ async def startup_and_shutdown_uvicorn(host, port):
 def base_url(host, port):
     """ base url for unit test invocation of api """
     return f"http://{host}:{port}"
+
+
+@pytest.fixture
+def servers():
+    def stuff():
+        server1 = Server(host="localhost", port=8000)
+        server1.add_key_tag("foo", "bar")
+        server1.add_key_tag("foo", "baz")
+        server1.add_key_tag("fleas", "standdown")
+        server1.add_key_tag("krimp", "kramp")
+        server2 = Server(host="localhost", port=8000)
+        server2.add_key_tag("foo", "bar")
+        server2.add_key_tag("fleas", "riseup")
+        server2.add_key_tag("slip", "slide")
+        return (server1, server2)
+
+    return stuff

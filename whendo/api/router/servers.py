@@ -14,6 +14,14 @@ def get_server(server_name: str):
         raise raised_exception(f"failed to retrieve the server ({server_name})", e)
 
 
+@router.get("", status_code=status.HTTP_200_OK)
+def get_servers():
+    try:
+        return get_dispatcher(router).get_servers()
+    except Exception as e:
+        raise raised_exception(f"failed to retrieve servers", e)
+
+
 @router.post("/{server_name}", status_code=status.HTTP_200_OK)
 def add_server(server_name: str, server=Depends(resolve_server)):
     try:
@@ -51,6 +59,26 @@ def describe_server(server_name: str):
         raise raised_exception(f"failed to describe program ({server_name})", e)
 
 
+@router.post("/{server_name}/add_key_tags", status_code=status.HTTP_200_OK)
+def add_server_key_tags(server_name: str, key_tags: dict):
+    try:
+        return get_dispatcher(router).add_server_key_tags(
+            server_name=server_name, key_tags=key_tags
+        )
+    except Exception as e:
+        raise raised_exception(
+            f"failed to add key-tags ({key_tags}) to server ({server_name}))", e
+        )
+
+
+@router.get("/{server_name}/get_tags", status_code=status.HTTP_200_OK)
+def get_server_tags(server_name: str):
+    try:
+        return get_dispatcher(router).get_server_tags(server_name=server_name)
+    except Exception as e:
+        raise raised_exception(f"failed to retrieve tags for server ({server_name})", e)
+
+
 @router.post("/by_tags/{mode}", status_code=status.HTTP_200_OK)
 def get_servers_by_tags(mode: str, key_tags: dict):
     try:
@@ -63,7 +91,9 @@ def get_servers_by_tags(mode: str, key_tags: dict):
         )
 
 
-@router.get("/{server_name}/execute/{action_name}", status_code=status.HTTP_200_OK)
+@router.get(
+    "/{server_name}/actions/{action_name}/execute", status_code=status.HTTP_200_OK
+)
 def execute_on_server(server_name: str, action_name: str):
     try:
         return get_dispatcher(router).execute_on_server(
@@ -75,7 +105,10 @@ def execute_on_server(server_name: str, action_name: str):
         )
 
 
-@router.post("/{server_name}/execute/{action_name}", status_code=status.HTTP_200_OK)
+@router.post(
+    "/{server_name}/actions/{action_name}/execute_with_data",
+    status_code=status.HTTP_200_OK,
+)
 def execute_on_server_with_data(server_name: str, action_name: str, data: dict):
     try:
         return get_dispatcher(router).execute_on_server_with_data(
@@ -87,7 +120,9 @@ def execute_on_server_with_data(server_name: str, action_name: str, data: dict):
         )
 
 
-@router.post("/execute_by_tags/{mode}/{action_name}", status_code=status.HTTP_200_OK)
+@router.post(
+    "/by_tags/{mode}/actions/{action_name}/execute", status_code=status.HTTP_200_OK
+)
 def execute_on_servers(action_name: str, mode: str, key_tags: dict):
     try:
         return get_dispatcher(router).execute_on_servers(
@@ -102,9 +137,12 @@ def execute_on_servers(action_name: str, mode: str, key_tags: dict):
 
 
 @router.post(
-    "/execute_by_tags_with_data/{mode}/{action_name}", status_code=status.HTTP_200_OK
+    "/by_tags/{mode}/actions/{action_name}/execute_with_data",
+    status_code=status.HTTP_200_OK,
 )
-def execute_by_tags_with_data(action_name: str, mode: str, key_tags: dict, data: dict):
+def execute_on_servers_with_data(
+    action_name: str, mode: str, key_tags: dict, data: dict
+):
     try:
         return get_dispatcher(router).execute_on_servers_with_data(
             action_name=action_name,

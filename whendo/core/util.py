@@ -419,28 +419,36 @@ class SystemInfo:
                 ),
                 "load_avg": lambda: dict(zip(["1min", "5min", "15min"], getloadavg())),
                 "cpu_percent": lambda: cpu_percent(),
+                "servers": {},
             },
         )
 
     @classmethod
     def increment_successes(cls):
-        if cls.initialized:
-            system_info = SharedRWs.get("system_info")
+        system_info = SharedRWs.get("system_info")
 
-            def update(dictionary: dict):
-                dictionary["successes"] = 1 + dictionary["successes"]
+        def update(dictionary: dict):
+            dictionary["successes"] = 1 + dictionary["successes"]
 
-            system_info.apply(update)
+        system_info.apply(update)
 
     @classmethod
     def increment_failures(cls):
-        if cls.initialized:
-            system_info = SharedRWs.get("system_info")
+        system_info = SharedRWs.get("system_info")
 
-            def update(dictionary: dict):
-                dictionary["failures"] = 1 + dictionary["failures"]
+        def update(dictionary: dict):
+            dictionary["failures"] = 1 + dictionary["failures"]
 
-            system_info.apply(update)
+        system_info.apply(update)
+
+    @classmethod
+    def add_server(cls, server_name: str, server_dict: dict):
+        system_info = SharedRWs.get("system_info")
+
+        def update(dictionary: dict):
+            dictionary["servers"].update({server_name: server_dict})
+
+        system_info.apply(update)
 
     @classmethod
     def get(cls):

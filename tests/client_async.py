@@ -3,11 +3,13 @@ from httpx import AsyncClient
 import json
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
+from whendo.core.server import Server
 from whendo.core.resolver import (
     resolve_action,
     resolve_scheduler,
     resolve_file_pathe,
     resolve_program,
+    resolve_server,
 )
 from whendo.core.util import FilePathe, DateTime, DateTime2
 from whendo.core.dispatcher import Dispatcher
@@ -143,6 +145,63 @@ class ClientAsync(BaseModel):
 
     async def deferred_program_count(self):
         return await self.get(f"/programs/deferred_program_count")
+
+    # servers
+
+    async def get_server(self, server_name: str):
+        return resolve_server(
+            await self.get(f"/servers/{server_name}"), check_for_found_class=False
+        )
+
+    async def get_servers(self):
+        servers = await self.get(f"/servers")
+        return {
+            name: resolve_server(servers[name], check_for_found_class=False)
+            for name in servers
+        }
+
+    async def describe_server(self, server_name: str):
+        return await self.get(f"/servers/{server_name}/describe")
+
+    async def add_server(self, server_name: str, server: Server):
+        return await self.post(f"/servers/{server_name}", server)
+
+    async def set_server(self, server_name: str, server: Server):
+        return await self.put(f"/servers/{server_name}", server)
+
+    async def delete_server(self, server_name: str):
+        return await self.delete(f"/servers/{server_name}")
+
+    async def get_server_tags(self, server_name: str):
+        return await self.get(f"/servers/{server_name}/get_tags")
+
+    async def get_servers_by_tags(self, server_name: str, key_tags: dict):
+        return await self.post_dict(f"/servers/by_tags", key_tags)
+
+    async def execute_on_server(self, server_name: str, action_name: str):
+        return await self.get(f"/servers/{server_name}/actions/{action_name}/execute")
+
+    async def execute_on_server_with_data(
+        self, server_name: str, action_name: str, data: dict
+    ):
+        return await self.post_dict(
+            f"/servers/{server_name}/actions/{action_name}/execute", data
+        )
+
+    async def execute_on_servers(self, mode: str, action_name: str, key_tags: dict):
+        return await self.post_dict(
+            f"/servers/by_tags/{mode}/actions/{action_name}/execute", key_tags
+        )
+
+    async def execute_on_servers_with_data(
+        self, mode: str, action_name: str, key_tags: dict, data: dict
+    ):
+        # need to pass a single dictionary (per https://fastapi.tiangolo.com/tutorial/body-multiple-params/)
+        composite = {"key_tags": key_tags, "data": data}
+        return await self.post_dict(
+            f"/servers/by_tags/{mode}/actions/{action_name}/execute_with_data",
+            composite,
+        )
 
     # deferrals and expirations
     async def defer_action(

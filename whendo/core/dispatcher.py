@@ -535,6 +535,26 @@ class Dispatcher(BaseModel):
             self.check_server_name(server_name, invert=True)
             self.servers[server_name] = server
             self.save_current()
+            SystemInfo.add_server(server_name=server_name, server_dict=server.dict())
+
+    def add_server_key_tags(self, server_name: str, key_tags: Dict[str, List[str]]):
+        with Lok.lock:
+            self.check_server_name(server_name)
+            server = self.get_server(server_name)
+            for key in key_tags:
+                if key in server.tags:
+                    tags = server.tags[key]
+                    for tag in key_tags[key]:
+                        if tag not in tags:
+                            tags.append(tag)
+                else:
+                    server.tags[key] = key_tags[key]
+            self.save_current()
+
+    def get_server_tags(self, server_name: str):
+        with Lok.lock:
+            self.check_server_name(server_name)
+            return self.servers[server_name].tags
 
     def describe_server(self, server_name: str):
         with Lok.lock:
@@ -563,7 +583,7 @@ class Dispatcher(BaseModel):
 
     def get_servers_by_tags(
         self,
-        key_tags: Dict[str, Set[str]],
+        key_tags: Dict[str, List[str]],
         key_tag_mode: KeyTagMode,
     ):
         if key_tags:
@@ -608,7 +628,7 @@ class Dispatcher(BaseModel):
             )
 
     def execute_on_servers(
-        self, action_name: str, key_tags: Dict[str, Set[str]], key_tag_mode: KeyTagMode
+        self, action_name: str, key_tags: Dict[str, List[str]], key_tag_mode: KeyTagMode
     ):
         result = []
         for server in self.get_servers_by_tags(
@@ -630,7 +650,7 @@ class Dispatcher(BaseModel):
     def execute_on_servers_with_data(
         self,
         action_name: str,
-        key_tags: Dict[str, Set[str]],
+        key_tags: Dict[str, List[str]],
         key_tag_mode: KeyTagMode,
         data: dict,
     ):

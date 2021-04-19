@@ -35,6 +35,7 @@ def test_now_3():
     now2 = util.Now.s()
     assert now1_str in now2
 
+
 def test_str_to_1():
     now = datetime.now()
     without_micro = datetime(
@@ -46,6 +47,7 @@ def test_str_to_1():
         second=now.second,
     )
     assert without_micro == util.str_to_dt(util.dt_to_str(now))
+
 
 def test_str_to_2():
     now = datetime.now().time()

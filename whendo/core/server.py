@@ -1,5 +1,5 @@
 """
-A server represents whendo process that listens on a host:port
+A server represents a whendo process that listens on a host:port
 and responds to restful api requests. Server objects are stored
 on a whendo server to facilitate running schedulers and executing
 actions on more than one machine.
@@ -30,10 +30,24 @@ class Server(BaseModel):
         return f"This whendo server listens on host:port ({self.host}:{self.port} with tags ({self.tags})."
 
     def add_key_tag(self, key: str, tag: str):
-        if key not in self.tags:
-            self.tags[key] = []
-        if tag not in self.tags[key]:
-            self.tags[key].append(tag)
+        """
+        Add a key:tag pair to the tags dictionary.
+        """
+        self.add_key_tags(key_tags={key: [tag]})
+
+    def add_key_tags(self, key_tags: Dict[str, List[str]]):
+        """
+        The new tags dictionary will include all supplied
+        key:tag pairs.
+        """
+        for key in key_tags:
+            if key in self.tags:
+                tags = self.tags[key]
+                for tag in key_tags[key]:
+                    if tag not in tags:
+                        tags.append(tag)
+            else:
+                self.tags[key] = key_tags[key]
 
     def has_key(self, key: str):
         return key in self.tags
@@ -79,10 +93,6 @@ class Server(BaseModel):
     def get_tags_by_key(self, key: str):
         """
         Return a key's tags.
-
-        for server in self.servers:
-            for tag in server.get_tags_by_key("program_name"):
-                Client(server=server).schedule_program(program_name=tag)
         """
         return self.tags.get(key, None)
 

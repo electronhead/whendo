@@ -4,11 +4,13 @@ import logging
 from typing import Optional
 from whendo.core.action import Action
 from whendo.core.scheduler import Scheduler
+from whendo.core.server import Server
 from whendo.core.resolver import (
     resolve_action,
     resolve_scheduler,
     resolve_file_pathe,
     resolve_program,
+    resolve_server,
 )
 from whendo.core.util import FilePathe, DateTime, Http, DateTime2
 from whendo.core.dispatcher import Dispatcher
@@ -155,6 +157,56 @@ class Client(BaseModel):
         return self.http().get(f"/programs/deferred_program_count")
 
     # servers
+
+    def get_server(self, server_name: str):
+        return resolve_server(self.http().get(f"/servers/{server_name}"))
+
+    def get_servers(self, server_name: str):
+        servers = self.http().get(f"/servers")
+        return {name: resolve_server(servers[name]) for name in servers}
+
+    def describe_server(self, server_name: str):
+        return self.http().get(f"/servers/{server_name}/describe")
+
+    def add_server(self, server_name: str, server: Server):
+        return self.http().post(f"/servers/{server_name}", server)
+
+    def set_server(self, server_name: str, server: Server):
+        return self.http().put(f"/servers/{server_name}", server)
+
+    def delete_server(self, server_name: str):
+        return self.http().delete(f"/servers/{server_name}")
+
+    def get_server_tags(self, server_name: str):
+        return self.http().get(f"/servers/{server_name}/get_tags")
+
+    def get_servers_by_tags(self, server_name: str, key_tags: dict):
+        return self.http().post_dict(f"/servers/by_tags", key_tags)
+
+    def execute_on_server(self, server_name: str, action_name: str):
+        return self.http().get(f"/servers/{server_name}/actions/{action_name}/execute")
+
+    def execute_on_server_with_data(
+        self, server_name: str, action_name: str, data: dict
+    ):
+        return self.http().post_dict(
+            f"/servers/{server_name}/actions/{action_name}/execute", data
+        )
+
+    def execute_on_servers(self, mode: str, action_name: str, key_tags: dict):
+        return self.http().post_dict(
+            f"/servers/by_tags/{mode}/actions/{action_name}/execute", key_tags
+        )
+
+    def execute_on_servers_with_data(
+        self, mode: str, action_name: str, key_tags: dict, data: dict
+    ):
+        # need to pass a single dictionary (per https://fastapi.tiangolo.com/tutorial/body-multiple-params/)
+        composite = {"key_tags": key_tags, "data": data}
+        return self.http().post_dict(
+            f"/servers/by_tags/{mode}/actions/{action_name}/execute_with_data",
+            composite,
+        )
 
     # deferrals and expirations
     def defer_action(self, scheduler_name: str, action_name: str, wait_until: DateTime):
