@@ -55,6 +55,9 @@ class Server(BaseModel):
     def has_key_tag(self, key: str, tag: str):
         return key in self.tags and tag in self.tags[key]
 
+    def has_tag(self, tag: str):
+        return any(tag in self.tags[x] for x in self.tags)
+
     def delete_key_tag(self, key: str, tag: str):
         """
         Remove the tag from the key's set, removing

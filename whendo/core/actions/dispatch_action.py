@@ -258,7 +258,7 @@ class ExecuteActionServer(DispatcherAction):
                 )
             else:
                 result = Http(host=server.host, port=server.port).post_dict(
-                    f"/actions/{action_name}/execute", data
+                    f"/actions/{action_name}/execute_with_data", data
                 )
         else:
             if server.host == self.local_host() and server.port == self.local_port():
@@ -273,7 +273,7 @@ class ExecuteActionServer(DispatcherAction):
 
 class ExecuteActionServersKeyTag(DispatcherAction):
     """
-    Execute an action at zero or more servers. If server_key_tag is not provided, executes action at all servers.
+    Execute an action at zero or more servers. If key_tag is not provided, executes action at all servers.
     """
 
     action_name: str
@@ -316,7 +316,7 @@ class ExecuteActionServersKeyTag(DispatcherAction):
                 else:
                     result.append(
                         Http(host=server.host, port=server.port).post_dict(
-                            f"/actions/{action_name}/execute", data
+                            f"/actions/{action_name}/execute_with_data", data
                         )
                     )
         else:
