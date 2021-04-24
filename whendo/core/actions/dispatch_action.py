@@ -52,7 +52,6 @@ class DispatcherAction(Action):
     [Note the use of self.getResult()]
     """
 
-    dispatcher_action: str = "dispatcher_action"
     mode: DispActionMode = DispActionMode.FIELD
 
     def compute_args(self, args: dict, data: dict = None):

@@ -33,7 +33,7 @@ class Arg(Action):
     data: dict
 
     def description(self):
-        return f"This action returns ({self.payload})."
+        return f"This action returns ({self.data})."
 
     def execute(self, tag: str = None, data: dict = None):
         return self.action_result(result=self.get_result(self.data), data=data)
