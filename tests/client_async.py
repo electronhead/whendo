@@ -60,7 +60,13 @@ class ClientAsync(BaseModel):
 
     # /execution
     async def execute_supplied_action(self, supplied_action: Action):
-        return await self.put("/execution", supplied_action)
+        return await self.post("/execution", supplied_action)
+
+    async def execute_supplied_action_with_data(
+        self, supplied_action: Action, data: dict
+    ):
+        composite = {"supplied_action_as_dict": supplied_action.dict(), "data": data}
+        return await self.post_dict("/execution/with_data", composite)
 
     # /actions
     async def get_action(self, action_name: str):
@@ -109,6 +115,9 @@ class ClientAsync(BaseModel):
     async def unschedule_scheduler(self, scheduler_name: str):
         return await self.get(f"/schedulers/{scheduler_name}/unschedule")
 
+    async def unschedule_all_schedulers(self):
+        return await self.get(f"/schedulers/unschedule_all")
+
     async def reschedule_all_schedulers(self):
         return await self.get(f"/schedulers/reschedule_all")
 
@@ -117,6 +126,9 @@ class ClientAsync(BaseModel):
 
     async def scheduled_action_count(self):
         return await self.get("/schedulers/action_count")
+
+    async def clear_all_scheduling(self):
+        return await self.get("/schedulers/clear_scheduling")
 
     # programs
     async def get_program(self, program_name: str):
@@ -150,7 +162,8 @@ class ClientAsync(BaseModel):
 
     async def get_server(self, server_name: str):
         return resolve_server(
-            await self.get(f"/servers/{server_name}"), check_for_found_class=False
+            await self.get_as_json(f"/servers/{server_name}"),
+            check_for_found_class=False,
         )
 
     async def get_servers(self):

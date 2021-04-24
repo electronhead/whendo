@@ -94,12 +94,3 @@ def execute_action_with_data(action_name: str, data: dict):
         )
     if exception is not None:  # from the action
         raise exception
-
-
-@router.put("/execute", status_code=status.HTTP_200_OK)
-def execute_supplied_action(action_name: str, action=Depends(resolve_action)):
-    try:
-        assert action, f"couldn't resolve class for action ({action})"
-        return get_dispatcher(router).execute_supplied_action(supplied_action=action)
-    except Exception as e:
-        raise raised_exception(f"failed to directly execute the action ({action})", e)

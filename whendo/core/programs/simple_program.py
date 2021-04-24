@@ -29,8 +29,8 @@ class PBEProgram(Program):
             .epilogue("clear_gpio")
             .prologue("start_pivot")
         pbe = PBEProgram(
-            prologue="start_pivot",
-            epilogue="clear_gpio",
+            prologue_name="start_pivot",
+            epilogue_name="clear_gpio",
             body={"heartbeat": ["turn_on_pin_A"],
                 "heartbeat2", ["report_activity"]}
             )

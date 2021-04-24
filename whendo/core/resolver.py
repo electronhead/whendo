@@ -32,9 +32,10 @@ def resolve_program(dictionary: dict, check_for_found_class: bool = True):
 
 
 def resolve_server(dictionary: dict, check_for_found_class: bool = True):
-    return resolve_instance(
+    result = resolve_instance(
         Server, dictionary, check_for_found_class=check_for_found_class
     )
+    return result
 
 
 def resolve_file_pathe(dictionary: dict, check_for_found_class: bool = True):

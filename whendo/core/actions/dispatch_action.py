@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 class DispActionMode(str, Enum):
     """
     usage:
-        DispActionMode.field
+        DispActionMode.FIELD
     """
 
-    field = "field"
-    data = "data"
+    FIELD = "field"
+    DATA = "data"
 
 
 class DispatcherAction(Action):
@@ -31,18 +31,18 @@ class DispatcherAction(Action):
     fields and the 'data' argument of the execute method.
 
     The mode field prioritizes which source to favor for the execution
-    of the action. Modes are either "field" or "data".
+    of the action. Modes are either FIELD or DATA.
 
-    field:
+    FIELD:
 
         the instance variables are the first choice for values used
         in the action's execute method. If an instance variable is
         absent (==None), then the execute method looks for the value
         in the incoming 'data' dictionary.
 
-        'field' is the default mode.
+        'FIELD' is the default mode.
 
-    data:
+    DATA:
 
         the dictionary items in the incoming 'data' dictionary argument
         are the first choice for values used in the execute method. If
@@ -53,7 +53,7 @@ class DispatcherAction(Action):
     """
 
     dispatcher_action: str = "dispatcher_action"
-    mode: DispActionMode = DispActionMode.field
+    mode: DispActionMode = DispActionMode.FIELD
 
     def compute_args(self, args: dict, data: dict = None):
         """
@@ -65,7 +65,7 @@ class DispatcherAction(Action):
                 data_args = {
                     arg: data_result[arg] for arg in args.keys() if arg in data_result
                 }
-                if self.mode == DispActionMode.data:
+                if self.mode == DispActionMode.DATA:
                     args.update(data_args)
                 else:
                     data_args.update(args)
@@ -74,13 +74,13 @@ class DispatcherAction(Action):
 
 
 class ScheduleProgram(DispatcherAction):
-    schedule_program: str = "schedule_program"
     program_name: Optional[str] = None
     start: Optional[datetime] = None
     stop: Optional[datetime] = None
+    schedule_program: str = "schedule_program"
 
     def description(self):
-        return f"This action unschedules a program with mode ({self.mode}) and fields: program_name ({self.program_name}), start ({self.start}), stop ({self.stop})."
+        return f"This action schedules a program with mode ({self.mode}) and fields: program_name ({self.program_name}), start ({self.start}), stop ({self.stop})."
 
     def execute(self, tag: str = None, data: dict = None):
         args = {
@@ -95,8 +95,8 @@ class ScheduleProgram(DispatcherAction):
 
 
 class UnscheduleProgram(DispatcherAction):
-    unschedule_program: str = "unschedule_program"
     program_name: Optional[str] = None
+    unschedule_program: str = "unschedule_program"
 
     def description(self):
         return f"This action unschedules a program with mode ({self.mode}) and field: program_name ({self.program_name})."
@@ -112,9 +112,9 @@ class UnscheduleProgram(DispatcherAction):
 
 
 class ScheduleAction(DispatcherAction):
-    schedule_action: str = "schedule_action"
     scheduler_name: Optional[str] = None
     action_name: Optional[str] = None
+    schedule_action: str = "schedule_action"
 
     def description(self):
         return f"This action schedules an action with mode ({self.mode}) and fields: scheduler_name ({self.scheduler_name}), action_name ({self.action_name})."
@@ -129,9 +129,9 @@ class ScheduleAction(DispatcherAction):
 
 
 class UnscheduleSchedulerAction(DispatcherAction):
-    unschedule_scheduler_action: str = "unschedule_scheduler_action"
     scheduler_name: Optional[str] = None
     action_name: Optional[str] = None
+    unschedule_scheduler_action: str = "unschedule_scheduler_action"
 
     def description(self):
         return f"This action unschedules a scheduler/action with mode ({self.mode}) and fields: scheduler_name ({self.scheduler_name}), action_name ({self.action_name})."
@@ -146,8 +146,8 @@ class UnscheduleSchedulerAction(DispatcherAction):
 
 
 class UnscheduleScheduler(DispatcherAction):
-    unschedule_scheduler: str = "unschedule_scheduler"
     scheduler_name: Optional[str] = None
+    unschedule_scheduler: str = "unschedule_scheduler"
 
     def description(self):
         return f"This action unschedules a scheduler with mode ({self.mode}) and field: scheduler_name ({self.scheduler_name})."
@@ -162,10 +162,10 @@ class UnscheduleScheduler(DispatcherAction):
 
 
 class DeferAction(DispatcherAction):
-    defer_action: str = "defer_action"
     scheduler_name: Optional[str] = None
     action_name: Optional[str] = None
     wait_until: Optional[datetime] = None
+    defer_action: str = "defer_action"
 
     def description(self):
         return f"This action defers a schedule/action with mode ({self.mode}) and fields: scheduler_name ({self.scheduler_name}), action_name ({self.action_name}), wait_until ({self.wait_until})."
@@ -185,10 +185,10 @@ class DeferAction(DispatcherAction):
 
 
 class ExpireAction(DispatcherAction):
-    expire_action: str = "expire_action"
     scheduler_name: Optional[str] = None
     action_name: Optional[str] = None
     expire_on: Optional[datetime] = None
+    expire_action: str = "expire_action"
 
     def description(self):
         return f"This action expires a schedule/action with mode ({self.mode}) and fields: scheduler_name ({self.scheduler_name}), action_name ({self.action_name}), expire_on ({self.expire_on})."
@@ -230,15 +230,14 @@ class ClearAllExpiringActions(DispatcherAction):
         return self.action_result(result=result, data=data)
 
 
-class ExecuteActionServer(DispatcherAction):
+class Exec(DispatcherAction):
     """
-    Execute an action at server.
+    Execute an action at a server.
     """
 
-    execute_action_server: str = "execute_action_server"
-
-    server_name: str
-    action_name: str
+    server_name: Optional[str] = None
+    action_name: Optional[str] = None
+    exec: str = "exec"
 
     def description(self):
         return f"This action executes ({self.action_name}) at the server ({self.server_name})."
@@ -248,20 +247,30 @@ class ExecuteActionServer(DispatcherAction):
         args = self.compute_args(args, data)
         server_name = args["server_name"]
         action_name = args["action_name"]
+        if not action_name:
+            raise NameError(f"action name missing")
+        host = None
+        port = None
+        if server_name:
+            server = DispatcherHooks.get_server(server_name)
+            host = server.host
+            port = server.port
+        else:
+            host = self.local_host()
+            port = self.local_port()
 
-        server = DispatcherHooks.get_server(server_name=server_name)
         if data:
-            if server.host == self.local_host() and server.port == self.local_port():
+            if host == self.local_host() and port == self.local_port():
                 # execute locally
                 result = DispatcherHooks.get_action(action_name).execute(
                     tag=tag, data=data
                 )
             else:
-                result = Http(host=server.host, port=server.port).post_dict(
-                    f"/actions/{action_name}/execute_with_data", data
+                result = Http(host=host, port=port).post_dict(
+                    f"/actions/{action_name}/execute", data
                 )
         else:
-            if server.host == self.local_host() and server.port == self.local_port():
+            if host == self.local_host() and port == self.local_port():
                 # execute locally
                 result = DispatcherHooks.get_action(action_name).execute(tag=tag)
             else:
@@ -271,14 +280,15 @@ class ExecuteActionServer(DispatcherAction):
         return self.action_result(result=result, data=data)
 
 
-class ExecuteActionServersKeyTag(DispatcherAction):
+class ExecKeyTags(DispatcherAction):
     """
-    Execute an action at zero or more servers. If key_tag is not provided, executes action at all servers.
+    Execute an action at zero or more servers. If key_tags is not provided, executes action at all servers.
     """
 
-    action_name: str
+    action_name: Optional[str] = None
     key_tags: Optional[Dict[str, Set[str]]] = None
     key_tag_mode: KeyTagMode = KeyTagMode.ANY
+    exec_key_tags: str = "exec_key_tags"
 
     def description(self):
         return f"This action executes ({self.action_name}) at the servers with key:tags satisfying ({self.key_tags}) using key tag mode ({self.key_tag_mode})."
@@ -291,6 +301,8 @@ class ExecuteActionServersKeyTag(DispatcherAction):
         }
         args = self.compute_args(args, data)
         action_name = args["action_name"]
+        if not action_name:
+            raise NameError(f"action name missing")
         key_tags = args["key_tags"]
         key_tag_mode = args["key_tag_mode"]
 
@@ -316,7 +328,7 @@ class ExecuteActionServersKeyTag(DispatcherAction):
                 else:
                     result.append(
                         Http(host=server.host, port=server.port).post_dict(
-                            f"/actions/{action_name}/execute_with_data", data
+                            f"/actions/{action_name}/execute", data
                         )
                     )
         else:
@@ -333,6 +345,122 @@ class ExecuteActionServersKeyTag(DispatcherAction):
                     result.append(
                         Http(host=server.host, port=server.port).get(
                             f"/actions/{action_name}/execute"
+                        )
+                    )
+        return self.action_result(result=result, data=data)
+
+
+class ExecSupplied(DispatcherAction):
+    """
+    Execute an action at a server.
+    """
+
+    server_name: Optional[str] = None
+    action: Optional[Action] = None
+    exec_supplied: str = "exec_supplied"
+
+    def description(self):
+        return (
+            f"This action executes ({self.action}) at the server ({self.server_name})."
+        )
+
+    def execute(self, tag: str = None, data: dict = None):
+        args: Dict[str, Any] = {"server_name": self.server_name, "action": self.action}
+        args = self.compute_args(args, data)
+        server_name = args["server_name"]
+        action = args["action"]
+        if not action:
+            raise NameError(f"action missing")
+        host = None
+        port = None
+        if server_name:
+            server = DispatcherHooks.get_server(server_name)
+            host = server.host
+            port = server.port
+        else:
+            host = self.local_host()
+            port = self.local_port()
+
+        if data:
+            if host == self.local_host() and port == self.local_port():
+                # execute locally
+                result = action.execute(tag=tag, data=data)
+            else:
+                composite = {"data": data, "supplied_action_as_dict": action.dict()}
+                result = Http(host=host, port=port).post_dict(
+                    f"/execution/with_data", composite
+                )
+        else:
+            if host == self.local_host() and port == self.local_port():
+                # execute locally
+                result = action.execute(tag=tag)
+            else:
+                result = Http(host=server.host, port=server.port).post(
+                    f"/execution", action
+                )
+        return self.action_result(result=result, data=data)
+
+
+class ExecSuppliedKeyTags(DispatcherAction):
+    """
+    Execute an action at zero or more servers. If key_tags is not provided, executes action at all servers.
+    """
+
+    action: Optional[Action] = None
+    key_tags: Optional[Dict[str, Set[str]]] = None
+    key_tag_mode: KeyTagMode = KeyTagMode.ANY
+    exec_supplied_key_tags: str = "exec_supplied_key_tags"
+
+    def description(self):
+        return f"This action executes ({self.action}) at the servers with key:tags satisfying ({self.key_tags}) using key tag mode ({self.key_tag_mode})."
+
+    def execute(self, tag: str = None, data: dict = None):
+        args: Dict[str, Any] = {
+            "action": self.action,
+            "key_tags": self.key_tags,
+            "key_tag_mode": self.key_tag_mode,
+        }
+        args = self.compute_args(args, data)
+        action = args["action"]
+        if not action:
+            raise NameError(f"action missing")
+        key_tags = args["key_tags"]
+        key_tag_mode = args["key_tag_mode"]
+
+        if key_tags:
+            servers = DispatcherHooks.get_servers_by_tags(
+                key_tags=key_tags, key_tag_mode=key_tag_mode
+            )
+        else:
+            servers = DispatcherHooks.get_servers()
+        result = []
+        if data:
+            for server in servers:
+                if (
+                    server.host == self.local_host()
+                    and server.port == self.local_port()
+                ):
+                    # execute locally
+                    result.append(action.execute(tag=tag, data=data))
+                else:
+                    composite = {"supplied_action_as_dict": action.dict(), "data": data}
+                    result.append(
+                        Http(host=server.host, port=server.port).post_dict(
+                            f"/execution/with_data", composite
+                        )
+                    )
+        else:
+            for server in servers:
+                if (
+                    server.host == self.local_host()
+                    and server.port == self.local_port()
+                ):
+                    # execute locally
+                    result.append(action.execute(tag=tag))
+                else:
+                    result.append(
+                        Http(host=server.host, port=server.port).post(
+                            f"/execution", action
                         )
                     )
         return self.action_result(result=result, data=data)

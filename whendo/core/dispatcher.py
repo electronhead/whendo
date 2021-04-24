@@ -157,6 +157,7 @@ class Dispatcher(BaseModel):
             unschedule_scheduler_thunk=lambda scheduler_name, action_name: self.unschedule_scheduler(
                 scheduler_name
             ),
+            unschedule_all_schedulers_thunk=lambda: self.unschedule_all_schedulers(),
             defer_action_thunk=lambda scheduler_name, action_name, wait_until: self.defer_action(
                 scheduler_name, action_name, wait_until
             ),
@@ -165,6 +166,7 @@ class Dispatcher(BaseModel):
             ),
             clear_all_deferred_actions_thunk=lambda: self.clear_all_deferred_actions(),
             clear_all_expiring_actions_thunk=lambda: self.clear_all_expiring_actions(),
+            clear_all_scheduling_thunk=lambda: self.clear_all_scheduling(),
             get_server_thunk=lambda server_name: self.get_server(server_name),
             get_servers_thunk=lambda: self.get_servers(),
             get_servers_by_tags_thunk=lambda key_tags, key_tag_mode: self.get_servers_by_tags(
@@ -225,6 +227,20 @@ class Dispatcher(BaseModel):
             if should_save:
                 self.save_current()
 
+    def clear_all_scheduling(self, should_save: bool = True):
+        """
+        Removes all scheduled actions, current or planned, and foreground
+        Timed instance jobs. Ignores the 'inventory' objects and the out-of-band
+        Timed instance.
+        """
+        with Lok.lock:
+            self.scheduled_actions.clear()
+            self.deferred_scheduled_actions.clear()
+            self.expiring_scheduled_actions.clear()
+            self.deferred_programs.clear()
+            self._timed.clear()
+            self.save_current()
+
     def replace_all(self, replacement: object):
         """
         Note #1: the assumption is that the replacement is a Dispatcher. There's
@@ -277,6 +293,11 @@ class Dispatcher(BaseModel):
         result["schedulers"] = stuff
 
         stuff = self.programs.copy()
+        for name in stuff:
+            stuff[name] = stuff[name].description()
+        result["programs"] = stuff
+
+        stuff = self.servers.copy()
         for name in stuff:
             stuff[name] = stuff[name].description()
         result["programs"] = stuff
@@ -343,6 +364,14 @@ class Dispatcher(BaseModel):
     def execute_supplied_action(self, supplied_action: Action):
         with Lok.lock:
             return supplied_action.execute()
+
+    def execute_supplied_action_with_data(self, supplied_action: Action, data: dict):
+        with Lok.lock:
+            result = supplied_action.execute(data=data)
+            print(
+                f"DISPATCHER.execute_supplied_action_with_data:: result({result}) supplied_action ({supplied_action})"
+            )
+            return result
 
     # schedulers
     def get_scheduler(self, scheduler_name: str):
@@ -468,7 +497,8 @@ class Dispatcher(BaseModel):
                     if item.scheduler_name not in self.schedulers:
                         error_msgs.append(f"missing scheduler: ({item.scheduler_name})")
             if len(error_msgs) > 0:
-                raise ValueError(", ".join(error_msgs))
+                error_txt = f"program ({program}) error_msgs ({error_msgs})"
+                raise ValueError(error_txt)
 
     def schedule_program(self, program_name: str, start: datetime, stop: datetime):
         """
@@ -739,6 +769,11 @@ class Dispatcher(BaseModel):
             scheduler.unschedule(scheduler_name)
             self.scheduled_actions.delete_scheduler(scheduler_name)
             self.save_current()
+
+    def unschedule_all_schedulers(self):
+        with Lok.lock:
+            for scheduler_name in self.scheduled_actions.scheduler_names():
+                self.unschedule_scheduler(scheduler_name)
 
     def reschedule_scheduler(self, scheduler_name: str):
         with Lok.lock:

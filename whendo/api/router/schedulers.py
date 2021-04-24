@@ -44,6 +44,15 @@ def get_expiring_action_count():
         raise raised_exception(f"failed to retrieve the deferred action count", e)
 
 
+@router.get("/unschedule_all", status_code=status.HTTP_200_OK)
+def unschedule_all_schedulers():
+    try:
+        get_dispatcher(router).unschedule_all_schedulers()
+        return return_success(f"all scheduled schedulers were successfully unscheduled")
+    except Exception as e:
+        raise raised_exception(f"failed to unschedule all scheduled schedulers", e)
+
+
 @router.get("/reschedule_all", status_code=status.HTTP_200_OK)
 def reschedule_all_schedulers():
     try:
@@ -69,6 +78,15 @@ def clear_expiring_actions():
         return return_success("expiring actions were cleared")
     except Exception as e:
         raise raised_exception("failed to clear expiring actions", e)
+
+
+@router.get("/clear_scheduling", status_code=status.HTTP_200_OK)
+def clear_all_scheduling():
+    try:
+        get_dispatcher(router).clear_all_scheduling()
+        return return_success("all scheduling was cleared")
+    except Exception as e:
+        raise raised_exception("failed to clear scheduling", e)
 
 
 @router.get("/{scheduler_name}/actions/{action_name}", status_code=status.HTTP_200_OK)

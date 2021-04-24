@@ -12,14 +12,17 @@ from httpx import AsyncClient
 from datetime import timedelta, datetime
 from whendo.core.action import Action
 import whendo.core.actions.file_action as file_x
+import whendo.core.actions.dispatch_action as disp_x
+import whendo.core.actions.http_action as http_x
+import whendo.core.actions.sys_action as sys_x
 from whendo.core.actions.list_action import All, Success
 from whendo.core.actions.sys_action import SysInfo
-from whendo.core.actions.http_action import ExecuteAction
 from whendo.core.scheduler import Scheduler, Immediately
 from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 from whendo.core.programs.simple_program import PBEProgram
+from whendo.core.server import Server, KeyTagMode
 from whendo.core.util import (
     FilePathe,
     resolve_instance,
@@ -33,6 +36,7 @@ from whendo.core.resolver import (
     resolve_scheduler,
     resolve_file_pathe,
     resolve_program,
+    resolve_server,
 )
 from .fixtures import port, host, startup_and_shutdown_uvicorn, base_url
 import logging
@@ -244,6 +248,135 @@ async def test_unschedule_scheduler(startup_and_shutdown_uvicorn, base_url, tmp_
 
 
 @pytest.mark.asyncio
+async def test_unschedule_all_schedulers(
+    startup_and_shutdown_uvicorn, base_url, tmp_path
+):
+    """ unschedule a scheduler. """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action1 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+    )
+    action2 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+    )
+    scheduler = Timely(interval=1)
+
+    await add_action(base_url=base_url, action_name="foo1", action=action1)
+    await add_action(base_url=base_url, action_name="foo2", action=action2)
+    await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
+    await schedule_action(base_url=base_url, action_name="foo1", scheduler_name="bar")
+    await schedule_action(base_url=base_url, action_name="foo2", scheduler_name="bar")
+    await assert_job_count(base_url=base_url, n=1)
+    await assert_scheduled_action_count(base_url=base_url, n=2)
+
+    await unschedule_all(base_url=base_url)
+    await assert_job_count(base_url=base_url, n=0)
+    await assert_scheduled_action_count(base_url=base_url, n=0)
+    await get_action(base_url=base_url, action_name="foo1")
+    await get_action(base_url=base_url, action_name="foo2")
+    await get_scheduler(base_url=base_url, scheduler_name="bar")
+
+
+@pytest.mark.asyncio
+async def test_unschedule_all_scheduling(
+    startup_and_shutdown_uvicorn, base_url, tmp_path
+):
+    """ unschedule a scheduler. """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action1 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+    )
+    action2 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+    )
+    scheduler = Timely(interval=1)
+
+    await add_action(base_url=base_url, action_name="foo1", action=action1)
+    await add_action(base_url=base_url, action_name="foo2", action=action2)
+    await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
+    await schedule_action(base_url=base_url, action_name="foo1", scheduler_name="bar")
+    await schedule_action(base_url=base_url, action_name="foo2", scheduler_name="bar")
+    await assert_job_count(base_url=base_url, n=1)
+    await assert_scheduled_action_count(base_url=base_url, n=2)
+
+    await unschedule_all(base_url=base_url)
+    await assert_job_count(base_url=base_url, n=0)
+    await assert_scheduled_action_count(base_url=base_url, n=0)
+    await get_action(base_url=base_url, action_name="foo1")
+    await get_action(base_url=base_url, action_name="foo2")
+    await get_scheduler(base_url=base_url, scheduler_name="bar")
+
+
+@pytest.mark.asyncio
+async def test_clear_all_scheduling(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    """ clear all scheduling. """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action1 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+    )
+    action2 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+    )
+    action3 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output3.txt")
+    )
+    action4 = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output4.txt")
+    )
+    await add_action(base_url=base_url, action_name="foo1", action=action1)
+    await add_action(base_url=base_url, action_name="foo2", action=action2)
+    await add_action(base_url=base_url, action_name="foo3", action=action3)
+    await add_action(base_url=base_url, action_name="foo4", action=action4)
+
+    scheduler = Timely(interval=1)
+    await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
+    await add_scheduler(
+        base_url=base_url, scheduler_name="immediately", scheduler=Immediately()
+    )
+    program = PBEProgram().prologue("foo4").epilogue("foo3").body_element("bar", "foo2")
+    await add_program(base_url=base_url, program_name="blink", program=program)
+
+    await schedule_action(base_url=base_url, action_name="foo1", scheduler_name="bar")
+    await defer_action(
+        base_url=base_url,
+        action_name="foo2",
+        scheduler_name="bar",
+        wait_until=DateTime(dt=Now.dt() + timedelta(seconds=10)),
+    )
+    await expire_action(
+        base_url=base_url,
+        action_name="foo2",
+        scheduler_name="bar",
+        expire_on=DateTime(dt=Now.dt() + timedelta(seconds=15)),
+    )
+    await schedule_program(
+        base_url=base_url,
+        program_name="blink",
+        start=Now.dt() + timedelta(seconds=10),
+        stop=Now.dt() + timedelta(seconds=15),
+    )
+    await assert_job_count(base_url=base_url, n=1)
+    await assert_scheduled_action_count(base_url=base_url, n=1)
+    await assert_deferred_action_count(base_url=base_url, n=1)
+    await assert_expiring_action_count(base_url=base_url, n=1)
+    await assert_deferred_program_count(base_url=base_url, n=1)
+
+    await clear_all_scheduling(base_url=base_url)
+    await assert_job_count(base_url=base_url, n=0)
+    await assert_scheduled_action_count(base_url=base_url, n=0)
+    await assert_deferred_action_count(base_url=base_url, n=0)
+    await assert_expiring_action_count(base_url=base_url, n=0)
+    await assert_deferred_program_count(base_url=base_url, n=0)
+    await get_action(base_url=base_url, action_name="foo1")
+    await get_action(base_url=base_url, action_name="foo2")
+    await get_scheduler(base_url=base_url, scheduler_name="bar")
+    await get_program(base_url=base_url, program_name="blink")
+
+
+@pytest.mark.asyncio
 async def test_job_count(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """ test job_count """
     await reset_dispatcher(base_url, str(tmp_path))
@@ -413,12 +546,34 @@ async def test_execute_supplied_action(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
 
-    await put(base_url, "/execution", action)
+    await post(base_url, "/execution", action)
 
     lines = None
     with open(action.file, "r") as fid:
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+
+@pytest.mark.asyncio
+async def test_execute_supplied_action_with_data(
+    startup_and_shutdown_uvicorn, base_url, tmp_path
+):
+    """ execute a supplied action """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action = file_x.FileAppend(
+        relative_to_output_dir=False, file=str(tmp_path / "output.txt")
+    )
+    data = {"higher": "and higher"}
+    composite = {"supplied_action_as_dict": action.dict(), "data": data}
+    await post_dict(base_url, "/execution/with_data", composite)
+    time.sleep(4)
+
+    lines = None
+    with open(action.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("and higher" in line for line in lines)
 
 
 @pytest.mark.asyncio
@@ -617,13 +772,13 @@ async def test_unschedule_program(startup_and_shutdown_uvicorn, base_url, tmp_pa
         base_url=base_url, program_name="baz", start=start, stop=stop
     )
 
-    await assert_deferred_program_count(base_url=base_url, n=1)
     await assert_scheduled_action_count(base_url=base_url, n=0)
+    await assert_deferred_program_count(base_url=base_url, n=1)
     await unschedule_program(base_url=base_url, program_name="baz")
     await assert_deferred_program_count(base_url=base_url, n=0)
 
     # action1,2,3 not doing their things
-    await run_and_stop_jobs(base_url=base_url, pause=6)
+    await run_and_stop_jobs(base_url=base_url, pause=4)
     with pytest.raises(FileNotFoundError):
         with open(action1.file, "r") as fid:
             lines = fid.readlines()
@@ -747,6 +902,162 @@ async def test_file_append_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await run_and_stop_jobs(base_url=base_url, pause=2)
     lines = None
     with open(action1.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("virtual_memory" in line for line in lines)
+
+
+@pytest.mark.asyncio
+async def test_file_append_execute_action(
+    startup_and_shutdown_uvicorn, base_url, tmp_path, host, port
+):
+    """ test use of execute <data> argument """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    server = Server(host=host, port=port, tags={"role": ["pivot"]})
+    assert server.port == port
+    assert server.host == host
+    await add_server(base_url=base_url, server_name="test", server=server)
+    file_append = file_x.FileAppendD(
+        # mode = "D",
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output.txt"),
+        payload={"hi": "pyrambium"},
+    )
+    info = sys_x.SysInfo()
+    execute_action = disp_x.Exec(server_name="test", action_name="file_append")
+    actions = All(actions=[info, execute_action])
+    timely = Timely(interval=1)
+
+    await add_action(base_url=base_url, action_name="file_append", action=file_append)
+    await add_action(base_url=base_url, action_name="actions", action=actions)
+    await add_scheduler(base_url=base_url, scheduler_name="timely", scheduler=timely)
+    await schedule_action(
+        base_url=base_url, action_name="actions", scheduler_name="timely"
+    )
+    await assert_scheduled_action_count(base_url=base_url, n=1)
+
+    await run_and_stop_jobs(base_url=base_url, pause=2)
+    lines = None
+    with open(file_append.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("virtual_memory" in line for line in lines)
+
+
+@pytest.mark.asyncio
+async def test_file_append_execute_supplied_action(
+    startup_and_shutdown_uvicorn, base_url, tmp_path, host, port
+):
+    """ test use of execute <data> argument """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    server = Server(host=host, port=port, tags={"role": ["pivot"]})
+    assert server.port == port
+    assert server.host == host
+    await add_server(base_url=base_url, server_name="test", server=server)
+    file_append = file_x.FileAppendD(
+        # mode = "D",
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output.txt"),
+        payload={"hi": "pyrambium"},
+    )
+    info = sys_x.SysInfo()
+    execute_action = disp_x.ExecSupplied(server_name="test", action=file_append)
+    actions = All(actions=[info, execute_action])
+    timely = Timely(interval=1)
+
+    await add_action(base_url=base_url, action_name="file_append", action=file_append)
+    await add_action(base_url=base_url, action_name="actions", action=actions)
+    await add_scheduler(base_url=base_url, scheduler_name="timely", scheduler=timely)
+    await schedule_action(
+        base_url=base_url, action_name="actions", scheduler_name="timely"
+    )
+    await assert_scheduled_action_count(base_url=base_url, n=1)
+
+    await run_and_stop_jobs(base_url=base_url, pause=2)
+    lines = None
+    with open(file_append.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("virtual_memory" in line for line in lines)
+
+
+@pytest.mark.asyncio
+async def test_file_append_execute_action_key_tags(
+    startup_and_shutdown_uvicorn, base_url, tmp_path, host, port
+):
+    """ test use of execute <data> argument """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    server = Server(host=host, port=port, tags={"role": ["pivot"]})
+    assert server.port == port
+    assert server.host == host
+    await add_server(base_url=base_url, server_name="test", server=server)
+    file_append = file_x.FileAppendD(
+        # mode = "D",
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output.txt"),
+        payload={"hi": "pyrambium"},
+    )
+    info = sys_x.SysInfo()
+    execute_action = disp_x.ExecKeyTags(
+        key_tags={"role": ["pivot"]}, action_name="file_append"
+    )
+    actions = All(actions=[info, execute_action])
+    timely = Timely(interval=1)
+
+    await add_action(base_url=base_url, action_name="file_append", action=file_append)
+    await add_action(base_url=base_url, action_name="actions", action=actions)
+    await add_scheduler(base_url=base_url, scheduler_name="timely", scheduler=timely)
+    await schedule_action(
+        base_url=base_url, action_name="actions", scheduler_name="timely"
+    )
+    await assert_scheduled_action_count(base_url=base_url, n=1)
+
+    await run_and_stop_jobs(base_url=base_url, pause=2)
+    lines = None
+    with open(file_append.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("virtual_memory" in line for line in lines)
+
+
+@pytest.mark.asyncio
+async def test_file_append_execute_action_key_tags(
+    startup_and_shutdown_uvicorn, base_url, tmp_path, host, port
+):
+    """ test use of execute <data> argument """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    server = Server(host=host, port=port, tags={"role": ["pivot"]})
+    assert server.port == port
+    assert server.host == host
+    await add_server(base_url=base_url, server_name="test", server=server)
+    file_append = file_x.FileAppendD(
+        # mode = "D",
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output.txt"),
+        payload={"hi": "pyrambium"},
+    )
+    info = sys_x.SysInfo()
+    execute_action = disp_x.ExecSuppliedKeyTags(
+        key_tags={"role": ["pivot"]}, action=file_append
+    )
+    actions = All(actions=[info, execute_action])
+    timely = Timely(interval=1)
+
+    await add_action(base_url=base_url, action_name="file_append", action=file_append)
+    await add_action(base_url=base_url, action_name="actions", action=actions)
+    await add_scheduler(base_url=base_url, scheduler_name="timely", scheduler=timely)
+    await schedule_action(
+        base_url=base_url, action_name="actions", scheduler_name="timely"
+    )
+    await assert_scheduled_action_count(base_url=base_url, n=1)
+
+    await run_and_stop_jobs(base_url=base_url, pause=2)
+    lines = None
+    with open(file_append.file, "r") as fid:
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
     assert any("virtual_memory" in line for line in lines)
@@ -915,9 +1226,37 @@ async def unschedule_program(base_url: str, program_name: str):
 
 
 async def delete_program(base_url: str, program_name: str):
-    """ schedule a program """
+    """ delete a program """
     response = await delete(base_url=base_url, path=f"/programs/{program_name}")
     assert response.status_code == 200, f"failed to delete program ({program_name})"
+
+
+async def add_server(base_url: str, server_name: str, server: Server):
+    """ add a server and confirm """
+    response = await post(
+        base_url=base_url, path=f"/servers/{server_name}", data=server
+    )
+    assert response.status_code == 200, f"failed to post server ({server_name})"
+    response = await get(base_url, path=f"/servers/{server_name}")
+    assert response.status_code == 200, f"failed to get server ({server_name})"
+    retrieved = resolve_server(response.json())
+    assert isinstance(retrieved, Server), str(type(retrieved))
+
+
+async def set_server(base_url: str, server_name: str, server: Server):
+    """ set a server and confirm """
+    response = await put(base_url=base_url, path=f"/servers/{server_name}", data=server)
+    assert response.status_code == 200, f"failed to put server ({server_name})"
+    response = await get(base_url, path=f"/servers/{server_name}")
+    assert response.status_code == 200, f"failed to get server ({server_name})"
+    retrieved = resolve_server(response.json())
+    assert isinstance(retrieved, Server), str(type(retrieved))
+
+
+async def delete_server(base_url: str, server_name: str):
+    """ delete a server """
+    response = await delete(base_url=base_url, path=f"/servers/{server_name}")
+    assert response.status_code == 200, f"failed to delete server ({server_name})"
 
 
 async def defer_action(
@@ -979,6 +1318,22 @@ async def replace_dispatcher(base_url: str, replacement: Dispatcher):
     assert (
         response.status_code == 200
     ), f"failed to replace the dispatcher ({response.json()}"
+
+
+async def unschedule_all(base_url: str):
+    """
+    unschedule all schedulers and actions
+    """
+    response = await get(base_url=base_url, path="/schedulers/unschedule_all")
+    assert response.status_code == 200, "failed to unschedule all schedulers"
+
+
+async def clear_all_scheduling(base_url: str):
+    """
+    clear all scheduling
+    """
+    response = await get(base_url=base_url, path="/schedulers/clear_scheduling")
+    assert response.status_code == 200, "failed to clear all scheduling"
 
 
 async def reschedule_all(base_url: str):

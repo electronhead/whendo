@@ -9,7 +9,8 @@ router = APIRouter(prefix="/servers", tags=["Servers"])
 @router.get("/{server_name}", status_code=status.HTTP_200_OK)
 def get_server(server_name: str):
     try:
-        return get_dispatcher(router).get_server(server_name=server_name)
+        server = get_dispatcher(router).get_server(server_name=server_name)
+        return return_success(server)
     except Exception as e:
         raise raised_exception(f"failed to retrieve the server ({server_name})", e)
 
@@ -17,7 +18,8 @@ def get_server(server_name: str):
 @router.get("", status_code=status.HTTP_200_OK)
 def get_servers():
     try:
-        return get_dispatcher(router).get_servers()
+        servers = get_dispatcher(router).get_servers()
+        return return_success(servers)
     except Exception as e:
         raise raised_exception(f"failed to retrieve servers", e)
 
@@ -65,7 +67,9 @@ def add_server_key_tags(server_name: str, key_tags: dict):
         get_dispatcher(router).add_server_key_tags(
             server_name=server_name, key_tags=key_tags
         )
-        return return_success(f"key tags ({key_tags}) were successfully added to server ({server_name}).")
+        return return_success(
+            f"key tags ({key_tags}) were successfully added to server ({server_name})."
+        )
     except Exception as e:
         raise raised_exception(
             f"failed to add key-tags ({key_tags}) to server ({server_name}))", e

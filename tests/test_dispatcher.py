@@ -15,7 +15,6 @@ from whendo.core.actions.list_action import (
     Success,
     Failure,
 )
-from whendo.core.actions.dispatch_action import ScheduleAction
 from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.scheduler import Immediately
 from whendo.core.dispatcher import Dispatcher
@@ -29,6 +28,7 @@ from whendo.core.actions.dispatch_action import (
     DispActionMode,
 )
 from whendo.core.timed import Timed
+from .fixtures import port, host
 
 pause = 3
 
@@ -177,7 +177,7 @@ def test_dispatcher_action_args_1(friends):
     dispatcher.add_action("flea", action2)
     dispatcher.add_scheduler("bar", scheduler)
     schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo", mode=DispActionMode.field
+        scheduler_name="bar", action_name="foo", mode=DispActionMode.FIELD
     )
     args = schedule_action.compute_args(
         args={"scheduler_name": "bar", "action_name": "foo"},
@@ -198,7 +198,7 @@ def test_dispatcher_action_args_2(friends):
     dispatcher.add_action("flea", action2)
     dispatcher.add_scheduler("bar", scheduler)
     schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo", mode=DispActionMode.data
+        scheduler_name="bar", action_name="foo", mode=DispActionMode.DATA
     )
     args = schedule_action.compute_args(
         args={"scheduler_name": "bar", "action_name": "foo"},
@@ -219,7 +219,7 @@ def test_dispatcher_action_args_3(friends):
     dispatcher.add_action("flea", action2)
     dispatcher.add_scheduler("bar", scheduler)
     schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo", mode=DispActionMode.field
+        scheduler_name="bar", action_name="foo", mode=DispActionMode.FIELD
     )
     args = schedule_action.compute_args(
         args={"scheduler_name": "bar", "action_name": "foo"},
@@ -240,7 +240,7 @@ def test_dispatcher_action_args_4(friends):
     dispatcher.add_action("flea", action2)
     dispatcher.add_scheduler("bar", scheduler)
     schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo", mode=DispActionMode.data
+        scheduler_name="bar", action_name="foo", mode=DispActionMode.DATA
     )
     args = schedule_action.compute_args(
         args={"scheduler_name": "bar", "action_name": "foo"},
@@ -261,7 +261,7 @@ def test_schedule_action_action_data_1(friends):
     dispatcher.add_action("flea", action2)
     dispatcher.add_scheduler("bar", scheduler)
     schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo", mode=DispActionMode.field
+        scheduler_name="bar", action_name="foo", mode=DispActionMode.FIELD
     )
     schedule_action.execute(data={"action_name": "flea"})
 
@@ -287,7 +287,7 @@ def test_schedule_action_action_data_2(friends):
     dispatcher.add_action("flea", action2)
     dispatcher.add_scheduler("bar", scheduler)
     schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo", mode=DispActionMode.data
+        scheduler_name="bar", action_name="foo", mode=DispActionMode.DATA
     )
     schedule_action.execute(data={"action_name": "flea"})
 
@@ -323,6 +323,31 @@ def test_unschedule_scheduler(friends):
     # make sure that bar and foo remain
     assert dispatcher.get_scheduler("bar")
     assert dispatcher.get_action("foo")
+
+
+def test_unschedule_all(friends):
+    """
+    Tests unscheduling all schedulers.
+    """
+    dispatcher, scheduler, action = friends()
+    assert dispatcher.job_count() == 0
+
+    dispatcher.add_action("foo", action)
+    dispatcher.add_scheduler("bar", scheduler)
+    dispatcher.schedule_action("bar", "foo")
+    assert dispatcher.job_count() == 1
+    assert dispatcher.get_scheduled_action_count() == 1
+
+    dispatcher.clear_jobs()
+    assert dispatcher.job_count() == 0
+
+    dispatcher.add_action("foo2", action)
+    dispatcher.schedule_action("bar", "foo2")
+    assert dispatcher.get_scheduled_action_count() == 2
+
+    dispatcher.unschedule_all_schedulers()
+    assert dispatcher.job_count() == 0
+    assert dispatcher.get_scheduled_action_count() == 0
 
 
 def test_reschedule_all(friends):
@@ -913,7 +938,7 @@ def test_terminate_scheduler_and(friends):
 
     dispatcher.run_jobs()
     dispatcher.schedule_action("bar", "foo")
-    time.sleep(2)
+    time.sleep(3)
     assert action.flea_count == 1
     assert action2.flea_count == 100
 
@@ -984,8 +1009,9 @@ class FleaCount(Action):
 
 
 @pytest.fixture
-def friends(tmp_path):
+def friends(tmp_path, host, port):
     """ returns a tuple of useful test objects """
+    util.SystemInfo.init(host, port)
 
     def stuff():
         # want a fresh tuple from the fixture

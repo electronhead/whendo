@@ -19,6 +19,7 @@ def test_server_has_key(servers):
     server1.delete_tag("standdown")
     assert not server1.has_key("fleas")
 
+
 def test_server_has_tag(servers):
     server1, server2 = servers()
     assert not server1.has_key("baz")

@@ -30,6 +30,9 @@ class Client(BaseModel):
     # hidden private field
     _http: Http = PrivateAttr(default_factory=Http)
 
+    def get_host(self):
+        return self.host
+
     def http(self):
         """
         Cache the Http object.
@@ -70,7 +73,11 @@ class Client(BaseModel):
     # /execution
 
     def execute_supplied_action(self, supplied_action: Action):
-        return self.http().put(f"/execution", supplied_action)
+        return self.http().post(f"/execution/", supplied_action)
+
+    def execute_supplied_action_with_data(self, supplied_action: Action, data: dict):
+        composite = {"supplied_action_as_dict": supplied_action.dict(), "data": data}
+        return self.http().post_dict(f"/execution/with_data", composite)
 
     # /actions
     def get_action(self, action_name: str):
@@ -117,16 +124,25 @@ class Client(BaseModel):
     def unschedule_scheduler(self, scheduler_name: str):
         return self.http().get(f"/schedulers/{scheduler_name}/unschedule")
 
+    def unschedule_all_schedulers(self):
+        return self.http().get(f"/schedulers/unschedule_all")
+
     def unschedule_scheduler_action(self, scheduler_name: str, action_name: str):
         return self.http().get(
             f"/schedulers/{scheduler_name}/actions/{action_name}/unschedule"
         )
+
+    def rescheduler_scheduler(self, scheduler_name: str):
+        return self.http().get(f"/schedulers/{scheduler_name}/reschedule")
 
     def reschedule_all_schedulers(self):
         return self.http().get(f"/schedulers/reschedule_all")
 
     def scheduled_action_count(self):
         return self.http().get("/schedulers/action_count")
+
+    def clear_all_scheduling(self):
+        return self.http().get("/schedulers/clear_scheduling")
 
     # programs
     def get_program(self, program_name: str):

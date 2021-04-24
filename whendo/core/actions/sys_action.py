@@ -41,8 +41,8 @@ class Pause(Action):
     does not interfere with job execution (blocking the thread).
     """
 
-    pause: str = "pause"
     seconds: float = 1.0
+    pause: str = "pause"
 
     def description(self):
         return f"This action sleeps for {self.seconds} second{'s' if self.seconds != 1 else ''}."
