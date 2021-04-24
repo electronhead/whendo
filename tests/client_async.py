@@ -146,8 +146,8 @@ class ClientAsync(BaseModel):
     async def delete_program(self, program_name: str):
         return await self.delete(f"/programs/{program_name}")
 
-    async def schedule_program(self, program_name: str, datetime2: DateTime2):
-        return await self.post(f"/programs/{program_name}/schedule", datetime2)
+    async def schedule_program(self, program_name: str, start_stop: DateTime2):
+        return await self.post(f"/programs/{program_name}/schedule", start_stop)
 
     async def unschedule_program(self, program_name: str):
         return await self.get(f"/programs/{program_name}/unschedule")

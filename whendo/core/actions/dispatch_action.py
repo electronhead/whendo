@@ -1,8 +1,7 @@
 import logging
 from enum import Enum
 from typing import Optional, Dict, Set, Any
-from datetime import datetime, timedelta
-from whendo.core.util import Now, Http, KeyTagMode
+from whendo.core.util import Now, Http, KeyTagMode, DateTime2, DateTime
 from whendo.core.hooks import DispatcherHooks
 from whendo.core.action import Action
 
@@ -74,22 +73,28 @@ class DispatcherAction(Action):
 
 class ScheduleProgram(DispatcherAction):
     program_name: Optional[str] = None
-    start: Optional[datetime] = None
-    stop: Optional[datetime] = None
+    start_stop: Optional[DateTime2] = None
     schedule_program: str = "schedule_program"
 
     def description(self):
         return f"This action schedules a program with mode ({self.mode}) and fields: program_name ({self.program_name}), start ({self.start}), stop ({self.stop})."
 
     def execute(self, tag: str = None, data: dict = None):
-        args = {
+        args: Dict[str, Any] = {
             "program_name": self.program_name,
-            "start": self.start,
-            "stop": self.stop,
+            "start_stop": self.start_stop,
         }
         args = self.compute_args(args, data)
-        DispatcherHooks.schedule_program(**args)
-        result = f"program ({args['program_name']}) scheduled, start({args['start']}) stop({args['stop']})"
+        program_name = args["program_name"]
+        if not program_name:
+            raise ValueError(f"program name missing")
+        start_stop = args["start_stop"]
+        if not start_stop:
+            raise ValueError(f"start_stop missing")
+        DispatcherHooks.schedule_program(
+            program_name=program_name, start=start_stop.dt1, stop=start_stop.dt2
+        )
+        result = f"program ({program_name}) scheduled, start_stop({start_stop})"
         return self.action_result(result=result, data=data, extra=args)
 
 
@@ -163,7 +168,7 @@ class UnscheduleScheduler(DispatcherAction):
 class DeferAction(DispatcherAction):
     scheduler_name: Optional[str] = None
     action_name: Optional[str] = None
-    wait_until: Optional[datetime] = None
+    wait_until: Optional[DateTime] = None
     defer_action: str = "defer_action"
 
     def description(self):
@@ -171,14 +176,27 @@ class DeferAction(DispatcherAction):
 
     def execute(self, tag: str = None, data: dict = None):
         # gather all of the args that can participate
-        args = {
+        args: Dict[str, Any] = {
             "scheduler_name": self.scheduler_name,
             "action_name": self.action_name,
             "wait_until": self.wait_until,
         }
         args = self.compute_args(args, data)
-        DispatcherHooks.defer_action(**args)
-        result = f"action ({args['action_name']}) using scheduler ({args['scheduler_name']}) deferred until ({args['wait_until']})"
+        scheduler_name = args["scheduler_name"]
+        if not scheduler_name:
+            raise ValueError("scheduler name missing")
+        action_name = args["action_name"]
+        if not action_name:
+            raise ValueError("action name missing")
+        wait_until = args["wait_until"]
+        if not wait_until:
+            raise ValueError("wait_until missing")
+        DispatcherHooks.defer_action(
+            scheduler_name=scheduler_name,
+            action_name=action_name,
+            wait_until=wait_until.dt,
+        )
+        result = f"action ({action_name}) using scheduler ({scheduler_name}) deferred until ({wait_until})"
 
         return self.action_result(result=result, data=data, extra=args)
 
@@ -186,7 +204,7 @@ class DeferAction(DispatcherAction):
 class ExpireAction(DispatcherAction):
     scheduler_name: Optional[str] = None
     action_name: Optional[str] = None
-    expire_on: Optional[datetime] = None
+    expire_on: Optional[DateTime] = None
     expire_action: str = "expire_action"
 
     def description(self):
@@ -194,14 +212,27 @@ class ExpireAction(DispatcherAction):
 
     def execute(self, tag: str = None, data: dict = None):
         # gather all of the args that can participate
-        args = {
+        args: Dict[str, Any] = {
             "scheduler_name": self.scheduler_name,
             "action_name": self.action_name,
             "expire_on": self.expire_on,
         }
         args = self.compute_args(args, data)
-        DispatcherHooks.expire_action(**args)
-        result = f"action ({args['action_name']}) using scheduler ({args['scheduler_name']}) expiring on ({args['expire_on']})"
+        scheduler_name = args["scheduler_name"]
+        if not scheduler_name:
+            raise ValueError("scheduler name missing")
+        action_name = args["action_name"]
+        if not action_name:
+            raise ValueError("action name missing")
+        expire_on = args["expire_on"]
+        if not expire_on:
+            raise ValueError("expire_on missing")
+        DispatcherHooks.expire_action(
+            scheduler_name=scheduler_name,
+            action_name=action_name,
+            expire_on=expire_on.dt,
+        )
+        result = f"action ({action_name}) using scheduler ({scheduler_name}) expiring on ({expire_on})"
         return self.action_result(result=result, data=data, extra=args)
 
 
@@ -247,7 +278,7 @@ class Exec(DispatcherAction):
         server_name = args["server_name"]
         action_name = args["action_name"]
         if not action_name:
-            raise NameError(f"action name missing")
+            raise ValueError(f"action name missing")
         host = None
         port = None
         if server_name:
@@ -301,7 +332,7 @@ class ExecKeyTags(DispatcherAction):
         args = self.compute_args(args, data)
         action_name = args["action_name"]
         if not action_name:
-            raise NameError(f"action name missing")
+            raise ValueError(f"action name missing")
         key_tags = args["key_tags"]
         key_tag_mode = args["key_tag_mode"]
 
@@ -369,7 +400,7 @@ class ExecSupplied(DispatcherAction):
         server_name = args["server_name"]
         action = args["action"]
         if not action:
-            raise NameError(f"action missing")
+            raise ValueError(f"action missing")
         host = None
         port = None
         if server_name:
@@ -422,7 +453,7 @@ class ExecSuppliedKeyTags(DispatcherAction):
         args = self.compute_args(args, data)
         action = args["action"]
         if not action:
-            raise NameError(f"action missing")
+            raise ValueError(f"action missing")
         key_tags = args["key_tags"]
         key_tag_mode = args["key_tag_mode"]
 

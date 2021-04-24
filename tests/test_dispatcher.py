@@ -539,7 +539,9 @@ def test_defer_action_action(friends):
     assert 0 == dispatcher.get_scheduled_action_count()
 
     defer_action = DeferAction(
-        scheduler_name="bar", action_name="foo", wait_until=util.Now.dt()
+        scheduler_name="bar",
+        action_name="foo",
+        wait_until=util.DateTime(dt=util.Now.dt()),
     )
     defer_action.execute()
 
@@ -604,7 +606,7 @@ def test_expire_action_action(friends):
     expire_action = ExpireAction(
         scheduler_name="bar",
         action_name="foo",
-        expire_on=util.Now.dt() + timedelta(seconds=2),
+        expire_on=util.DateTime(dt=util.Now.dt() + timedelta(seconds=2)),
     )
     expire_action.execute()
 

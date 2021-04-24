@@ -73,7 +73,7 @@ class Client(BaseModel):
     # /execution
 
     def execute_supplied_action(self, supplied_action: Action):
-        return self.http().post(f"/execution/", supplied_action)
+        return self.http().post(f"/execution", supplied_action)
 
     def execute_supplied_action_with_data(self, supplied_action: Action, data: dict):
         composite = {"supplied_action_as_dict": supplied_action.dict(), "data": data}
@@ -160,8 +160,8 @@ class Client(BaseModel):
     def delete_program(self, program_name: str):
         return self.http().delete(f"/programs/{program_name}")
 
-    def schedule_program(self, program_name: str, datetime2: DateTime2):
-        return self.http().post(f"/programs/{program_name}/schedule", datetime2)
+    def schedule_program(self, program_name: str, start_stop: DateTime2):
+        return self.http().post(f"/programs/{program_name}/schedule", start_stop)
 
     def unschedule_program(self, program_name: str):
         return self.http().get(f"/programs/{program_name}/unschedule")

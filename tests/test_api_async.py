@@ -9,7 +9,7 @@ import pytest
 import json
 from pydantic import BaseModel
 from httpx import AsyncClient
-from datetime import timedelta, datetime
+from datetime import timedelta
 from whendo.core.action import Action
 import whendo.core.actions.file_action as file_x
 import whendo.core.actions.dispatch_action as disp_x
@@ -355,8 +355,9 @@ async def test_clear_all_scheduling(startup_and_shutdown_uvicorn, base_url, tmp_
     await schedule_program(
         base_url=base_url,
         program_name="blink",
-        start=Now.dt() + timedelta(seconds=10),
-        stop=Now.dt() + timedelta(seconds=15),
+        start_stop=DateTime2(
+            dt1=Now.dt() + timedelta(seconds=10), dt2=Now.dt() + timedelta(seconds=15)
+        ),
     )
     await assert_job_count(base_url=base_url, n=1)
     await assert_scheduled_action_count(base_url=base_url, n=1)
@@ -718,11 +719,8 @@ async def test_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
     program = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
     await add_program(base_url=base_url, program_name="baz", program=program)
-    start = Now().dt()
-    stop = start + timedelta(seconds=4)
-    await schedule_program(
-        base_url=base_url, program_name="baz", start=start, stop=stop
-    )
+    start_stop = DateTime2(dt1=Now().dt(), dt2=Now().dt() + timedelta(seconds=4))
+    await schedule_program(base_url=base_url, program_name="baz", start_stop=start_stop)
 
     # action1,2,3 doing their things
     await run_and_stop_jobs(base_url=base_url, pause=6)
@@ -766,13 +764,12 @@ async def test_unschedule_program(startup_and_shutdown_uvicorn, base_url, tmp_pa
 
     program = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
     await add_program(base_url=base_url, program_name="baz", program=program)
-    start = Now().dt()
-    stop = start + timedelta(seconds=4)
-    await schedule_program(
-        base_url=base_url, program_name="baz", start=start, stop=stop
-    )
+    start = Now.dt() + timedelta(seconds=2)
+    stop = start + timedelta(seconds=2)
+    start_stop = DateTime2(dt1=start, dt2=stop)
 
-    await assert_scheduled_action_count(base_url=base_url, n=0)
+    await schedule_program(base_url=base_url, program_name="baz", start_stop=start_stop)
+    time.sleep(1)
     await assert_deferred_program_count(base_url=base_url, n=1)
     await unschedule_program(base_url=base_url, program_name="baz")
     await assert_deferred_program_count(base_url=base_url, n=0)
@@ -816,11 +813,8 @@ async def test_delete_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
     program = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
     await add_program(base_url=base_url, program_name="baz", program=program)
-    start = Now().dt()
-    stop = start + timedelta(seconds=4)
-    await schedule_program(
-        base_url=base_url, program_name="baz", start=start, stop=stop
-    )
+    start_stop = DateTime2(dt1=Now().dt(), dt2=Now().dt() + timedelta(seconds=4))
+    await schedule_program(base_url=base_url, program_name="baz", start_stop=start_stop)
 
     await assert_deferred_program_count(base_url=base_url, n=1)
     await assert_scheduled_action_count(base_url=base_url, n=0)
@@ -1208,13 +1202,10 @@ async def set_program(base_url: str, program_name: str, program: Action):
     assert isinstance(retrieved_program, Program), str(type(retrieved_program))
 
 
-async def schedule_program(
-    base_url: str, program_name: str, start: datetime, stop: datetime
-):
+async def schedule_program(base_url: str, program_name: str, start_stop: DateTime2):
     """ schedule a program """
-    datetime2 = DateTime2(dt1=start, dt2=stop)
     response = await post(
-        base_url=base_url, path=f"/programs/{program_name}/schedule", data=datetime2
+        base_url=base_url, path=f"/programs/{program_name}/schedule", data=start_stop
     )
     assert response.status_code == 200, f"failed to schedule program ({program_name})"
 

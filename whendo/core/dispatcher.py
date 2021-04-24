@@ -20,7 +20,6 @@ from .util import (
     Now,
     str_to_dt,
     dt_to_str,
-    DateTime2,
     Http,
     SystemInfo,
     KeyTagMode,

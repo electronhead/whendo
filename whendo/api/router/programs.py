@@ -76,12 +76,10 @@ def describe_program(program_name: str):
 
 
 @router.post("/{program_name}/schedule", status_code=status.HTTP_200_OK)
-def schedule_program(program_name: str, datetime2: DateTime2):
+def schedule_program(program_name: str, start_stop: DateTime2):
     try:
-        dt1 = datetime2.dt1
-        dt2 = datetime2.dt2
         get_dispatcher(router).schedule_program(
-            program_name=program_name, start=dt1, stop=dt2
+            program_name=program_name, start=start_stop.dt1, stop=start_stop.dt2
         )
         return return_success(f"program ({program_name}) was successfully scheduled")
     except Exception as e:

@@ -272,7 +272,7 @@ async def test_clear_all_scheduling(startup_and_shutdown_uvicorn, host, port, tm
     await schedule_program(
         client=client,
         program_name="blink",
-        datetime2=DateTime2(
+        start_stop=DateTime2(
             dt1=Now.dt() + timedelta(seconds=10), dt2=Now.dt() + timedelta(seconds=15)
         ),
     )
@@ -643,8 +643,8 @@ async def test_program(startup_and_shutdown_uvicorn, host, port, tmp_path):
     await add_program(client=client, program_name="baz", program=program)
     start = Now().dt()
     stop = start + timedelta(seconds=4)
-    datetime2 = DateTime2(dt1=start, dt2=stop)
-    await schedule_program(client=client, program_name="baz", datetime2=datetime2)
+    start_stop = DateTime2(dt1=start, dt2=stop)
+    await schedule_program(client=client, program_name="baz", start_stop=start_stop)
 
     # action1,2,3 doing their things
     await run_and_stop_jobs(client=client, pause=6)
@@ -691,8 +691,8 @@ async def test_unschedule_program(startup_and_shutdown_uvicorn, host, port, tmp_
     await add_program(client=client, program_name="baz", program=program)
     start = Now().dt()
     stop = start + timedelta(seconds=4)
-    datetime2 = DateTime2(dt1=start, dt2=stop)
-    await schedule_program(client=client, program_name="baz", datetime2=datetime2)
+    start_stop = DateTime2(dt1=start, dt2=stop)
+    await schedule_program(client=client, program_name="baz", start_stop=start_stop)
 
     await assert_deferred_program_count(client=client, n=1)
     await assert_scheduled_action_count(client=client, n=0)
@@ -743,8 +743,8 @@ async def test_delete_program(startup_and_shutdown_uvicorn, host, port, tmp_path
     now = Now().dt()
     start = now + timedelta(seconds=2)
     stop = start + timedelta(seconds=2)
-    datetime2 = DateTime2(dt1=start, dt2=stop)
-    await schedule_program(client=client, program_name="baz", datetime2=datetime2)
+    start_stop = DateTime2(dt1=start, dt2=stop)
+    await schedule_program(client=client, program_name="baz", start_stop=start_stop)
 
     await assert_deferred_program_count(client=client, n=1)
     await assert_scheduled_action_count(client=client, n=0)
@@ -1022,11 +1022,11 @@ async def delete_program(client: ClientAsync, program_name: str):
 
 
 async def schedule_program(
-    client: ClientAsync, program_name: str, datetime2: DateTime2
+    client: ClientAsync, program_name: str, start_stop: DateTime2
 ):
     """ schedule an program """
     response = await client.schedule_program(
-        program_name=program_name, datetime2=datetime2
+        program_name=program_name, start_stop=start_stop
     )
     assert response.status_code == 200, f"failed to schedule program ({program_name})"
 
