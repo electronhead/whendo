@@ -2,7 +2,7 @@ from pydantic import BaseModel, PrivateAttr
 import requests
 import logging
 from typing import Optional
-from whendo.core.action import Action
+from whendo.core.action import Action, ActionData
 from whendo.core.scheduler import Scheduler
 from whendo.core.server import Server
 from whendo.core.resolver import (
@@ -76,8 +76,8 @@ class Client(BaseModel):
         return self.http().post(f"/execution", supplied_action)
 
     def execute_supplied_action_with_data(self, supplied_action: Action, data: dict):
-        composite = {"supplied_action_as_dict": supplied_action.dict(), "data": data}
-        return self.http().post_dict(f"/execution/with_data", composite)
+        action_data = ActionData(action=supplied_action, data=data)
+        return self.http().post(f"/execution/with_data", action_data)
 
     # /actions
     def get_action(self, action_name: str):

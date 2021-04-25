@@ -60,3 +60,8 @@ class Action(BaseModel):
             if "result" in x:
                 return x["result"]
         return x
+
+
+class ActionData(Action):
+    action: Action
+    data: dict

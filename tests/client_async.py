@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 from httpx import AsyncClient
 import json
-from whendo.core.action import Action
+from whendo.core.action import Action, ActionData
 from whendo.core.scheduler import Scheduler
 from whendo.core.server import Server
 from whendo.core.resolver import (
@@ -65,8 +65,8 @@ class ClientAsync(BaseModel):
     async def execute_supplied_action_with_data(
         self, supplied_action: Action, data: dict
     ):
-        composite = {"supplied_action_as_dict": supplied_action.dict(), "data": data}
-        return await self.post_dict("/execution/with_data", composite)
+        action_data = ActionData(action=supplied_action, data=data)
+        return await self.post("/execution/with_data", action_data)
 
     # /actions
     async def get_action(self, action_name: str):

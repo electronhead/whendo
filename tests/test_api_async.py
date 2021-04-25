@@ -10,7 +10,7 @@ import json
 from pydantic import BaseModel
 from httpx import AsyncClient
 from datetime import timedelta
-from whendo.core.action import Action
+from whendo.core.action import Action, ActionData
 import whendo.core.actions.file_action as file_x
 import whendo.core.actions.dispatch_action as disp_x
 import whendo.core.actions.http_action as http_x
@@ -566,8 +566,8 @@ async def test_execute_supplied_action_with_data(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
     data = {"higher": "and higher"}
-    composite = {"supplied_action_as_dict": action.dict(), "data": data}
-    await post_dict(base_url, "/execution/with_data", composite)
+    action_data = ActionData(action=action, data=data)
+    await post(base_url, "/execution/with_data", action_data)
     time.sleep(4)
 
     lines = None

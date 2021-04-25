@@ -3,7 +3,7 @@ from enum import Enum
 from typing import Optional, Dict, Set, Any
 from whendo.core.util import Now, Http, KeyTagMode, DateTime2, DateTime
 from whendo.core.hooks import DispatcherHooks
-from whendo.core.action import Action
+from whendo.core.action import Action, ActionData
 
 
 logger = logging.getLogger(__name__)
@@ -416,9 +416,9 @@ class ExecSupplied(DispatcherAction):
                 # execute locally
                 result = action.execute(tag=tag, data=data)
             else:
-                composite = {"data": data, "supplied_action_as_dict": action.dict()}
-                result = Http(host=host, port=port).post_dict(
-                    f"/execution/with_data", composite
+                action_data = ActionData(action=action, data=data)
+                result = Http(host=host, port=port).post(
+                    f"/execution/with_data", action_data
                 )
         else:
             if host == self.local_host() and port == self.local_port():
@@ -473,10 +473,10 @@ class ExecSuppliedKeyTags(DispatcherAction):
                     # execute locally
                     result.append(action.execute(tag=tag, data=data))
                 else:
-                    composite = {"supplied_action_as_dict": action.dict(), "data": data}
+                    action_data = ActionData(action=action, data=data)
                     result.append(
-                        Http(host=server.host, port=server.port).post_dict(
-                            f"/execution/with_data", composite
+                        Http(host=server.host, port=server.port).post(
+                            f"/execution/with_data", action_data
                         )
                     )
         else:
