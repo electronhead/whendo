@@ -32,4 +32,4 @@ class FileAppend(Action):
             PP.pprint(flds["payload"], stream=outfile)
             outfile.write("\n")
         result = f"file ({flds['file']}) appended."
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})

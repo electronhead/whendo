@@ -17,7 +17,7 @@ def xtest_during_period():
         fleas: int
 
         def execute(self, tag: str = None, rez: Rez = None):
-            return Rez()
+            return self.action_result()
 
     action = TestAction(fleas=185000000)
 

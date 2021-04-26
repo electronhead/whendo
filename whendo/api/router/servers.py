@@ -1,5 +1,5 @@
 from fastapi import APIRouter, status, Depends
-from whendo.core.util import KeyTagMode
+from whendo.core.util import KeyTagMode, Rez
 from whendo.api.shared import return_success, raised_exception, get_dispatcher
 from whendo.core.resolver import resolve_server
 
@@ -111,13 +111,13 @@ def execute_on_server(server_name: str, action_name: str):
 
 
 @router.post(
-    "/{server_name}/actions/{action_name}/execute_with_data",
+    "/{server_name}/actions/{action_name}/execute_with_rez",
     status_code=status.HTTP_200_OK,
 )
-def execute_on_server_with_data(server_name: str, action_name: str, data: dict):
+def execute_on_server_with_rez(server_name: str, action_name: str, rez: Rez):
     try:
-        return get_dispatcher(router).execute_on_server_with_data(
-            server_name=server_name, action_name=action_name, data=data
+        return get_dispatcher(router).execute_on_server_with_rez(
+            server_name=server_name, action_name=action_name, rez=rez
         )
     except Exception as e:
         raise raised_exception(
@@ -142,18 +142,18 @@ def execute_on_servers(action_name: str, mode: str, key_tags: dict):
 
 
 @router.post(
-    "/by_tags/{mode}/actions/{action_name}/execute_with_data",
+    "/by_tags/{mode}/actions/{action_name}/execute_with_rez",
     status_code=status.HTTP_200_OK,
 )
-def execute_on_servers_with_data(
-    action_name: str, mode: str, key_tags: dict, data: dict
+def execute_on_servers_with_rez(
+    action_name: str, mode: str, key_tags: dict, rez: Rez
 ):
     try:
-        return get_dispatcher(router).execute_on_servers_with_data(
+        return get_dispatcher(router).execute_on_servers_with_rez(
             action_name=action_name,
             key_tags=key_tags,
             key_tag_mode=KeyTagMode(mode),
-            data=data,
+            rez=rez,
         )
     except Exception as e:
         raise raised_exception(

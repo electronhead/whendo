@@ -11,7 +11,7 @@ import socket
 import requests
 import json
 from datetime import datetime, timedelta, time
-from typing import Callable
+from typing import Callable, Optional
 import os
 from pathlib import Path
 from pydantic import BaseModel
@@ -543,3 +543,20 @@ class Http(BaseModel):
 class ModelModel(BaseModel):
     m1: BaseModel
     m2: BaseModel
+    
+class ModelDict(BaseModel):
+    m: BaseModel
+    d: dict
+    
+class RezDict(BaseModel):
+    r: BaseModel # really a Rez
+    d: dict
+
+class Rez(BaseModel):
+    result: Any = None
+    flds: Dict[str, Any] = {}
+    rez: Optional[
+        BaseModel
+    ] = None  # actually a Rez -- cannot define self-referencing classes
+    extra: Optional[Dict[str, Any]] = None
+    info: Optional[Dict[str, Any]] = None

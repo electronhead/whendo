@@ -25,7 +25,7 @@ from .util import (
     KeyTagMode,
 )
 from .hooks import DispatcherHooks
-from .action import Action
+from .action import Action, Rez
 from .program import Program, ProgramItem
 from .scheduler import Scheduler, TimedScheduler, ThresholdScheduler, Immediately
 from .timed import Timed
@@ -355,20 +355,20 @@ class Dispatcher(BaseModel):
             self.check_action_name(action_name)
             return self.get_action(action_name).execute()
 
-    def execute_action_with_data(self, action_name: str, data: dict):
+    def execute_action_with_rez(self, action_name: str, rez: Rez):
         with Lok.lock:
             self.check_action_name(action_name)
-            return self.get_action(action_name).execute(data=data)
+            return self.get_action(action_name).execute(rez=rez)
 
     def execute_supplied_action(self, supplied_action: Action):
         with Lok.lock:
             return supplied_action.execute()
 
-    def execute_supplied_action_with_data(self, supplied_action: Action, data: dict):
+    def execute_supplied_action_with_rez(self, supplied_action: Action, rez: Rez):
         with Lok.lock:
-            result = supplied_action.execute(data=data)
+            result = supplied_action.execute(rez=rez)
             print(
-                f"DISPATCHER.execute_supplied_action_with_data:: result({result}) supplied_action ({supplied_action})"
+                f"DISPATCHER.execute_supplied_action_with_rez:: result({result}) supplied_action ({supplied_action})"
             )
             return result
 
@@ -642,18 +642,18 @@ class Dispatcher(BaseModel):
                 f"/actions/{action_name}/execute"
             )
 
-    def execute_on_server_with_data(
-        self, server_name: str, action_name: str, data: dict
+    def execute_on_server_with_rez(
+        self, server_name: str, action_name: str, rez: Rez
     ):
         server = self.get_server(server_name=server_name)
         if (
             server.host == SystemInfo.get()["host"]
             and server.port == SystemInfo.get()["port"]
         ):
-            return self.execute_action_with_data(action_name=action_name, data=data)
+            return self.execute_action_with_rez(action_name=action_name, rez=rez)
         else:
-            return Http(host=server.host, port=server.port).post_dict(
-                f"/actions/{action_name}/execute", data
+            return Http(host=server.host, port=server.port).post(
+                f"/actions/{action_name}/execute", rez
             )
 
     def execute_on_servers(
@@ -676,12 +676,12 @@ class Dispatcher(BaseModel):
                 )
         return result
 
-    def execute_on_servers_with_data(
+    def execute_on_servers_with_rez(
         self,
         action_name: str,
         key_tags: Dict[str, List[str]],
         key_tag_mode: KeyTagMode,
-        data: dict,
+        rez: Rez,
     ):
         result = []
         for server in self.get_servers_by_tags(
@@ -692,12 +692,12 @@ class Dispatcher(BaseModel):
                 and server.port == SystemInfo.get()["port"]
             ):
                 result.append(
-                    self.execute_action_with_data(action_name=action_name, data=data)
+                    self.execute_action_with_rez(action_name=action_name, rez=rez)
                 )
             else:
                 result.append(
-                    Http(host=server.host, port=server.port).post_dict(
-                        f"/actions/{action_name}/execute", data
+                    Http(host=server.host, port=server.port).post(
+                        f"/actions/{action_name}/execute", rez
                     )
                 )
         return result

@@ -12,7 +12,7 @@ from whendo.core.resolver import (
     resolve_program,
     resolve_server,
 )
-from whendo.core.util import FilePathe, DateTime, Http, DateTime2
+from whendo.core.util import FilePathe, DateTime, Http, DateTime2, Rez, RezDict
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 
@@ -75,9 +75,9 @@ class Client(BaseModel):
     def execute_supplied_action(self, supplied_action: Action):
         return self.http().post(f"/execution", supplied_action)
 
-    def execute_supplied_action_with_data(self, supplied_action: Action, rez: Rez):
+    def execute_supplied_action_with_rez(self, supplied_action: Action, rez: Rez):
         action_rez = ActionRez(action=supplied_action, rez=rez)
-        return self.http().post(f"/execution/with_data", action_rez)
+        return self.http().post(f"/execution/with_rez", action_rez)
 
     # /actions
     def get_action(self, action_name: str):
@@ -98,8 +98,8 @@ class Client(BaseModel):
     def execute_action(self, action_name: str):
         return self.http().get(f"/actions/{action_name}/execute")
 
-    def execute_action_with_data(self, action_name: str, data: dict):
-        return self.http().post_dict(f"/actions/{action_name}/execute", data)
+    def execute_action_with_rez(self, action_name: str, rez:Rez):
+        return self.http().post(f"/actions/{action_name}/execute", rez)
 
     # /schedulers
 
@@ -202,11 +202,11 @@ class Client(BaseModel):
     def execute_on_server(self, server_name: str, action_name: str):
         return self.http().get(f"/servers/{server_name}/actions/{action_name}/execute")
 
-    def execute_on_server_with_data(
-        self, server_name: str, action_name: str, data: dict
+    def execute_on_server_with_rez(
+        self, server_name: str, action_name: str, rez:Rez
     ):
-        return self.http().post_dict(
-            f"/servers/{server_name}/actions/{action_name}/execute", data
+        return self.http().post(
+            f"/servers/{server_name}/actions/{action_name}/execute", rez
         )
 
     def execute_on_servers(self, mode: str, action_name: str, key_tags: dict):
@@ -214,13 +214,13 @@ class Client(BaseModel):
             f"/servers/by_tags/{mode}/actions/{action_name}/execute", key_tags
         )
 
-    def execute_on_servers_with_data(
-        self, mode: str, action_name: str, key_tags: dict, data: dict
+    def execute_on_servers_with_rez(
+        self, mode: str, action_name: str, key_tags: dict, rez:Rez
     ):
-        composite = {"key_tags": key_tags, "data": data}
-        return self.http().post_dict(
-            f"/servers/by_tags/{mode}/actions/{action_name}/execute_with_data",
-            composite,
+        rez_dict = RezDict(r=rez, d=key_tags)
+        return self.http().post(
+            f"/servers/by_tags/{mode}/actions/{action_name}/execute_with_rez",
+            rez_dict,
         )
 
     # deferrals and expirations

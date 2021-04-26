@@ -22,7 +22,7 @@ from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 from whendo.core.programs.simple_program import PBEProgram
 from whendo.core.server import Server, KeyTagMode
-from whendo.core.util import FilePathe, resolve_instance, DateTime, Now, Http, DateTime2
+from whendo.core.util import FilePathe, resolve_instance, DateTime, Now, Http, DateTime2, Rez
 from whendo.core.resolver import (
     resolve_action,
     resolve_scheduler,
@@ -434,7 +434,7 @@ async def test_execute_action(startup_and_shutdown_uvicorn, host, port, tmp_path
 
 
 @pytest.mark.asyncio
-async def test_execute_action_with_data(
+async def test_execute_action_with_rez(
     startup_and_shutdown_uvicorn, host, port, tmp_path
 ):
     """ execute an action at a host/port """
@@ -445,7 +445,7 @@ async def test_execute_action_with_data(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
     await add_action(client=client, action_name="foo", action=action)
-    await execute_action_with_data(client, "foo", data={"fleas": "abound"})
+    await execute_action_with_rez(client, "foo", rez=Rez(result={"fleas": "abound"}))
 
     lines = None
     with open(action.file, "r") as fid:
@@ -475,18 +475,17 @@ async def test_execute_supplied_action(
 
 
 @pytest.mark.asyncio
-async def test_execute_supplied_action_with_data(
+async def test_execute_supplied_action_with_rez(
     startup_and_shutdown_uvicorn, host, port, tmp_path
 ):
-    """ execute a supplied action with data"""
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
     action = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
-    data = {"higher": "and higher"}
-    await client.execute_supplied_action_with_data(supplied_action=action, data=data)
+    rez = Rez(result={"higher": "and higher"})
+    await client.execute_supplied_action_with_rez(supplied_action=action, rez=rez)
     time.sleep(2)
 
     lines = None
@@ -772,13 +771,13 @@ async def test_success(startup_and_shutdown_uvicorn, host, port, tmp_path):
 
     action = Success()
     await add_action(client=client, action_name="success", action=action)
-    data = {"fleas": "unite!"}
+    rez = Rez(result={"fleas": "unite!"})
 
-    result = await execute_action_with_data(
-        client=client, action_name="success", data=data
+    result = await execute_action_with_rez(
+        client=client, action_name="success", rez=rez
     )
 
-    assert result["result"] == data
+    assert result.result == rez.result
 
 
 @pytest.mark.asyncio
@@ -808,7 +807,6 @@ async def test_file_append_1(startup_and_shutdown_uvicorn, host, port, tmp_path)
 
 @pytest.mark.asyncio
 async def test_file_append_2(startup_and_shutdown_uvicorn, host, port, tmp_path):
-    """ test use of execute <data> argument """
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
@@ -837,7 +835,6 @@ async def test_file_append_2(startup_and_shutdown_uvicorn, host, port, tmp_path)
 async def test_file_append_execute_action(
     startup_and_shutdown_uvicorn, tmp_path, host, port
 ):
-    """ test use of execute <data> argument """
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
@@ -873,7 +870,6 @@ async def test_file_append_execute_action(
 async def test_file_append_execute_supplied_action(
     startup_and_shutdown_uvicorn, tmp_path, host, port
 ):
-    """ test use of execute <data> argument """
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
@@ -909,7 +905,6 @@ async def test_file_append_execute_supplied_action(
 async def test_file_append_execute_action_key_tag(
     startup_and_shutdown_uvicorn, tmp_path, host, port
 ):
-    """ test use of execute <data> argument """
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
@@ -948,7 +943,6 @@ async def test_file_append_execute_action_key_tag(
 async def test_file_append_execute_supplied_action_key_tag(
     startup_and_shutdown_uvicorn, tmp_path, host, port
 ):
-    """ test use of execute <data> argument """
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
@@ -1088,11 +1082,11 @@ async def execute_action(client: ClientAsync, action_name: str):
     assert response.status_code == 200, f"failed to execute action ({action_name})"
 
 
-async def execute_action_with_data(client: ClientAsync, action_name: str, data: dict):
-    response = await client.execute_action_with_data(action_name=action_name, data=data)
+async def execute_action_with_rez(client: ClientAsync, action_name: str, rez: Rez):
+    response = await client.execute_action_with_rez(action_name=action_name, rez=rez)
     assert (
         response.status_code == 200
-    ), f"failed to execute action ({action_name}) with data ({data})"
+    ), f"failed to execute action ({action_name}) with rez ({rez})"
     return response.json()
 
 

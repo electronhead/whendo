@@ -90,7 +90,7 @@ def test_file_action(tmp_path):
             path = tmp_path / "test.txt"
             with path.open(mode="a") as fid:
                 fid.write("blee\n")
-            return Rez()
+            return self.action_result()
 
     class Suite:
         def __init__(self, action):

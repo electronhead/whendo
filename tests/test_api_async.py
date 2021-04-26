@@ -514,7 +514,7 @@ async def test_execute_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
 
 @pytest.mark.asyncio
-async def test_execute_action_with_data(
+async def test_execute_action_with_rez(
     startup_and_shutdown_uvicorn, base_url, tmp_path
 ):
     """ execute an action at a host/port """
@@ -525,8 +525,8 @@ async def test_execute_action_with_data(
     )
     await add_action(base_url=base_url, action_name="foo", action=action)
 
-    await execute_action_with_data(
-        base_url=base_url, action_name="foo", data={"fleas": "abound"}
+    await execute_action_with_rez(
+        base_url=base_url, action_name="foo", rez=Rez(result={"fleas": "abound"})
     )
 
     lines = None
@@ -556,7 +556,7 @@ async def test_execute_supplied_action(
 
 
 @pytest.mark.asyncio
-async def test_execute_supplied_action_with_data(
+async def test_execute_supplied_action_with_rez(
     startup_and_shutdown_uvicorn, base_url, tmp_path
 ):
     """ execute a supplied action """
@@ -565,9 +565,9 @@ async def test_execute_supplied_action_with_data(
     action = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
-    data = {"higher": "and higher"}
+    rez = Rez(result={"higher": "and higher"})
     action_rez = ActionRez(action=action, rez=rez)
-    await post(base_url, "/execution/with_data", action_rez)
+    await post(base_url, "/execution/with_rez", action_rez)
     time.sleep(4)
 
     lines = None
@@ -841,12 +841,12 @@ async def test_success(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
     action = Success()
     await add_action(base_url=base_url, action_name="success", action=action)
-    data = {"fleas": "unite!"}
+    rez = Rez(result={"fleas": "unite!"})
 
-    result = await execute_action_with_data(
-        base_url=base_url, action_name="success", data=data
+    result = await execute_action_with_rez(
+        base_url=base_url, action_name="success", rez=rez
     )
-    assert result["result"] == data
+    assert result.result = rez
 
 
 @pytest.mark.asyncio
@@ -855,7 +855,6 @@ async def test_file_append_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await reset_dispatcher(base_url, str(tmp_path))
 
     action = file_x.FileAppend(
-        # mode="P",
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
         payload={"free": "pyrambium"},
@@ -876,11 +875,9 @@ async def test_file_append_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
 @pytest.mark.asyncio
 async def test_file_append_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
-    """ test use of execute <data> argument """
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = file_x.FileAppend(
-        # mode = "D",
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
         payload={"hi": "pyrambium"},
@@ -905,7 +902,6 @@ async def test_file_append_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
 async def test_file_append_execute_action(
     startup_and_shutdown_uvicorn, base_url, tmp_path, host, port
 ):
-    """ test use of execute <data> argument """
     await reset_dispatcher(base_url, str(tmp_path))
 
     server = Server(host=host, port=port, tags={"role": ["pivot"]})
@@ -943,7 +939,6 @@ async def test_file_append_execute_action(
 async def test_file_append_execute_supplied_action(
     startup_and_shutdown_uvicorn, base_url, tmp_path, host, port
 ):
-    """ test use of execute <data> argument """
     await reset_dispatcher(base_url, str(tmp_path))
 
     server = Server(host=host, port=port, tags={"role": ["pivot"]})
@@ -981,7 +976,6 @@ async def test_file_append_execute_supplied_action(
 async def test_file_append_execute_action_key_tags(
     startup_and_shutdown_uvicorn, base_url, tmp_path, host, port
 ):
-    """ test use of execute <data> argument """
     await reset_dispatcher(base_url, str(tmp_path))
 
     server = Server(host=host, port=port, tags={"role": ["pivot"]})
@@ -1021,7 +1015,6 @@ async def test_file_append_execute_action_key_tags(
 async def test_file_append_execute_action_key_tags(
     startup_and_shutdown_uvicorn, base_url, tmp_path, host, port
 ):
-    """ test use of execute <data> argument """
     await reset_dispatcher(base_url, str(tmp_path))
 
     server = Server(host=host, port=port, tags={"role": ["pivot"]})
@@ -1080,18 +1073,18 @@ async def execute_action(base_url: str, action_name: str):
     assert response.status_code == 200, f"failed to execute action ({action_name})"
 
 
-async def execute_action_with_data(base_url: str, action_name: str, data: dict):
+async def execute_action_with_rez(base_url: str, action_name: str, rez: Rez):
     """ make sure action exists and resolves properly """
     response = await get(base_url, path=f"/actions/{action_name}")
     assert response.status_code == 200, f"failed to get action ({action_name})"
     retrieved_action = resolve_action(response.json())
     assert isinstance(retrieved_action, Action), str(type(retrieved_action))
-    response = await post_dict(
-        base_url, path=f"/actions/{action_name}/execute", data=data
+    response = await post(
+        base_url, path=f"/actions/{action_name}/execute", rez=rez
     )
     assert (
         response.status_code == 200
-    ), f"failed to execute action ({action_name}) with data ({data}) with response ({response.json()})"
+    ), f"failed to execute action ({action_name}) with rez ({rez}) with response ({response.json()})"
     return response.json()
 
 

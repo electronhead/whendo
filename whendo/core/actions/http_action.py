@@ -24,4 +24,4 @@ class SendPayload(Action):
         if response.status_code != requests.codes.ok:
             raise Exception(response)
         result = f"payload ({flds['payload']} sent to url ({flds['url']})"
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})

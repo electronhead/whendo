@@ -48,7 +48,7 @@ def test_not_1():
 def test_not_2():
     class Action1(Action):
         def execute(self, tag: str = None, rez: Rez = None):
-            return Rez()
+            return self.action_result()
 
     action1 = Action1()
     action2 = negate(action1)
@@ -204,12 +204,12 @@ def test_if_else_action_else_1():
     class Action2(Action):
         def execute(self, tag: str = None, rez: Rez = None):
             dictionary["value"] = self.__class__
-            return Rez()
+            return self.action_result()
 
     class Action3(Action):
         def execute(self, tag: str = None, rez: Rez = None):
             dictionary["value"] = self.__class__
-            return Rez()
+            return self.action_result()
 
     if_else_action = list_x.IfElse(
         test_action=Action1(),
@@ -237,7 +237,7 @@ def test_if_else_action_else_2():
     class Action2(Action):
         def execute(self, tag: str = None, rez: Rez = None):
             dictionary["value"] = self.__class__
-            return Rez()
+            return self.action_result()
 
     if_else_action = list_x.IfElse(
         test_action=Action1(),
@@ -259,12 +259,12 @@ def test_if_else_action_else_3():
     class Action1(Action):
         def execute(self, tag: str = None, rez: Rez = None):
             dictionary["value"] = self.__class__
-            return Rez()
+            return self.action_result()
 
     class Action2(Action):
         def execute(self, tag: str = None, rez: Rez = None):
             dictionary["value"] = self.__class__
-            return Rez()
+            return self.action_result()
 
     if_else_action = list_x.IfElse(
         test_action=Action1(),
@@ -281,17 +281,17 @@ def test_if_else_action_4():
     class Action1(Action):
         def execute(self, tag: str = None, rez: Rez = None):
             dictionary["value"] = self.__class__
-            return Rez()
+            return self.action_result()
 
     class Action2(Action):
         def execute(self, tag: str = None, rez: Rez = None):
             dictionary["value"] = self.__class__
-            return Rez()
+            return self.action_result()
 
     class Action3(Action):
         def execute(self, tag: str = None, rez: Rez = None):
             dictionary["value"] = self.__class__
-            return Rez()
+            return self.action_result()
 
     if_else_action = list_x.IfElse(
         test_action=Action1(),
@@ -387,7 +387,7 @@ def test_terminate():
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.flea_count += 1
-            return Rez(result=self.flea_count)
+            return self.action_result(result=self.flea_count)
 
     action1 = FleaCount(flea_count=0)
     action2 = FleaCount(flea_count=0)
@@ -464,5 +464,5 @@ class Add1(Action):
     def execute(self, tag: str = None, rez: Rez = None):
         if rez:
             if isinstance(rez.result, int) or isinstance(rez.result, float):
-                return Rez(result=rez.result+1)
-        return Rez(result=1)
+                return self.action_result(result=rez.result+1)
+        return self.action_result(result=1)

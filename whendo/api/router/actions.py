@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, Depends
 from whendo.api.shared import return_success, raised_exception, get_dispatcher
 from whendo.core.resolver import resolve_action
+from whendo.core.util import Rez
 
 router = APIRouter(prefix="/actions", tags=["Actions"])
 
@@ -72,25 +73,25 @@ def execute_action(action_name: str):
 
 
 @router.post("/{action_name}/execute", status_code=status.HTTP_200_OK)
-def execute_action_with_data(action_name: str, data: dict):
+def execute_action_with_rez(action_name: str, rez: Rez):
     """
     Two potential types of exceptions below. One resulting from the actual execute_action call and
     the other returned from the execution of the action itself.
     """
     exception = None  # the action's exception if the action generated an exception
     try:
-        result = get_dispatcher(router).execute_action_with_data(
-            action_name=action_name, data=data
+        result = get_dispatcher(router).execute_action_with_rez(
+            action_name=action_name, rez=rez
         )
         if not isinstance(result, Exception):
             return result
         else:
             exception = raised_exception(
-                f"failed to execute action ({action_name}) with data ({data})", result
+                f"failed to execute action ({action_name}) with rez ({rez})", result
             )
     except Exception as e:  # from execute_action
         raise raised_exception(
-            f"failed to execute action ({action_name}) with data ({data})", e
+            f"failed to execute action ({action_name}) with rez ({rez})", e
         )
     if exception is not None:  # from the action
         raise exception

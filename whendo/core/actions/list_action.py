@@ -29,17 +29,21 @@ def processing_results(
 
 
 class Fields(Action):
-    fields: str = "fields"
+    """
+    flds in this object override supplied rez.flds.
+    """
+
+    _fields: str = "_fields"
     flds: Optional[dict] = None
 
     def description(self):
-        return f"This action returns ({self.flds})."
+        return f"This action adds ({self.flds}) to the field value flow."
 
     def execute(self, tag: str = None, rez: Rez = None):
         rez_flds = rez.flds.copy() if rez else {}
         rez_flds.update(self.compute_flds(rez=rez))
         result = f"fields ({rez_flds}) added to data flow"
-        return Rez(result=result, rez=rez, flds=rez_flds)
+        return self.action_result(result=rez.result if rez else None, rez=rez, flds=rez_flds)
 
 
 class RaiseIfEqual(Action):
@@ -64,8 +68,10 @@ class RaiseIfEqual(Action):
                 f"exception thrown because ({value}) == ({data_value}); info ({self.info()})"
             )
         else:
-            result = f"exception not thrown because ({value}) not equal to ({data_value}); info ({self.info()})"
-            return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+            result = (
+                f"exception not thrown because ({value}) not equal to ({data_value})"
+            )
+            return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class Terminate(Action):
@@ -123,7 +129,9 @@ class Fail(Action):
             operand_result = exception
         if isinstance(operand_result, Exception):
             extra = {"execption": str(operand_result)}
-            return Rez(result=True, rez=rez, flds=rez.flds if rez else {}, extra=extra)
+            return self.action_result(
+                result=True, rez=rez, flds=rez.flds if rez else {}, extra=extra
+            )
         else:
             raise Exception(
                 "exception generated; action execution treated as a failure",
@@ -185,7 +193,7 @@ class ListAction(Action):
                 json.dumps(processing_info),
             )
         extra = processing_info if flds["include_processing_info"] else None
-        return Rez(
+        return self.action_result(
             result=processing_info["result"],
             rez=rez,
             flds=rez.flds if rez else {},
@@ -266,7 +274,7 @@ def process_actions(
             exception_actions.append(exception_dict)
             if isinstance(exception, TerminateSchedulerException):
                 exception.value = processing_results(
-                    Rez(result=str(exception)),
+                    self.action_result(result=str(exception)),
                     processing_count,
                     success_count,
                     exception_count,
@@ -276,7 +284,9 @@ def process_actions(
                 raise exception
             if op_mode == ListOpMode.UNTIL_FAILURE:  # stop after first failure
                 break
-            loop_rez = Rez(result=exception_dict, rez=rez, flds=rez.flds if rez else {})
+            loop_rez = self.action_result(
+                result=exception_dict, rez=rez, flds=rez.flds if rez else {}
+            )
         else:
             success_count += 1
             successful_actions.append(action.dict())
@@ -386,7 +396,9 @@ class IfElse(Action):
                         exception_actions,
                     )
                     raise exception
-                rez = Rez(result=exception_dict, rez=rez, flds=rez.flds if rez else {})
+                rez = self.action_result(
+                    result=exception_dict, rez=rez, flds=rez.flds if rez else {}
+                )
             else:
                 success_count += 1
                 successful_actions.append(else_action.dict())
@@ -449,7 +461,7 @@ class IfElse(Action):
                 json.dumps(processing_info),
             )
         extra = processing_info if self.include_processing_info else None
-        return Rez(
+        return self.action_result(
             result=processing_info["result"],
             rez=rez,
             flds=rez.flds if rez else {},

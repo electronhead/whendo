@@ -18,7 +18,9 @@ class SysInfo(Action):
         return f"This action returns system-level information."
 
     def execute(self, tag: str = None, rez: Rez = None):
-        return Rez(result=util.SystemInfo.get(), rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(
+            result=util.SystemInfo.get(), rez=rez, flds=rez.flds if rez else {}
+        )
 
 
 class MiniInfo(Action):
@@ -32,7 +34,9 @@ class MiniInfo(Action):
         return f"This action returns terse local information."
 
     def execute(self, tag: str = None, rez: Rez = None):
-        return Rez(result=self.local_info(), rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(
+            result=self.local_info(), rez=rez, flds=rez.flds if rez else {}
+        )
 
 
 class Pause(Action):
@@ -51,7 +55,7 @@ class Pause(Action):
         flds = self.compute_flds(rez=rez)
         seconds = flds["seconds"]
         time.sleep(seconds)
-        return Rez(
+        return self.action_result(
             result=f"slept for ({seconds}) seconds",
             rez=rez,
             flds=rez.flds if rez else {},

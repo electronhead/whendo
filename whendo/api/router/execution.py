@@ -18,22 +18,20 @@ def execute_supplied_action(supplied_action=Depends(resolve_action)):
         )
 
 
-@router.post("/with_data", status_code=status.HTTP_200_OK)
-def execute_supplied_action_with_data(action_data=Depends(resolve_action)):
+@router.post("/with_rez", status_code=status.HTTP_200_OK)
+def execute_supplied_action_with_data(action_rez=Depends(resolve_action)):
     """
-    The supplied action needs to be passed as a dict since BaseModel instsances
-    can not be resolved inside a dictionary, which is required due to the multiple
-    objects being passed through the api.
+    The supplied action needs to be passed as an ActionRez
     """
     try:
-        assert action_data, f"couldn't resolve class for action_data ({action_data})"
-        action = action_data.action
-        data = action_data.data
-        return get_dispatcher(router).execute_supplied_action_with_data(
-            supplied_action=action, data=data
+        assert action_rez, f"couldn't resolve class for action_rez ({action_rez})"
+        action = action_rez.action
+        rez = action_rez.rez
+        return get_dispatcher(router).execute_supplied_action_with_rez(
+            supplied_action=action, rez=rez
         )
     except Exception as e:
         raise raised_exception(
-            f"failed to directly execute the action embedded in ({action_data})",
+            f"failed to directly execute the action embedded in ({action_rez})",
             e,
         )

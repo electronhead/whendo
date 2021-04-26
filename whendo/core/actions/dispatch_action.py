@@ -36,7 +36,7 @@ class ScheduleProgram(DispatcherAction):
             program_name=program_name, start=start_stop.dt1, stop=start_stop.dt2
         )
         result = f"program ({program_name}) scheduled, start_stop({start_stop})"
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class UnscheduleProgram(DispatcherAction):
@@ -50,7 +50,7 @@ class UnscheduleProgram(DispatcherAction):
         flds = self.compute_flds(rez=rez)
         DispatcherHooks.unschedule_program(**flds)
         result = f"program ({flds['program_name']}) unscheduled"
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class ScheduleAction(DispatcherAction):
@@ -65,7 +65,7 @@ class ScheduleAction(DispatcherAction):
         flds = self.compute_flds(rez=rez)
         DispatcherHooks.schedule_action(**flds)
         result = f"action ({flds['action_name']}) scheduled using scheduler ({flds['scheduler_name']})"
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class UnscheduleSchedulerAction(DispatcherAction):
@@ -80,7 +80,7 @@ class UnscheduleSchedulerAction(DispatcherAction):
         flds = self.compute_flds(rez=rez)
         DispatcherHooks.unschedule_scheduler_action(**flds)
         result = f"action ({flds['action_name']}) unscheduled from scheduler ({flds['scheduler_name']})"
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class UnscheduleScheduler(DispatcherAction):
@@ -94,7 +94,7 @@ class UnscheduleScheduler(DispatcherAction):
         flds = self.compute_flds(rez=rez)
         DispatcherHooks.unschedule_scheduler(**flds)
         result = f"scheduler ({flds['scheduler_name']}) unscheduled"
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class DeferAction(DispatcherAction):
@@ -124,7 +124,7 @@ class DeferAction(DispatcherAction):
         )
         result = f"action ({action_name}) using scheduler ({scheduler_name}) deferred until ({wait_until})"
 
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class ExpireAction(DispatcherAction):
@@ -153,7 +153,7 @@ class ExpireAction(DispatcherAction):
             expire_on=expire_on.dt,
         )
         result = f"action ({action_name}) using scheduler ({scheduler_name}) expiring on ({expire_on})"
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class ClearAllDeferredActions(DispatcherAction):
@@ -165,7 +165,7 @@ class ClearAllDeferredActions(DispatcherAction):
     def execute(self, tag: str = None, rez: Rez = None):
         DispatcherHooks.clear_all_deferred_actions()
         result = "All deferred scheduled actions removed."
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class ClearAllExpiringActions(DispatcherAction):
@@ -177,7 +177,7 @@ class ClearAllExpiringActions(DispatcherAction):
     def execute(self, tag: str = None, rez: Rez = None):
         DispatcherHooks.clear_all_expiring_actions()
         result = "All expiring scheduled actions removed."
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class Exec(DispatcherAction):
@@ -226,7 +226,7 @@ class Exec(DispatcherAction):
                 result = Http(host=server.host, port=server.port).get(
                     f"/actions/{action_name}/execute"
                 )
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class ExecKeyTags(DispatcherAction):
@@ -291,7 +291,7 @@ class ExecKeyTags(DispatcherAction):
                             f"/actions/{action_name}/execute"
                         )
                     )
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class ExecSupplied(DispatcherAction):
@@ -329,9 +329,9 @@ class ExecSupplied(DispatcherAction):
                 # execute locally
                 result = action.execute(tag=tag, rez=rez)
             else:
-                action_data = ActionRez(action=action, rez=rez)
+                action_rez = ActionRez(action=action, rez=rez)
                 result = Http(host=host, port=port).post(
-                    f"/execution/with_data", action_data
+                    f"/execution/with_rez", action_rez
                 )
         else:
             if host == self.local_host() and port == self.local_port():
@@ -341,7 +341,7 @@ class ExecSupplied(DispatcherAction):
                 result = Http(host=server.host, port=server.port).post(
                     f"/execution", action
                 )
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class ExecSuppliedKeyTags(DispatcherAction):
@@ -384,7 +384,7 @@ class ExecSuppliedKeyTags(DispatcherAction):
                     action_rez = ActionRez(action=action, rez=rez)
                     result.append(
                         Http(host=server.host, port=server.port).post(
-                            f"/execution/with_data", action_rez
+                            f"/execution/with_rez", action_rez
                         )
                     )
         else:
@@ -401,4 +401,4 @@ class ExecSuppliedKeyTags(DispatcherAction):
                             f"/execution", action
                         )
                     )
-        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})

@@ -1,9 +1,9 @@
 import pytest
 import time
 from datetime import timedelta
-import whendo.core.util as util
 from typing import Optional, Dict, Any
-from whendo.core.action import Action, Rez
+from whendo.core.util import Rez, SystemInfo, Now, KeyTagMode, DateTime, Rez
+from whendo.core.action import Action
 from whendo.core.server import Server
 from whendo.core.actions.list_action import (
     UntilFailure,
@@ -37,7 +37,7 @@ def test_server_all_1(friends, servers):
     aqua, teal = servers()
     dispatcher.add_server(server_name="aqua", server=aqua)
     dispatcher.add_server(server_name="teal", server=teal)
-    mode = util.KeyTagMode.ALL
+    mode = KeyTagMode.ALL
     result = dispatcher.get_servers_by_tags(
         key_tags={"foo": ["bar", "baz"]}, key_tag_mode=mode
     )
@@ -49,7 +49,7 @@ def test_server_all_2(friends, servers):
     aqua, teal = servers()
     dispatcher.add_server(server_name="aqua", server=aqua)
     dispatcher.add_server(server_name="teal", server=teal)
-    mode = util.KeyTagMode.ALL
+    mode = KeyTagMode.ALL
     result = dispatcher.get_servers_by_tags(
         key_tags={"foo": ["bar"]}, key_tag_mode=mode
     )
@@ -61,7 +61,7 @@ def test_server_all_3(friends, servers):
     aqua, teal = servers()
     dispatcher.add_server(server_name="aqua", server=aqua)
     dispatcher.add_server(server_name="teal", server=teal)
-    mode = util.KeyTagMode.ALL
+    mode = KeyTagMode.ALL
     result = dispatcher.get_servers_by_tags(key_tags={"foo": []}, key_tag_mode=mode)
     assert len(result) == 0
 
@@ -71,7 +71,7 @@ def test_server_all_4(friends, servers):
     aqua, teal = servers()
     dispatcher.add_server(server_name="aqua", server=aqua)
     dispatcher.add_server(server_name="teal", server=teal)
-    mode = util.KeyTagMode.ALL
+    mode = KeyTagMode.ALL
     result = dispatcher.get_servers_by_tags(
         key_tags={"foo": ["clasp"]}, key_tag_mode=mode
     )
@@ -83,7 +83,7 @@ def test_server_any_1(friends, servers):
     aqua, teal = servers()
     dispatcher.add_server(server_name="aqua", server=aqua)
     dispatcher.add_server(server_name="teal", server=teal)
-    mode = util.KeyTagMode.ANY
+    mode = KeyTagMode.ANY
     result = dispatcher.get_servers_by_tags(
         key_tags={"foo": ["bar", "baz"]}, key_tag_mode=mode
     )
@@ -95,7 +95,7 @@ def test_server_any_2(friends, servers):
     aqua, teal = servers()
     dispatcher.add_server(server_name="aqua", server=aqua)
     dispatcher.add_server(server_name="teal", server=teal)
-    mode = util.KeyTagMode.ANY
+    mode = KeyTagMode.ANY
     result = dispatcher.get_servers_by_tags(
         key_tags={"foo": ["bar"]}, key_tag_mode=mode
     )
@@ -107,7 +107,7 @@ def test_server_any_3(friends, servers):
     aqua, teal = servers()
     dispatcher.add_server(server_name="aqua", server=aqua)
     dispatcher.add_server(server_name="teal", server=teal)
-    mode = util.KeyTagMode.ANY
+    mode = KeyTagMode.ANY
     result = dispatcher.get_servers_by_tags(key_tags={"foo": []}, key_tag_mode=mode)
     assert len(result) == 0
 
@@ -117,7 +117,7 @@ def test_server_any_4(friends, servers):
     aqua, teal = servers()
     dispatcher.add_server(server_name="aqua", server=aqua)
     dispatcher.add_server(server_name="teal", server=teal)
-    mode = util.KeyTagMode.ANY
+    mode = KeyTagMode.ANY
     result = dispatcher.get_servers_by_tags(
         key_tags={"foo": ["clasp"]}, key_tag_mode=mode
     )
@@ -512,7 +512,7 @@ def test_defer_action(friends):
     assert 0 == dispatcher.get_scheduled_action_count()
 
     dispatcher.defer_action(
-        scheduler_name="bar", action_name="foo", wait_until=util.Now.dt()
+        scheduler_name="bar", action_name="foo", wait_until=Now.dt()
     )
 
     # deferred state -- can run jobs and actions will _not_ be executed
@@ -540,7 +540,7 @@ def test_defer_action_action(friends):
     defer_action = DeferAction(
         scheduler_name="bar",
         action_name="foo",
-        wait_until=util.DateTime(dt=util.Now.dt()),
+        wait_until=DateTime(dt=Now.dt()),
     )
     defer_action.execute()
 
@@ -574,7 +574,7 @@ def test_expire_action(friends):
     dispatcher.expire_action(
         scheduler_name="bar",
         action_name="foo",
-        expire_on=util.Now.dt() + timedelta(seconds=1),
+        expire_on=Now.dt() + timedelta(seconds=1),
     )
 
     assert 1 == dispatcher.get_expiring_action_count()
@@ -605,7 +605,7 @@ def test_expire_action_action(friends):
     expire_action = ExpireAction(
         scheduler_name="bar",
         action_name="foo",
-        expire_on=util.DateTime(dt=util.Now.dt() + timedelta(seconds=2)),
+        expire_on=DateTime(dt=Now.dt() + timedelta(seconds=2)),
     )
     expire_action.execute()
 
@@ -631,7 +631,7 @@ def test_immediately(friends):
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez(result=self.fleas)
+            return self.action_result(result=self.fleas)
 
     test_action = TestAction()
 
@@ -658,21 +658,21 @@ def test_program_1(friends):
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez()
+            return self.action_result()
 
     class TestAction2(Action):
         fleas: int = 0
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez()
+            return self.action_result()
 
     class TestAction3(Action):
         fleas: int = 0
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez()
+            return self.action_result()
 
     action1 = TestAction1()
     action2 = TestAction2()
@@ -687,7 +687,7 @@ def test_program_1(friends):
     program = PBEProgram().prologue("foo1").body_element("bar", "foo2").epilogue("foo3")
     dispatcher.add_program("baz", program)
 
-    start = util.Now().dt() + timedelta(seconds=1)
+    start = Now().dt() + timedelta(seconds=1)
     stop = start + timedelta(seconds=4)
 
     dispatcher.run_jobs()
@@ -715,21 +715,21 @@ def test_unschedule_program(friends):
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez()
+            return self.action_result()
 
     class TestAction2(Action):
         fleas: int = 0
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez()
+            return self.action_result()
 
     class TestAction3(Action):
         fleas: int = 0
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez()
+            return self.action_result()
 
     action1 = TestAction1()
     action2 = TestAction2()
@@ -743,7 +743,7 @@ def test_unschedule_program(friends):
 
     program = PBEProgram().prologue("foo1").body_element("bar", "foo2").epilogue("foo3")
     dispatcher.add_program("baz", program)
-    start = util.Now().dt() + timedelta(seconds=4)
+    start = Now().dt() + timedelta(seconds=4)
     stop = start + timedelta(seconds=4)
 
     dispatcher.run_jobs()
@@ -778,21 +778,21 @@ def test_unschedule_program_action(friends):
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez()
+            return self.action_result()
 
     class TestAction2(Action):
         fleas: int = 0
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez()
+            return self.action_result()
 
     class TestAction3(Action):
         fleas: int = 0
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez()
+            return self.action_result()
 
     action1 = TestAction1()
     action2 = TestAction2()
@@ -806,7 +806,7 @@ def test_unschedule_program_action(friends):
 
     program = PBEProgram().prologue("foo1").body_element("bar", "foo2").epilogue("foo3")
     dispatcher.add_program("baz", program)
-    start = util.Now().dt() + timedelta(seconds=4)
+    start = Now().dt() + timedelta(seconds=4)
     stop = start + timedelta(seconds=4)
 
     dispatcher.run_jobs()
@@ -843,21 +843,21 @@ def test_delete_program(friends):
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez()
+            return self.action_result()
 
     class TestAction2(Action):
         fleas: int = 0
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez()
+            return self.action_result()
 
     class TestAction3(Action):
         fleas: int = 0
 
         def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return Rez()
+            return self.action_result()
 
     action1 = TestAction1()
     action2 = TestAction2()
@@ -871,7 +871,7 @@ def test_delete_program(friends):
 
     program = PBEProgram().prologue("foo1").body_element("bar", "foo2").epilogue("foo3")
     dispatcher.add_program("baz", program)
-    start = util.Now().dt() + timedelta(seconds=4)
+    start = Now().dt() + timedelta(seconds=4)
     stop = start + timedelta(seconds=4)
     assert len(dispatcher.get_programs()) == 1
 
@@ -893,13 +893,13 @@ def test_delete_program(friends):
     assert action3.fleas == 0
 
 
-def test_execute_with_data(friends):
+def test_execute_with_rez(friends):
     """
     Want to see execute work with supplied dictionary.
     """
     dispatcher, scheduler, action = friends()
-    action.execute(data={"fleacount": "infinite"})
-    assert action.data == {"fleacount": "infinite"}
+    result = action.execute(rez=Rez(result={"fleacount": "infinite"}))
+    assert result.rez.result == {"fleacount": "infinite"}
 
 
 def test_terminate_scheduler(friends):
@@ -960,7 +960,7 @@ def test_if_else_1(friends):
         if_action=ScheduleAction(scheduler_name="immediately", action_name="foo1"),
         else_action=ScheduleAction(scheduler_name="immediately", action_name="foo2"),
     )
-    schedule_action = All(actions=[Arg(data={"result": 2}), if_else])
+    schedule_action = All(actions=[Fields(flds={"result": 2}), if_else])
 
     dispatcher.add_action("schedule_action", schedule_action)
     dispatcher.schedule_action("immediately", "schedule_action")
@@ -985,7 +985,7 @@ def test_if_else_2(friends):
         if_action=ScheduleAction(scheduler_name="immediately", action_name="foo1"),
         else_action=ScheduleAction(scheduler_name="immediately", action_name="foo2"),
     )
-    schedule_action = All(actions=[Arg(data={"result": 2}), if_else])
+    schedule_action = All(actions=[Fields(flds={"result": 2}), if_else])
 
     dispatcher.add_action("schedule_action", schedule_action)
     dispatcher.schedule_action("immediately", "schedule_action")
@@ -1003,13 +1003,13 @@ class FleaCount(Action):
 
     def execute(self, tag: str = None, rez: Rez = None):
         self.flea_count += 1
-        return Rez(result = self.flea_count)
+        return self.action_result(result = self.flea_count)
 
 
 @pytest.fixture
 def friends(tmp_path, host, port):
     """ returns a tuple of useful test objects """
-    util.SystemInfo.init(host, port)
+    SystemInfo.init(host, port)
 
     def stuff():
         # want a fresh tuple from the fixture
