@@ -1,12 +1,7 @@
 import requests
 import logging
-import json
-from typing import Optional, Dict, Set
-from whendo.core.action import Action
-import whendo.core.util as util_x
-from whendo.core.hooks import DispatcherHooks
-from whendo.core.server import Server
-from whendo.core.util import KeyTagMode
+from typing import Optional
+from whendo.core.action import Action, Rez
 
 
 logger = logging.getLogger(__name__)
@@ -17,22 +12,16 @@ class SendPayload(Action):
     This class sends a payload dictionary to a url.
     """
 
-    url: str
-    payload: Optional[dict]
+    url: Optional[str] = None
+    payload: Optional[dict] = None
 
     def description(self):
-        return f"This action sends the supplied dictionary payload to ({self.url})."
+        return f"This action sends payload ({self.payload()}) to ({self.url})."
 
-    def execute(self, tag: str = None, data: dict = None):
-        if self.payload:
-            payload = self.payload.copy()
-            if data:
-                payload.update(data)
-        elif data:
-            payload = data
-        else:
-            payload = {"result": "no payload"}
-        response = requests.post(self.url, payload)
+    def execute(self, tag: str = None, rez: Rez = None):
+        flds = self.compute_flds(rez=rez)
+        response = requests.post(flds["url"], flds["payload"])
         if response.status_code != requests.codes.ok:
             raise Exception(response)
-        return self.action_result(result=response.json(), data=data)
+        result = f"payload ({flds['payload']} sent to url ({flds['url']})"
+        return Rez(result=result, rez=rez, flds=rez.flds if rez else {})

@@ -1,7 +1,7 @@
 import time
 from whendo.core.timed import Timed
 from whendo.core.util import TimeUnit, PP
-from whendo.core.action import Action
+from whendo.core.action import Action, Rez
 
 pause = 3
 
@@ -86,11 +86,11 @@ def test_file_action(tmp_path):
     """
 
     class FileAction(Action):
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             path = tmp_path / "test.txt"
             with path.open(mode="a") as fid:
                 fid.write("blee\n")
-            return {"outcome": "file appended"}
+            return Rez()
 
     class Suite:
         def __init__(self, action):

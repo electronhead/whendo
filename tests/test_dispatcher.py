@@ -3,7 +3,7 @@ import time
 from datetime import timedelta
 import whendo.core.util as util
 from typing import Optional, Dict, Any
-from whendo.core.action import Action
+from whendo.core.action import Action, Rez
 from whendo.core.server import Server
 from whendo.core.actions.list_action import (
     UntilFailure,
@@ -11,7 +11,7 @@ from whendo.core.actions.list_action import (
     Terminate,
     IfElse,
     RaiseIfEqual,
-    Arg,
+    Fields,
     Success,
     Failure,
 )
@@ -25,7 +25,6 @@ from whendo.core.actions.dispatch_action import (
     ScheduleAction,
     DeferAction,
     ExpireAction,
-    DispActionMode,
 )
 from whendo.core.timed import Timed
 from .fixtures import port, host
@@ -166,88 +165,88 @@ def test_schedule_action_action(friends):
     assert action.flea_count > 0
 
 
-def test_dispatcher_action_args_1(friends):
-    """
-    Tests computation of args based on fields, data and mode (=field).
-    """
-    dispatcher, scheduler, action = friends()
-    action2 = FleaCount(flea_count=100)
+# def test_dispatcher_action_args_1(friends):
+#     """
+#     Tests computation of args based on fields, data and mode (=field).
+#     """
+#     dispatcher, scheduler, action = friends()
+#     action2 = FleaCount(flea_count=100)
 
-    dispatcher.add_action("foo", action)
-    dispatcher.add_action("flea", action2)
-    dispatcher.add_scheduler("bar", scheduler)
-    schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo", mode=DispActionMode.FIELD
-    )
-    args = schedule_action.compute_args(
-        args={"scheduler_name": "bar", "action_name": "foo"},
-        data={"action_name": "flea"},
-    )
-    assert args["scheduler_name"] == "bar"
-    assert args["action_name"] == "foo"
-
-
-def test_dispatcher_action_args_2(friends):
-    """
-    Tests computation of args based on fields, data and mode (=data).
-    """
-    dispatcher, scheduler, action = friends()
-    action2 = FleaCount(flea_count=100)
-
-    dispatcher.add_action("foo", action)
-    dispatcher.add_action("flea", action2)
-    dispatcher.add_scheduler("bar", scheduler)
-    schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo", mode=DispActionMode.DATA
-    )
-    args = schedule_action.compute_args(
-        args={"scheduler_name": "bar", "action_name": "foo"},
-        data={"action_name": "flea"},
-    )
-    assert args["scheduler_name"] == "bar"
-    assert args["action_name"] == "flea"
+#     dispatcher.add_action("foo", action)
+#     dispatcher.add_action("flea", action2)
+#     dispatcher.add_scheduler("bar", scheduler)
+#     schedule_action = ScheduleAction(
+#         scheduler_name="bar", action_name="foo", mode=DispActionMode.FIELD
+#     )
+#     args = schedule_action.compute_args(
+#         args={"scheduler_name": "bar", "action_name": "foo"},
+#         data={"action_name": "flea"},
+#     )
+#     assert args["scheduler_name"] == "bar"
+#     assert args["action_name"] == "foo"
 
 
-def test_dispatcher_action_args_3(friends):
-    """
-    Tests computation of args based on fields, data and mode (=field).
-    """
-    dispatcher, scheduler, action = friends()
-    action2 = FleaCount(flea_count=100)
+# def test_dispatcher_action_args_2(friends):
+#     """
+#     Tests computation of args based on fields, data and mode (=data).
+#     """
+#     dispatcher, scheduler, action = friends()
+#     action2 = FleaCount(flea_count=100)
 
-    dispatcher.add_action("foo", action)
-    dispatcher.add_action("flea", action2)
-    dispatcher.add_scheduler("bar", scheduler)
-    schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo", mode=DispActionMode.FIELD
-    )
-    args = schedule_action.compute_args(
-        args={"scheduler_name": "bar", "action_name": "foo"},
-        data={"result": {"action_name": "flea"}},
-    )
-    assert args["scheduler_name"] == "bar"
-    assert args["action_name"] == "foo"
+#     dispatcher.add_action("foo", action)
+#     dispatcher.add_action("flea", action2)
+#     dispatcher.add_scheduler("bar", scheduler)
+#     schedule_action = ScheduleAction(
+#         scheduler_name="bar", action_name="foo", mode=DispActionMode.DATA
+#     )
+#     args = schedule_action.compute_args(
+#         args={"scheduler_name": "bar", "action_name": "foo"},
+#         data={"action_name": "flea"},
+#     )
+#     assert args["scheduler_name"] == "bar"
+#     assert args["action_name"] == "flea"
 
 
-def test_dispatcher_action_args_4(friends):
-    """
-    Tests computation of args based on fields, data and mode (=data).
-    """
-    dispatcher, scheduler, action = friends()
-    action2 = FleaCount(flea_count=100)
+# def test_dispatcher_action_args_3(friends):
+#     """
+#     Tests computation of args based on fields, data and mode (=field).
+#     """
+#     dispatcher, scheduler, action = friends()
+#     action2 = FleaCount(flea_count=100)
 
-    dispatcher.add_action("foo", action)
-    dispatcher.add_action("flea", action2)
-    dispatcher.add_scheduler("bar", scheduler)
-    schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo", mode=DispActionMode.DATA
-    )
-    args = schedule_action.compute_args(
-        args={"scheduler_name": "bar", "action_name": "foo"},
-        data={"result": {"action_name": "flea"}},
-    )
-    assert args["scheduler_name"] == "bar"
-    assert args["action_name"] == "flea"
+#     dispatcher.add_action("foo", action)
+#     dispatcher.add_action("flea", action2)
+#     dispatcher.add_scheduler("bar", scheduler)
+#     schedule_action = ScheduleAction(
+#         scheduler_name="bar", action_name="foo", mode=DispActionMode.FIELD
+#     )
+#     args = schedule_action.compute_args(
+#         args={"scheduler_name": "bar", "action_name": "foo"},
+#         data={"result": {"action_name": "flea"}},
+#     )
+#     assert args["scheduler_name"] == "bar"
+#     assert args["action_name"] == "foo"
+
+
+# def test_dispatcher_action_args_4(friends):
+#     """
+#     Tests computation of args based on fields, data and mode (=data).
+#     """
+#     dispatcher, scheduler, action = friends()
+#     action2 = FleaCount(flea_count=100)
+
+#     dispatcher.add_action("foo", action)
+#     dispatcher.add_action("flea", action2)
+#     dispatcher.add_scheduler("bar", scheduler)
+#     schedule_action = ScheduleAction(
+#         scheduler_name="bar", action_name="foo", mode=DispActionMode.DATA
+#     )
+#     args = schedule_action.compute_args(
+#         args={"scheduler_name": "bar", "action_name": "foo"},
+#         data={"result": {"action_name": "flea"}},
+#     )
+#     assert args["scheduler_name"] == "bar"
+#     assert args["action_name"] == "flea"
 
 
 def test_schedule_action_action_data_1(friends):
@@ -261,9 +260,9 @@ def test_schedule_action_action_data_1(friends):
     dispatcher.add_action("flea", action2)
     dispatcher.add_scheduler("bar", scheduler)
     schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo", mode=DispActionMode.FIELD
+        scheduler_name="bar", action_name="foo"
     )
-    schedule_action.execute(data={"action_name": "flea"})
+    schedule_action.execute(rez=Rez(flds={"action_name": "flea"}))
 
     assert dispatcher.get_scheduled_action_count() == 1
 
@@ -287,9 +286,9 @@ def test_schedule_action_action_data_2(friends):
     dispatcher.add_action("flea", action2)
     dispatcher.add_scheduler("bar", scheduler)
     schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo", mode=DispActionMode.DATA
+        scheduler_name="bar", action_name="foo"
     )
-    schedule_action.execute(data={"action_name": "flea"})
+    schedule_action.execute(rez=Rez(flds={"action_name": "flea"}))
 
     assert dispatcher.get_scheduled_action_count() == 1
 
@@ -630,9 +629,9 @@ def test_immediately(friends):
     class TestAction(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return self.action_result(result=self.fleas, data=data)
+            return Rez(result=self.fleas)
 
     test_action = TestAction()
 
@@ -657,23 +656,23 @@ def test_program_1(friends):
     class TestAction1(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return "BLING"
+            return Rez()
 
     class TestAction2(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return "BLING"
+            return Rez()
 
     class TestAction3(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return "BLING"
+            return Rez()
 
     action1 = TestAction1()
     action2 = TestAction2()
@@ -714,23 +713,23 @@ def test_unschedule_program(friends):
     class TestAction1(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return "BLING"
+            return Rez()
 
     class TestAction2(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return "BLING"
+            return Rez()
 
     class TestAction3(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return "BLING"
+            return Rez()
 
     action1 = TestAction1()
     action2 = TestAction2()
@@ -777,23 +776,23 @@ def test_unschedule_program_action(friends):
     class TestAction1(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return "BLING"
+            return Rez()
 
     class TestAction2(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return "BLING"
+            return Rez()
 
     class TestAction3(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return "BLING"
+            return Rez()
 
     action1 = TestAction1()
     action2 = TestAction2()
@@ -842,23 +841,23 @@ def test_delete_program(friends):
     class TestAction1(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return "BLING"
+            return Rez()
 
     class TestAction2(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return "BLING"
+            return Rez()
 
     class TestAction3(Action):
         fleas: int = 0
 
-        def execute(self, tag: str = None, data: dict = None):
+        def execute(self, tag: str = None, rez: Rez = None):
             self.fleas += 1
-            return "BLING"
+            return Rez()
 
     action1 = TestAction1()
     action2 = TestAction2()
@@ -1002,12 +1001,9 @@ class FleaCount(Action):
     flea_count: int = 0
     data: Optional[Dict[Any, Any]]
 
-    def execute(self, tag: str = None, data: dict = None):
+    def execute(self, tag: str = None, rez: Rez = None):
         self.flea_count += 1
-        self.data = data
-        result = self.action_result(result=self.flea_count, data=data)
-        print("INSIDE FleaCount execute", result)
-        return result
+        return Rez(result = self.flea_count)
 
 
 @pytest.fixture

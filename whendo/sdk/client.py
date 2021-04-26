@@ -2,7 +2,7 @@ from pydantic import BaseModel, PrivateAttr
 import requests
 import logging
 from typing import Optional
-from whendo.core.action import Action, ActionData
+from whendo.core.action import Action, ActionRez, Rez
 from whendo.core.scheduler import Scheduler
 from whendo.core.server import Server
 from whendo.core.resolver import (
@@ -75,9 +75,9 @@ class Client(BaseModel):
     def execute_supplied_action(self, supplied_action: Action):
         return self.http().post(f"/execution", supplied_action)
 
-    def execute_supplied_action_with_data(self, supplied_action: Action, data: dict):
-        action_data = ActionData(action=supplied_action, data=data)
-        return self.http().post(f"/execution/with_data", action_data)
+    def execute_supplied_action_with_data(self, supplied_action: Action, rez: Rez):
+        action_rez = ActionRez(action=supplied_action, rez=rez)
+        return self.http().post(f"/execution/with_data", action_rez)
 
     # /actions
     def get_action(self, action_name: str):
@@ -217,7 +217,6 @@ class Client(BaseModel):
     def execute_on_servers_with_data(
         self, mode: str, action_name: str, key_tags: dict, data: dict
     ):
-        # need to pass a single dictionary (per https://fastapi.tiangolo.com/tutorial/body-multiple-params/)
         composite = {"key_tags": key_tags, "data": data}
         return self.http().post_dict(
             f"/servers/by_tags/{mode}/actions/{action_name}/execute_with_data",

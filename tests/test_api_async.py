@@ -10,7 +10,7 @@ import json
 from pydantic import BaseModel
 from httpx import AsyncClient
 from datetime import timedelta
-from whendo.core.action import Action, ActionData
+from whendo.core.action import Action, ActionRez
 import whendo.core.actions.file_action as file_x
 import whendo.core.actions.dispatch_action as disp_x
 import whendo.core.actions.http_action as http_x
@@ -566,8 +566,8 @@ async def test_execute_supplied_action_with_data(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
     data = {"higher": "and higher"}
-    action_data = ActionData(action=action, data=data)
-    await post(base_url, "/execution/with_data", action_data)
+    action_rez = ActionRez(action=action, rez=rez)
+    await post(base_url, "/execution/with_data", action_rez)
     time.sleep(4)
 
     lines = None
@@ -854,7 +854,7 @@ async def test_file_append_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """ test basic use of file_x.FileAppend """
     await reset_dispatcher(base_url, str(tmp_path))
 
-    action = file_x.FileAppendP(
+    action = file_x.FileAppend(
         # mode="P",
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
@@ -879,7 +879,7 @@ async def test_file_append_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
     """ test use of execute <data> argument """
     await reset_dispatcher(base_url, str(tmp_path))
 
-    action1 = file_x.FileAppendD(
+    action1 = file_x.FileAppend(
         # mode = "D",
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
@@ -912,7 +912,7 @@ async def test_file_append_execute_action(
     assert server.port == port
     assert server.host == host
     await add_server(base_url=base_url, server_name="test", server=server)
-    file_append = file_x.FileAppendD(
+    file_append = file_x.FileAppend(
         # mode = "D",
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
@@ -950,7 +950,7 @@ async def test_file_append_execute_supplied_action(
     assert server.port == port
     assert server.host == host
     await add_server(base_url=base_url, server_name="test", server=server)
-    file_append = file_x.FileAppendD(
+    file_append = file_x.FileAppend(
         # mode = "D",
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
@@ -988,7 +988,7 @@ async def test_file_append_execute_action_key_tags(
     assert server.port == port
     assert server.host == host
     await add_server(base_url=base_url, server_name="test", server=server)
-    file_append = file_x.FileAppendD(
+    file_append = file_x.FileAppend(
         # mode = "D",
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
@@ -1028,7 +1028,7 @@ async def test_file_append_execute_action_key_tags(
     assert server.port == port
     assert server.host == host
     await add_server(base_url=base_url, server_name="test", server=server)
-    file_append = file_x.FileAppendD(
+    file_append = file_x.FileAppend(
         # mode = "D",
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),

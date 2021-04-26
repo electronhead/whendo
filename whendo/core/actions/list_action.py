@@ -3,7 +3,7 @@ from enum import Enum
 import json
 import logging
 from collections import namedtuple
-from whendo.core.action import Action
+from whendo.core.action import Action, add_dicts, Rez
 from whendo.core.exception import TerminateSchedulerException
 
 
@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 
 
 def processing_results(
-    result: Any,
+    rez: Rez = None,
     processing_count: int = 0,
     success_count: int = 0,
     exception_count: int = 0,
@@ -19,7 +19,7 @@ def processing_results(
     exception_actions: List[Dict[Any, Any]] = [],
 ):
     return {
-        "result": result,
+        "result": rez,
         "processing_count": processing_count,
         "success_count": success_count,
         "exception_count": exception_count,
@@ -28,15 +28,18 @@ def processing_results(
     }
 
 
-class Arg(Action):
-    arg: str = "arg"
-    data: dict
+class Fields(Action):
+    fields: str = "fields"
+    flds: Optional[dict] = None
 
     def description(self):
-        return f"This action returns ({self.data})."
+        return f"This action returns ({self.flds})."
 
-    def execute(self, tag: str = None, data: dict = None):
-        return self.action_result(result=self.get_result(self.data), data=data)
+    def execute(self, tag: str = None, rez: Rez = None):
+        rez_flds = rez.flds.copy() if rez else {}
+        rez_flds.update(self.compute_flds(rez=rez))
+        result = f"fields ({rez_flds}) added to data flow"
+        return Rez(result=result, rez=rez, flds=rez_flds)
 
 
 class RaiseIfEqual(Action):
@@ -51,16 +54,18 @@ class RaiseIfEqual(Action):
     def description(self):
         return f"This action raises an exception if the result in the supplied argument, data, is equal to ({self.value}). Otherwise it returns the value untouched."
 
-    def execute(self, tag: str = None, data: dict = None):
-        value = self.value
-        data_value = self.get_result(data)
+    def execute(self, tag: str = None, rez: Rez = None):
+        flds = self.compute_flds(rez=rez)
+        data_value = rez.result if rez else None
+        value = flds["value"]
         should_raise = data_value == value
         if should_raise:
             raise ValueError(
                 f"exception thrown because ({value}) == ({data_value}); info ({self.info()})"
             )
         else:
-            return self.action_result(result=data_value, data=data)
+            result = f"exception not thrown because ({value}) not equal to ({data_value}); info ({self.info()})"
+            return Rez(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
 class Terminate(Action):
@@ -69,7 +74,7 @@ class Terminate(Action):
     def description(self):
         return f"This action raises a TerminateScheduler exception."
 
-    def execute(self, tag: str = None, data: dict = None):
+    def execute(self, tag: str = None, rez: Rez = None):
         raise TerminateSchedulerException(value=tag)
 
 
@@ -81,7 +86,7 @@ class Failure(Action):
     def description(self):
         return f"This action always fails. It serves a role similar to the bool, False."
 
-    def execute(self, tag: str = None, data: dict = None):
+    def execute(self, tag: str = None, rez: Rez = None):
         raise Exception("purposely unsuccessful execution", self.json())
 
 
@@ -95,8 +100,8 @@ class Success(Action):
             f"This action always succeeds. It serves a role similar to the bool, True."
         )
 
-    def execute(self, tag: str = None, data: dict = None):
-        return self.action_result(result=self.get_result(data), data=data)
+    def execute(self, tag: str = None, rez: Rez = None):
+        return rez
 
 
 class Fail(Action):
@@ -108,15 +113,17 @@ class Fail(Action):
     def description(self):
         return f"If the operand ({self.operand}) fails, Not succeeds, otherwise fails (throwing an Exception). It serves a role similar to logical negation."
 
-    def execute(self, tag: str = None, data: dict = None):
+    def execute(self, tag: str = None, rez: Rez = None):
+        flds = self.compute_flds(rez=rez)
+        operand = flds["operand"]
         operand_result = None
         try:
-            operand_result = self.operand.execute(tag=tag, data=data)
+            operand_result = operand.execute(tag=tag, rez=rez)
         except Exception as exception:
             operand_result = exception
         if isinstance(operand_result, Exception):
             extra = {"execption": str(operand_result)}
-            return self.action_result(result=True, data=data, extra=extra)
+            return Rez(result=True, rez=rez, flds=rez.flds if rez else {}, extra=extra)
         else:
             raise Exception(
                 "exception generated; action execution treated as a failure",
@@ -157,28 +164,32 @@ class ListAction(Action):
         if self.op_mode == ListOpMode.UNTIL_FAILURE:
             return f"This action executes all of these actions in order until the first failure: ({self.actions}). It serves a role similar to logical and."
 
-    def execute(self, tag: str = None, data: dict = None):
+    def execute(self, tag: str = None, rez: Rez = None):
+        flds = self.compute_flds(rez=rez)
         processing_info = process_actions(
-            data=data,
-            op_mode=self.op_mode,
+            rez=rez,
+            op_mode=flds["op_mode"],
             tag=tag,
-            actions=self.actions,
+            actions=flds["actions"],
             successful_actions=[],
             exception_actions=[],
         )
         if (
             processing_info["processing_count"] > 0
             and processing_info["success_count"] == 0
-            and self.exception_on_no_success
+            and flds["exception_on_no_success"]
         ):
             raise Exception(
                 "exception generated; all actions failing treated as a list action failure",
                 json.dumps(self.dict()),
                 json.dumps(processing_info),
             )
-        extra = processing_info if self.include_processing_info else None
-        return self.action_result(
-            result=self.get_result(processing_info["result"]), data=data, extra=extra
+        extra = processing_info if flds["include_processing_info"] else None
+        return Rez(
+            result=processing_info["result"],
+            rez=rez,
+            flds=rez.flds if rez else {},
+            extra=extra,
         )
 
 
@@ -190,8 +201,8 @@ class All(ListAction):
     _all: str = "all"
     op_mode: ListOpMode = ListOpMode.ALL
 
-    def execute(self, tag: str = None, data: dict = None):
-        return super().execute(tag=tag, data=data)
+    def execute(self, tag: str = None, rez: Rez = None):
+        return super().execute(tag=tag, rez=rez)
 
 
 class UntilSuccess(ListAction):
@@ -202,8 +213,8 @@ class UntilSuccess(ListAction):
     until_success: str = "until_success"
     op_mode: ListOpMode = ListOpMode.UNTIL_SUCCESS
 
-    def execute(self, tag: str = None, data: dict = None):
-        return super().execute(tag=tag, data=data)
+    def execute(self, tag: str = None, rez: Rez = None):
+        return super().execute(tag=tag, rez=rez)
 
 
 class UntilFailure(ListAction):
@@ -214,15 +225,15 @@ class UntilFailure(ListAction):
     until_failure: str = "until_failure"
     op_mode: ListOpMode = ListOpMode.UNTIL_FAILURE
 
-    def execute(self, tag: str = None, data: dict = None):
-        return super().execute(tag=tag, data=data)
+    def execute(self, tag: str = None, rez: Rez = None):
+        return super().execute(tag=tag, rez=rez)
 
 
 def process_actions(
     op_mode: ListOpMode,
     actions: List[Action],
     tag: str = None,
-    data: Dict[Any, Any] = None,
+    rez: Rez = None,
     successful_actions: List[Dict[Any, Any]] = [],
     exception_actions: List[Dict[Any, Any]] = [],
     processing_count: int = 0,
@@ -233,46 +244,46 @@ def process_actions(
     services the three action list classes, ALL, UNTIL_SUCCESS, and UNTIL_FAILURE
     """
     exceptions: List[Exception] = []
-    loop_data = data
+    loop_rez = rez
     for action in actions:
+        exception = None
         try:
-            result = action.execute(tag=tag, data=loop_data)
+            loop_rez = action.execute(tag=tag, rez=loop_rez)
             logger.info(
-                f"ListAction: tag ({tag}); executed action ({action}); loop data ({loop_data})"
+                f"ListAction: tag ({tag}); executed action ({action}); loop data ({loop_rez})"
             )
-        except Exception as exception:
-            result = exception
+        except Exception as e:
+            exception = e
             logger.exception(
-                f"ListAction: tag ({tag}); error while executing action ({action}); loop data ({loop_data})",
+                f"ListAction: tag ({tag}); error while executing action ({action}); loop data ({loop_rez})",
                 exc_info=exception,
             )
         processing_count += 1
-        if isinstance(result, Exception):
+        if exception:
             exception_count += 1
             exception_dict = action.dict().copy()
-            exception_dict.update({"exception": str(result)})
+            exception_dict.update({"exception": str(exception)})
             exception_actions.append(exception_dict)
-            if isinstance(result, TerminateSchedulerException):
-                result.value = processing_results(
-                    loop_data,
+            if isinstance(exception, TerminateSchedulerException):
+                exception.value = processing_results(
+                    Rez(result=str(exception)),
                     processing_count,
                     success_count,
                     exception_count,
                     successful_actions,
                     exception_actions,
                 )
-                raise result
+                raise exception
             if op_mode == ListOpMode.UNTIL_FAILURE:  # stop after first failure
                 break
-            loop_data = exception_dict
+            loop_rez = Rez(result=exception_dict, rez=rez, flds=rez.flds if rez else {})
         else:
             success_count += 1
             successful_actions.append(action.dict())
-            loop_data = result
             if op_mode == ListOpMode.UNTIL_SUCCESS:  # stop after first success
                 break
     return processing_results(
-        loop_data,
+        loop_rez,
         processing_count,
         success_count,
         exception_count,
@@ -308,17 +319,23 @@ class IfElse(Action):
     def description(self):
         return f"If  action ({self.test_action}) succeeds, then IfElse executes ({self.if_action}), otherwise executes ({self.else_action})"
 
-    def execute(self, tag: str = None, data: dict = None):
-        print(f"IfElse::execute::data=({data})")
+    def execute(self, tag: str = None, rez: Rez = None):
+        flds = self.compute_flds(rez=rez)
+        test_action = flds["test_action"]
+        else_action = flds["else_action"]
+        if_action = flds["if_action"]
+        exception_on_no_success = flds["exception_on_no_success"]
+        include_processing_info = flds["include_processing_info"]
+        exception = None
         try:
-            test_result = self.test_action.execute(tag=tag, data=data)
+            rez = flds["test_action"].execute(tag=tag, rez=rez)
             self.logger_info(
-                f"IfElse: tag ({tag}); successfully executed 'test' action ({self.test_action})"
+                f"IfElse: tag ({tag}); successfully executed 'test' action ({test_action})"
             )
-        except Exception as exception:
-            test_result = exception
+        except Exception as e:
+            exception = e
             self.logger_exception(
-                f"IfElse: tag ({tag}); error while executing 'test' action ({self.test_action}) exception ({exception})",
+                f"IfElse: tag ({tag}); error while executing 'test' action ({test_action}) exception ({exception})",
                 exc_info=exception,
             )
         processing_count = 1
@@ -326,97 +343,95 @@ class IfElse(Action):
         exception_count = 0
         successful_actions: List[Dict[Any, Any]] = []
         exception_actions: List[Dict[Any, Any]] = []
-        else_test = isinstance(test_result, Exception)
-        if else_test:  # execute the else action
+        if exception:  # execute the else action
             exception_count = 1
-            exception_dict = self.test_action.dict().copy()
-            exception_dict.update({"exception": str(test_result)})
+            exception_dict = test_action.dict().copy()
+            exception_dict.update({"exception": str(exception)})
             exception_actions.append(exception_dict)
-            if isinstance(test_result, TerminateSchedulerException):
-                test_result.value = processing_results(
-                    data,
+            if isinstance(exception, TerminateSchedulerException):
+                exception.value = processing_results(
+                    rez,
                     processing_count,
                     success_count,
                     exception_count,
                     successful_actions,
                     exception_actions,
                 )
-                raise test_result
-
+                raise exception
+            exception = None
             try:
-                else_result = self.else_action.execute(tag=tag, data=data)
+                rez = else_action.execute(tag=tag, rez=rez)
                 self.logger_info(
-                    f"IfElse: tag ({tag}); successfully executed 'else' action ({self.else_action})"
+                    f"IfElse: tag ({tag}); successfully executed 'else' action ({else_action})"
                 )
-            except Exception as exception:
-                else_result = exception
+            except Exception as e:
+                exception = e
                 self.logger_exception(
-                    f"IfElse: tag ({tag}); error while executing 'else' action ({self.else_action}) exception ({exception})",
+                    f"IfElse: tag ({tag}); error while executing 'else' action ({else_action}) exception ({exception})",
                     exc_info=exception,
                 )
             processing_count += 1
-            if isinstance(else_result, Exception):
+            if exception:
                 exception_count += 1
-                exception_dict = self.else_action.dict().copy()
-                exception_dict.update({"exception": str(else_result)})
+                exception_dict = else_action.dict().copy()
+                exception_dict.update({"exception": str(exception)})
                 exception_actions.append(exception_dict)
-                if isinstance(else_result, TerminateSchedulerException):
-                    else_result.value = processing_results(
-                        data,
+                if isinstance(exception, TerminateSchedulerException):
+                    exception.value = processing_results(
+                        rez,
                         processing_count,
                         success_count,
                         exception_count,
                         successful_actions,
                         exception_actions,
                     )
-                    raise else_result
-                result = exception_dict
+                    raise exception
+                rez = Rez(result=exception_dict, rez=rez, flds=rez.flds if rez else {})
             else:
                 success_count += 1
-                successful_actions.append(self.else_action.dict())
-                result = else_result
+                successful_actions.append(else_action.dict())
         else:
             success_count += 1
-            successful_actions.append(self.test_action.dict())
+            successful_actions.append(test_action.dict())
 
-            if self.if_action:  # execute the if_action
+            if if_action:  # execute the if_action
+                exception = None
                 try:
-                    if_result = self.if_action.execute(tag=tag, data=data)
+                    rez = if_action.execute(tag=tag, rez=rez)
                     self.logger_info(
-                        f"IfElse: tag ({tag}); successfully executed 'if' action ({self.if_action})"
+                        f"IfElse: tag ({tag}); successfully executed 'if' action ({if_action})"
                     )
-                except Exception as exception:
-                    if_result = exception
+                except Exception as e:
+                    exception = e
                     self.logger_exception(
-                        f"IfElse: tag ({tag}); error while executing 'if' action ({self.else_action}) exception ({exception})",
+                        f"IfElse: tag ({tag}); error while executing 'if' action ({else_action}) exception ({exception})",
                         exc_info=exception,
                     )
                 processing_count += 1
-                if isinstance(if_result, Exception):
+                if exception:
                     exception_count += 1
-                    exception_dict = self.if_action.dict().copy()
-                    exception_dict.update({"exception": str(if_result)})
+                    exception_dict = if_action.dict().copy()
+                    exception_dict.update({"exception": str(exception)})
                     exception_actions.append(exception_dict)
-                    if isinstance(if_result, TerminateSchedulerException):
-                        if_result.value = processing_results(
-                            data,
+                    if isinstance(exception, TerminateSchedulerException):
+                        exception.value = processing_results(
+                            rez,
                             processing_count,
                             success_count,
                             exception_count,
                             successful_actions,
                             exception_actions,
                         )
-                        raise if_result
+                        raise exception
                     result = exception_dict
                 else:
                     success_count += 1
                     successful_actions.append(self.if_action.dict())
-                    result = if_result
             else:  # just use test_result since there is no if_action
-                result = test_result
+                pass
 
         processing_info = processing_results(
-            result,
+            rez,
             processing_count,
             success_count,
             exception_count,
@@ -434,8 +449,11 @@ class IfElse(Action):
                 json.dumps(processing_info),
             )
         extra = processing_info if self.include_processing_info else None
-        return self.action_result(
-            result=self.get_result(processing_info["result"]), data=data, extra=extra
+        return Rez(
+            result=processing_info["result"],
+            rez=rez,
+            flds=rez.flds if rez else {},
+            extra=extra,
         )
 
 
@@ -451,8 +469,10 @@ class Compose(Action):
             f"Performs function composition on supplied actions in left-to-right order."
         )
 
-    def execute(self, tag: str = None, data: dict = None):
-        loop_data = data
-        for action in self.actions:
-            loop_data = action.execute(tag=tag, data=loop_data)
-        return self.action_result(result=self.get_result(loop_data), data=data)
+    def execute(self, tag: str = None, rez: Rez = None):
+        flds = self.compute_flds(rez=rez)
+        actions = flds["actions"]
+        loop_rez = rez
+        for action in actions:
+            loop_rez = action.execute(tag=tag, rez=loop_rez)
+        return loop_rez

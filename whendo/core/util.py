@@ -538,3 +538,8 @@ class Http(BaseModel):
 
     def cmd(self, path: str):
         return f"http://{self.host}:{self.port}{path}"
+
+
+class ModelModel(BaseModel):
+    m1: BaseModel
+    m2: BaseModel

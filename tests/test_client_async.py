@@ -812,7 +812,7 @@ async def test_file_append_2(startup_and_shutdown_uvicorn, host, port, tmp_path)
     client = ClientAsync(host=host, port=port)
     await reset_dispatcher(client, str(tmp_path))
 
-    action1 = file_x.FileAppendD(
+    action1 = file_x.FileAppend(
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
         payload={"hi": "pyrambium"},
@@ -845,8 +845,7 @@ async def test_file_append_execute_action(
     assert server.port == port
     assert server.host == host
     await add_server(client=client, server_name="test", server=server)
-    file_append = file_x.FileAppendD(
-        # mode = "D",
+    file_append = file_x.FileAppend(
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
         payload={"hi": "pyrambium"},
@@ -882,7 +881,7 @@ async def test_file_append_execute_supplied_action(
     assert server.port == port
     assert server.host == host
     await add_server(client=client, server_name="test", server=server)
-    file_append = file_x.FileAppendD(
+    file_append = file_x.FileAppend(
         # mode = "D",
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
@@ -918,7 +917,7 @@ async def test_file_append_execute_action_key_tag(
     assert server.port == port
     assert server.host == host
     await add_server(client=client, server_name="test", server=server)
-    file_append = file_x.FileAppendD(
+    file_append = file_x.FileAppend(
         # mode = "D",
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),
@@ -957,7 +956,7 @@ async def test_file_append_execute_supplied_action_key_tag(
     assert server.port == port
     assert server.host == host
     await add_server(client=client, server_name="test", server=server)
-    file_append = file_x.FileAppendD(
+    file_append = file_x.FileAppend(
         # mode = "D",
         relative_to_output_dir=False,
         file=str(tmp_path / "output.txt"),

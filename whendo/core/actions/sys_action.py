@@ -1,6 +1,6 @@
 import time
 import logging
-from whendo.core.action import Action
+from whendo.core.action import Action, Rez
 import whendo.core.util as util
 
 
@@ -17,8 +17,8 @@ class SysInfo(Action):
     def description(self):
         return f"This action returns system-level information."
 
-    def execute(self, tag: str = None, data: dict = None):
-        return self.action_result(result=util.SystemInfo.get(), data=data)
+    def execute(self, tag: str = None, rez: Rez = None):
+        return Rez(result=util.SystemInfo.get(), rez=rez, flds=rez.flds if rez else {})
 
 
 class MiniInfo(Action):
@@ -31,8 +31,8 @@ class MiniInfo(Action):
     def description(self):
         return f"This action returns terse local information."
 
-    def execute(self, tag: str = None, data: dict = None):
-        return self.action_result(result=self.local_info(), data=data)
+    def execute(self, tag: str = None, rez: Rez = None):
+        return Rez(result=self.local_info(), rez=rez, flds=rez.flds if rez else {})
 
 
 class Pause(Action):
@@ -47,6 +47,12 @@ class Pause(Action):
     def description(self):
         return f"This action sleeps for {self.seconds} second{'s' if self.seconds != 1 else ''}."
 
-    def execute(self, tag: str = None, data: dict = None):
-        time.sleep(self.seconds)
-        return self.action_result(result=self.seconds, data=data)
+    def execute(self, tag: str = None, rez: Rez = None):
+        flds = self.compute_flds(rez=rez)
+        seconds = flds["seconds"]
+        time.sleep(seconds)
+        return Rez(
+            result=f"slept for ({seconds}) seconds",
+            rez=rez,
+            flds=rez.flds if rez else {},
+        )

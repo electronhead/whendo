@@ -1,7 +1,7 @@
 from datetime import time
 import whendo.core.scheduler as sched
 from whendo.core.util import Now
-from whendo.core.action import Action
+from whendo.core.action import Action, Rez
 from whendo.core.timed import Timed
 
 
@@ -16,8 +16,8 @@ def xtest_during_period():
     class TestAction(Action):
         fleas: int
 
-        def execute(self, tag: str = None, data: dict = None):
-            return True
+        def execute(self, tag: str = None, rez: Rez = None):
+            return Rez()
 
     action = TestAction(fleas=185000000)
 

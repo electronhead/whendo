@@ -1,8 +1,7 @@
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
 import logging
-from collections import namedtuple
-from .util import object_info, SystemInfo, Now
+from .util import object_info, SystemInfo
 
 
 logger = logging.getLogger(__name__)
@@ -16,11 +15,8 @@ class Action(BaseModel):
     def description(self):
         return "This has no description."
 
-    def execute(self, tag: str = None, data: dict = None):
-        """
-        This method typically attempts to do something useful and return something useful
-        """
-        return {"result": "not sure what happened"}
+    def execute(self, tag: str = None, rez: Rez = None) -> Rez:
+        return Rez(rez=rez)
 
     def info(self):
         return object_info(self)
@@ -44,24 +40,44 @@ class Action(BaseModel):
             "time": self.local_time(),
         }
 
-    def action_result(self, result: Any = None, data: dict = None, extra: dict = None):
-        output = {}
-        if result is not None:
-            output["result"] = result
-        if data is not None:
-            output["data"] = data
-        if extra is not None:
-            output["extra"] = extra
-        output["info"] = self.info()
-        return output
+    def fields(self):
+        """
+        Return only non-meta fields.
+        """
+        return set(
+            name for name in self.__fields__ if self.__fields__[name].default != name
+        )
 
-    def get_result(self, x):
-        if isinstance(x, dict):
-            if "result" in x:
-                return x["result"]
-        return x
+    def field_values(self):
+        return {
+            f: self.__dict__[f] for f in self.fields() if self.__dict__[f] is not None
+        }
+
+    def compute_flds(self, rez: Rez = None):
+        field_values = self.field_values()
+        if rez:
+            selected_flds = {
+                key: rez.flds[key] for key in self.fields() if key not in field_values
+            }
+            return add_dicts(field_values, selected_flds)
+        else:
+            return field_values()
 
 
-class ActionData(Action):
+def add_dicts(dict1: dict, dict2: dict):
+    return {**dict1, **dict2}
+
+
+class Rez(BaseModel):
+    result: Any = None
+    flds: Dict[str, Any] = {}
+    rez: Optional[
+        BaseModel
+    ] = None  # actually a Rez -- cannot define self-referencing classes
+    extra: Optional[Dict[str, Any]] = None
+    info: Optional[Dict[str, Any]] = None
+
+
+class ActionRez(Action):
     action: Action
-    data: dict
+    rez: Rez
