@@ -40,7 +40,7 @@ class Fields(Action):
         return f"This action adds ({self.flds}) to the field value flow."
 
     def execute(self, tag: str = None, rez: Rez = None):
-        rez_flds = rez.flds.copy() if rez else {}
+        rez_flds = rez.flds.copy() if rez and rez.flds else {}
         rez_flds.update(self.compute_flds(rez=rez))
         result = f"fields ({rez_flds}) added to data flow"
         return self.action_result(
