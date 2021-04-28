@@ -30,6 +30,7 @@ from whendo.core.util import (
     DateTime,
     Now,
     DateTime2,
+    Rez,
 )
 from whendo.core.resolver import (
     resolve_action,
@@ -37,6 +38,8 @@ from whendo.core.resolver import (
     resolve_file_pathe,
     resolve_program,
     resolve_server,
+    resolve_instance,
+    resolve_rez,
 )
 from .fixtures import port, host, startup_and_shutdown_uvicorn, base_url
 import logging
@@ -100,7 +103,7 @@ async def test_uvicorn_4(startup_and_shutdown_uvicorn, base_url, tmp_path):
     output_file = str(tmp_path / "output.txt")
     xtra = {"base_url": base_url}
     action = file_x.FileAppend(
-        relative_to_output_dir=False, file=output_file, xtra=xtra
+        relative_to_output_dir=False, file=output_file, payload={"show": "two"}
     )
     scheduler = Timely(interval=1)
 
@@ -122,10 +125,14 @@ async def test_uvicorn_logic_action(startup_and_shutdown_uvicorn, base_url, tmp_
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"show": "two"},
     )
     action2 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"show": "two"},
     )
     action3 = All(actions=[action1, action2])
     scheduler = Timely(interval=1)
@@ -154,10 +161,14 @@ async def test_set_action_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"show": "two"},
     )
     action2 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"show": "two"},
     )
     scheduler = Timely(interval=1)
 
@@ -190,10 +201,14 @@ async def test_reschedule_action_1(startup_and_shutdown_uvicorn, base_url, tmp_p
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"show": "two"},
     )
     action2 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"show": "three"},
     )
     scheduler = Timely(interval=1)
 
@@ -286,10 +301,14 @@ async def test_unschedule_all_scheduling(
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"show": "two"},
     )
     action2 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"show": "two"},
     )
     scheduler = Timely(interval=1)
 
@@ -315,16 +334,24 @@ async def test_clear_all_scheduling(startup_and_shutdown_uvicorn, base_url, tmp_
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"show": "two"},
     )
     action2 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"show": "two"},
     )
     action3 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output3.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output3.txt"),
+        payload={"show": "two"},
     )
     action4 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output4.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output4.txt"),
+        payload={"show": "two"},
     )
     await add_action(base_url=base_url, action_name="foo1", action=action1)
     await add_action(base_url=base_url, action_name="foo2", action=action2)
@@ -430,10 +457,14 @@ async def test_replace_dispatcher(startup_and_shutdown_uvicorn, base_url, tmp_pa
     saved_dir = await get_saved_dir(base_url=base_url)
 
     action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"show": "two"},
     )
     action2 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"show": "two"},
     )
     scheduler = Timely(interval=1)
 
@@ -501,7 +532,9 @@ async def test_execute_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await reset_dispatcher(base_url, str(tmp_path))
 
     action = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output.txt"),
+        payload={"show": "two"},
     )
     await add_action(base_url=base_url, action_name="foo", action=action)
 
@@ -526,7 +559,9 @@ async def test_execute_action_with_rez(
     await add_action(base_url=base_url, action_name="foo", action=action)
 
     await execute_action_with_rez(
-        base_url=base_url, action_name="foo", rez=Rez(result={"fleas": "abound"})
+        base_url=base_url,
+        action_name="foo",
+        rez=Rez(flds={"payload": {"fleas": "abound"}}),
     )
 
     lines = None
@@ -544,7 +579,9 @@ async def test_execute_supplied_action(
     await reset_dispatcher(base_url, str(tmp_path))
 
     action = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output.txt"),
+        payload={"show": "time"},
     )
 
     await post(base_url, "/execution", action)
@@ -553,6 +590,7 @@ async def test_execute_supplied_action(
     with open(action.file, "r") as fid:
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("show" in line for line in lines)
 
 
 @pytest.mark.asyncio
@@ -565,7 +603,7 @@ async def test_execute_supplied_action_with_rez(
     action = file_x.FileAppend(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
-    rez = Rez(result={"higher": "and higher"})
+    rez = Rez(flds={"payload": {"higher": "and higher"}})
     action_rez = ActionRez(action=action, rez=rez)
     await post(base_url, "/execution/with_rez", action_rez)
     time.sleep(4)
@@ -586,7 +624,9 @@ async def test_defer_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
     await reset_dispatcher(base_url, str(tmp_path))
     action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"over": 3},
     )
     scheduler = Timely(interval=1)
 
@@ -616,6 +656,7 @@ async def test_defer_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
     with open(action1.file, "r") as fid:
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("3" in line for line in lines)
 
 
 @pytest.mark.asyncio
@@ -627,7 +668,9 @@ async def test_expire_action(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
     await reset_dispatcher(base_url, str(tmp_path))
     action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"under": 3.2},
     )
     scheduler = Timely(interval=1)
 
@@ -663,7 +706,9 @@ async def test_immediately(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
     await reset_dispatcher(base_url, str(tmp_path))
     action = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"oh": "out put #1"},
     )
     scheduler = Immediately()
 
@@ -698,13 +743,19 @@ async def test_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"oh": "out put #1"},
     )
     action2 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"oh": "out put #2"},
     )
     action3 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output3.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output3.txt"),
+        payload={"oh": "out put #3"},
     )
     scheduler = Timely(interval=1)
     immediately = Immediately()
@@ -743,13 +794,19 @@ async def test_unschedule_program(startup_and_shutdown_uvicorn, base_url, tmp_pa
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"oh": "out put 1"},
     )
     action2 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"oh": "out put #2"},
     )
     action3 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output3.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output3.txt"),
+        payload={"oh": "out put #3"},
     )
     scheduler = Timely(interval=1)
     immediately = Immediately()
@@ -771,6 +828,7 @@ async def test_unschedule_program(startup_and_shutdown_uvicorn, base_url, tmp_pa
     await schedule_program(base_url=base_url, program_name="baz", start_stop=start_stop)
     time.sleep(1)
     await assert_deferred_program_count(base_url=base_url, n=1)
+    await assert_scheduled_action_count(base_url=base_url, n=0)
     await unschedule_program(base_url=base_url, program_name="baz")
     await assert_deferred_program_count(base_url=base_url, n=0)
 
@@ -792,13 +850,19 @@ async def test_delete_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output1.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"oh": "out put #1"},
     )
     action2 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output2.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"oh": "out put #2"},
     )
     action3 = file_x.FileAppend(
-        relative_to_output_dir=False, file=str(tmp_path / "output3.txt")
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output3.txt"),
+        payload={"oh": "out put #3"},
     )
     scheduler = Timely(interval=1)
     immediately = Immediately()
@@ -843,10 +907,7 @@ async def test_success(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await add_action(base_url=base_url, action_name="success", action=action)
     rez = Rez(result={"fleas": "unite!"})
 
-    result = await execute_action_with_rez(
-        base_url=base_url, action_name="success", rez=rez
-    )
-    assert result.result = rez
+    await execute_action_with_rez(base_url=base_url, action_name="success", rez=rez)
 
 
 @pytest.mark.asyncio
@@ -1071,6 +1132,7 @@ async def execute_action(base_url: str, action_name: str):
     assert isinstance(retrieved_action, Action), str(type(retrieved_action))
     response = await get(base_url, path=f"/actions/{action_name}/execute")
     assert response.status_code == 200, f"failed to execute action ({action_name})"
+    return resolve_rez(response.json())
 
 
 async def execute_action_with_rez(base_url: str, action_name: str, rez: Rez):
@@ -1079,13 +1141,11 @@ async def execute_action_with_rez(base_url: str, action_name: str, rez: Rez):
     assert response.status_code == 200, f"failed to get action ({action_name})"
     retrieved_action = resolve_action(response.json())
     assert isinstance(retrieved_action, Action), str(type(retrieved_action))
-    response = await post(
-        base_url, path=f"/actions/{action_name}/execute", rez=rez
-    )
+    response = await post(base_url, path=f"/actions/{action_name}/execute", data=rez)
     assert (
         response.status_code == 200
     ), f"failed to execute action ({action_name}) with rez ({rez}) with response ({response.json()})"
-    return response.json()
+    return resolve_rez(response.json())
 
 
 async def add_action(base_url: str, action_name: str, action: Action):

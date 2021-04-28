@@ -10,6 +10,7 @@ from whendo.core.resolver import (
     resolve_file_pathe,
     resolve_program,
     resolve_server,
+    resolve_rez,
 )
 from whendo.core.util import FilePathe, DateTime, DateTime2, Rez, RezDict
 from whendo.core.dispatcher import Dispatcher
@@ -60,13 +61,13 @@ class ClientAsync(BaseModel):
 
     # /execution
     async def execute_supplied_action(self, supplied_action: Action):
-        return await self.post("/execution", supplied_action)
+        response = await self.post("/execution", supplied_action)
+        return resolve_rez(response.json())
 
-    async def execute_supplied_action_with_rez(
-        self, supplied_action: Action, rez: Rez
-    ):
+    async def execute_supplied_action_with_rez(self, supplied_action: Action, rez: Rez):
         action_rez = ActionRez(action=supplied_action, rez=rez)
-        return await self.post("/execution/with_rez", action_rez)
+        response = await self.post("/execution/with_rez", action_rez)
+        return resolve_rez(response.json())
 
     # /actions
     async def get_action(self, action_name: str):
@@ -87,8 +88,8 @@ class ClientAsync(BaseModel):
     async def execute_action(self, action_name: str):
         return await self.get(f"/actions/{action_name}/execute")
 
-    async def execute_action_with_rez(self, action_name: str, rez: Rex):
-        return await self.post_dict(f"/actions/{action_name}/execute", rez)
+    async def execute_action_with_rez(self, action_name: str, rez: Rez):
+        return await self.post(f"/actions/{action_name}/execute", rez)
 
     # /schedulers
     async def schedule_action(self, scheduler_name: str, action_name: str):
@@ -192,13 +193,17 @@ class ClientAsync(BaseModel):
         return await self.post_dict(f"/servers/by_tags", key_tags)
 
     async def execute_on_server(self, server_name: str, action_name: str):
-        return await self.get(f"/servers/{server_name}/actions/{action_name}/execute")
+        return resolve_rez(
+            await self.get(f"/servers/{server_name}/actions/{action_name}/execute")
+        )
 
     async def execute_on_server_with_rez(
-        self, server_name: str, action_name: str, rez:Rez
+        self, server_name: str, action_name: str, rez: Rez
     ):
-        return await self.post(
-            f"/servers/{server_name}/actions/{action_name}/execute", rez
+        return resolve_rez(
+            await self.post(
+                f"/servers/{server_name}/actions/{action_name}/execute", rez
+            )
         )
 
     async def execute_on_servers(self, mode: str, action_name: str, key_tags: dict):
@@ -207,7 +212,7 @@ class ClientAsync(BaseModel):
         )
 
     async def execute_on_servers_with_rez(
-        self, mode: str, action_name: str, key_tags: dict, rez:Rez
+        self, mode: str, action_name: str, key_tags: dict, rez: Rez
     ):
         rez_dict = RezDict(r=rez, d=key_tags)
         return await self.post(

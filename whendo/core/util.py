@@ -156,6 +156,60 @@ def resolve_instance(
         return found_class(**dictionary)
 
 
+def resolve_instance_multi_class(
+    klasses, dictionary: Dict[str, Any], check_for_found_class: bool = True
+):
+    """
+    An also recursive version of resolve_instance that resolves across multiple
+    inheritance trees.
+    """
+    found_classes = [
+        x for x in [find_class(klass, dictionary) for klass in klasses] if x
+    ]
+    count = len(found_classes)
+    if count == 0:
+        if check_for_found_class:
+            raise NameError(
+                f"could not resolve dictionary ({dictionary}) to a subclass of at least one of ({klasses})"
+            )
+        else:
+            for (key, value) in dictionary.items():
+                if isinstance(value, dict):
+                    dictionary[key] = resolve_instance_multi_class(
+                        klasses, dictionary=value, check_for_found_class=False
+                    )
+            return dictionary
+    if count > 1:
+        if dictionary == None or len(dictionary) == 0:
+            return None
+        else:
+            raise NameError(
+                f"multiple found classes ({found_classes}) for dictionary ({dictionary})"
+            )
+    else:
+        found_class = found_classes[0]
+        # resolve singleton dictionary elements; not constrained to producing instance of klass subclass
+        for (key, value) in dictionary.items():
+            if isinstance(value, dict):
+                dictionary[key] = resolve_instance_multi_class(
+                    klasses, dictionary=value, check_for_found_class=False
+                )
+        # resolve list containing all dictionary elements; likelihood of non-klass in this circumstance
+        # is very small, therefore more strict than for singletons
+        for (key, value) in dictionary.items():
+            if isinstance(value, list):
+                if all(isinstance(element, dict) for element in value):
+                    dictionary[key] = list(
+                        resolve_instance_multi_class(klasses, dictionary=element)
+                        for element in value
+                    )
+        return (
+            found_class(**dictionary)
+            if dictionary and len(dictionary) > 0
+            else found_class()
+        )
+
+
 def object_info(obj):
     return {
         "class": f"{obj.__class__.__module__}.{obj.__class__.__name__}",
@@ -540,21 +594,14 @@ class Http(BaseModel):
         return f"http://{self.host}:{self.port}{path}"
 
 
-class ModelModel(BaseModel):
-    m1: BaseModel
-    m2: BaseModel
-    
-class ModelDict(BaseModel):
-    m: BaseModel
-    d: dict
-    
 class RezDict(BaseModel):
-    r: BaseModel # really a Rez
+    r: BaseModel  # a Rez
     d: dict
 
+
 class Rez(BaseModel):
-    result: Any = None
-    flds: Dict[str, Any] = {}
+    result: Optional[Any] = None
+    flds: Optional[Dict[str, Any]] = None
     rez: Optional[
         BaseModel
     ] = None  # actually a Rez -- cannot define self-referencing classes

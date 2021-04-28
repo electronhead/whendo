@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status, Depends
-from whendo.core.util import KeyTagMode, Rez
+from whendo.core.util import KeyTagMode, RezDict
 from whendo.api.shared import return_success, raised_exception, get_dispatcher
-from whendo.core.resolver import resolve_server
+from whendo.core.resolver import resolve_server, resolve_rez
 
 router = APIRouter(prefix="/servers", tags=["Servers"])
 
@@ -114,7 +114,9 @@ def execute_on_server(server_name: str, action_name: str):
     "/{server_name}/actions/{action_name}/execute_with_rez",
     status_code=status.HTTP_200_OK,
 )
-def execute_on_server_with_rez(server_name: str, action_name: str, rez: Rez):
+def execute_on_server_with_rez(
+    server_name: str, action_name: str, rez=Depends(resolve_rez)
+):
     try:
         return get_dispatcher(router).execute_on_server_with_rez(
             server_name=server_name, action_name=action_name, rez=rez
@@ -145,10 +147,10 @@ def execute_on_servers(action_name: str, mode: str, key_tags: dict):
     "/by_tags/{mode}/actions/{action_name}/execute_with_rez",
     status_code=status.HTTP_200_OK,
 )
-def execute_on_servers_with_rez(
-    action_name: str, mode: str, key_tags: dict, rez: Rez
-):
+def execute_on_servers_with_rez(action_name: str, mode: str, rez_dict: RezDict):
     try:
+        rez = rez_dict.r
+        key_tags = rez_dict.d
         return get_dispatcher(router).execute_on_servers_with_rez(
             action_name=action_name,
             key_tags=key_tags,

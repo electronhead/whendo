@@ -23,13 +23,12 @@ class FileAppend(Action):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        file = (
-            os.path.join(Dirs.output_dir(), flds["file"])
-            if self.relative_to_output_dir
-            else self.file
-        )
+        file = flds["file"]
+        relative_to_output_dir = flds["relative_to_output_dir"]
+        payload = rez.result if rez and rez.result else flds["payload"]
+        file = os.path.join(Dirs.output_dir(), file) if relative_to_output_dir else file
         with open(file, "a") as outfile:
-            PP.pprint(flds["payload"], stream=outfile)
+            PP.pprint(payload, stream=outfile)
             outfile.write("\n")
-        result = f"file ({flds['file']}) appended."
+        result = f"file ({file}) appended."
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})

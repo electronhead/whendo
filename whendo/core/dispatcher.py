@@ -14,22 +14,20 @@ import os
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
-from .util import (
-    PP,
-    Dirs,
-    Now,
-    str_to_dt,
-    dt_to_str,
-    Http,
-    SystemInfo,
-    KeyTagMode,
-)
+from .util import PP, Dirs, Now, str_to_dt, dt_to_str, Http, SystemInfo, KeyTagMode, Rez
 from .hooks import DispatcherHooks
-from .action import Action, Rez
+from .action import Action
 from .program import Program, ProgramItem
 from .scheduler import Scheduler, TimedScheduler, ThresholdScheduler, Immediately
 from .timed import Timed
-from .resolver import resolve_action, resolve_scheduler, resolve_program, resolve_server
+from .resolver import (
+    resolve_action,
+    resolve_scheduler,
+    resolve_program,
+    resolve_server,
+    resolve_action,
+    resolve_rez,
+)
 from .executor import Executor
 from .scheduling import (
     DeferredPrograms,
@@ -638,13 +636,12 @@ class Dispatcher(BaseModel):
         ):
             return self.execute_action(action_name)
         else:
-            return Http(host=server.host, port=server.port).get(
+            response = Http(host=server.host, port=server.port).get(
                 f"/actions/{action_name}/execute"
             )
+            return resolve_rez(response)
 
-    def execute_on_server_with_rez(
-        self, server_name: str, action_name: str, rez: Rez
-    ):
+    def execute_on_server_with_rez(self, server_name: str, action_name: str, rez: Rez):
         server = self.get_server(server_name=server_name)
         if (
             server.host == SystemInfo.get()["host"]
@@ -652,9 +649,10 @@ class Dispatcher(BaseModel):
         ):
             return self.execute_action_with_rez(action_name=action_name, rez=rez)
         else:
-            return Http(host=server.host, port=server.port).post(
+            response = Http(host=server.host, port=server.port).post(
                 f"/actions/{action_name}/execute", rez
             )
+            return resolve_rez(response)
 
     def execute_on_servers(
         self, action_name: str, key_tags: Dict[str, List[str]], key_tag_mode: KeyTagMode
@@ -669,11 +667,10 @@ class Dispatcher(BaseModel):
             ):
                 result.append(self.execute_action(action_name))
             else:
-                result.append(
-                    Http(host=server.host, port=server.port).get(
-                        f"/actions/{action_name}/execute"
-                    )
+                response = Http(host=server.host, port=server.port).get(
+                    f"/actions/{action_name}/execute"
                 )
+                result.append(resolve_rez(response))
         return result
 
     def execute_on_servers_with_rez(
@@ -695,11 +692,10 @@ class Dispatcher(BaseModel):
                     self.execute_action_with_rez(action_name=action_name, rez=rez)
                 )
             else:
-                result.append(
-                    Http(host=server.host, port=server.port).post(
-                        f"/actions/{action_name}/execute", rez
-                    )
+                response = Http(host=server.host, port=server.port).post(
+                    f"/actions/{action_name}/execute", rez
                 )
+                result.append(resolve_rez(response))
         return result
 
     # scheduling

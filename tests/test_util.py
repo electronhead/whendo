@@ -4,6 +4,7 @@ import pathlib
 from pydantic import BaseModel
 from typing import List
 import whendo.core.util as util
+from whendo.core.util import Rez, DateTime, Now
 
 
 def test_now_1():
@@ -95,8 +96,8 @@ def test_key_strings_from_dict():
 
 def test_resolve_instance():
     """
-    Top > A, B, D
-    D > C
+    Top > A, B, C
+    C > D
     """
 
     class Top(BaseModel):
@@ -142,6 +143,90 @@ def test_resolve_instance():
     assert isinstance(instance2.a_list[0].b_instance, C)
     assert instance1 == instance2.a_list[0].b_list[2]
     assert instance0 == instance2.a_list[1].d_instance
+
+
+def test_resolve_instance_multi_class_1():
+    """
+    Top > A, B, D
+    C > D
+    Top2 > W, X, Y
+    Y > Z
+    """
+
+    class Top(BaseModel):
+        pass
+
+    class Top2(BaseModel):
+        pass
+
+    class C(Top):
+        c: str
+
+    class D(C):
+        d: str
+        d_instance: Top
+
+    class B(Top):
+        b_instance: Top2
+        b_list: List[Top]
+
+    class A(Top):
+        a_list: List[Top]
+
+    class Y(Top2):
+        y: str
+
+    class Z(Y):
+        z: str
+        z_instance: Top2
+
+    class X(Top2):
+        x_instance: Top2
+        x_list: List[Top2]
+
+    class W(Top2):
+        w_list: List[Top2]
+
+    dictionary0 = {"c": "why"}
+    dictionary1 = {  # D
+        "c": "dc",
+        "d": "abc",
+        "d_instance": {  # C
+            "c": "mmm",
+        },
+    }
+    dictionary2 = {  # A
+        "a_list": [
+            {  # B
+                "b_instance": {"y": "bbb"},  # Y
+                "b_list": [{"c": "yyy"}, {"c": "zzz"}, dictionary1],  # C  # C
+            },
+            {"c": "people", "d": "who", "d_instance": dictionary0},  # D
+        ]
+    }
+    instance0 = util.resolve_instance_multi_class([Top, Top2], dictionary0)
+    instance1 = util.resolve_instance_multi_class([Top, Top2], dictionary1)
+    instance2 = util.resolve_instance_multi_class([Top, Top2], dictionary2)
+    assert isinstance(instance0, C)
+    assert isinstance(instance1, D)
+    assert isinstance(instance2, A)
+    assert isinstance(instance2.a_list[0].b_instance, Y)
+    assert instance1 == instance2.a_list[0].b_list[2]
+    assert instance0 == instance2.a_list[1].d_instance
+
+
+def test_resolve_instance_multi_class_2():
+    fp = util.FilePathe(path="/w/xy/z")
+    dt = DateTime(dt=Now.dt())
+    rezz = Rez(result=fp, flds={"x": dt})
+    rez = Rez(result=dt, flds={"x": dt}, rez=rezz)
+    rezd = rez.dict()
+    rez2 = util.resolve_instance_multi_class([Rez, DateTime, util.FilePathe], rezd)
+    assert isinstance(rez2.flds["x"], DateTime)
+    assert rez2.result == dt
+    assert rez2.rez == rezz
+    assert isinstance(rez2.rez.flds["x"], DateTime)
+    assert rez2.rez.result == fp
 
 
 def test_filepathe():

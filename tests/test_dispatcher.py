@@ -12,6 +12,7 @@ from whendo.core.actions.list_action import (
     IfElse,
     RaiseIfEqual,
     Fields,
+    Result,
     Success,
     Failure,
 )
@@ -259,9 +260,7 @@ def test_schedule_action_action_data_1(friends):
     dispatcher.add_action("foo", action)
     dispatcher.add_action("flea", action2)
     dispatcher.add_scheduler("bar", scheduler)
-    schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo"
-    )
+    schedule_action = ScheduleAction(scheduler_name="bar", action_name="foo")
     schedule_action.execute(rez=Rez(flds={"action_name": "flea"}))
 
     assert dispatcher.get_scheduled_action_count() == 1
@@ -285,9 +284,7 @@ def test_schedule_action_action_data_2(friends):
     dispatcher.add_action("foo", action)
     dispatcher.add_action("flea", action2)
     dispatcher.add_scheduler("bar", scheduler)
-    schedule_action = ScheduleAction(
-        scheduler_name="bar", action_name="foo"
-    )
+    schedule_action = ScheduleAction(scheduler_name="bar")
     schedule_action.execute(rez=Rez(flds={"action_name": "flea"}))
 
     assert dispatcher.get_scheduled_action_count() == 1
@@ -899,6 +896,7 @@ def test_execute_with_rez(friends):
     """
     dispatcher, scheduler, action = friends()
     result = action.execute(rez=Rez(result={"fleacount": "infinite"}))
+    print("ASDFSDF", result)
     assert result.rez.result == {"fleacount": "infinite"}
 
 
@@ -985,7 +983,7 @@ def test_if_else_2(friends):
         if_action=ScheduleAction(scheduler_name="immediately", action_name="foo1"),
         else_action=ScheduleAction(scheduler_name="immediately", action_name="foo2"),
     )
-    schedule_action = All(actions=[Fields(flds={"result": 2}), if_else])
+    schedule_action = All(actions=[Result(value=2), if_else])
 
     dispatcher.add_action("schedule_action", schedule_action)
     dispatcher.schedule_action("immediately", "schedule_action")
@@ -1003,7 +1001,9 @@ class FleaCount(Action):
 
     def execute(self, tag: str = None, rez: Rez = None):
         self.flea_count += 1
-        return self.action_result(result = self.flea_count)
+        return self.action_result(
+            result=self.flea_count, rez=rez, flds=rez.flds if rez else {}
+        )
 
 
 @pytest.fixture

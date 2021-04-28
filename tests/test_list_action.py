@@ -199,7 +199,7 @@ def test_if_else_action_else_1():
 
     class Action1(Action):
         def execute(self, tag: str = None, rez: Rez = None):
-            return Exception()
+            raise Exception()
 
     class Action2(Action):
         def execute(self, tag: str = None, rez: Rez = None):
@@ -225,14 +225,14 @@ def test_if_else_action_else_2():
     """
     Show that, in the absence of an if_action,
     if test action succeeds, its result
-    is the result of if_then_else.
+    is the result of else_action.
     """
     dictionary = {"value": None}
 
     class Action1(Action):
         def execute(self, tag: str = None, rez: Rez = None):
             dictionary["value"] = self.__class__
-            return Exception()
+            raise Exception()
 
     class Action2(Action):
         def execute(self, tag: str = None, rez: Rez = None):
@@ -308,10 +308,8 @@ def test_composition_all_1():
     Show that Actions execute methods are composed.
     """
     add1 = Add1()
-    sum_all = list_x.All(actions=[add1, add1, add1, add1]).execute(
-        data={"result": 10.1}
-    )
-    assert sum_all["result"] == 14.1
+    sum_all = list_x.All(actions=[add1, add1, add1, add1]).execute(rez=Rez(result=10.1))
+    assert sum_all.result == 14.1
 
 
 def test_composition_all_2():
@@ -321,9 +319,9 @@ def test_composition_all_2():
     """
     add1 = Add1()
     sum_all = list_x.All(actions=[add1, add1, list_x.Failure(), add1, add1]).execute(
-        data={"result": 10.1}
+        rez=Rez(result=10.1)
     )
-    assert sum_all["result"] == 2
+    assert sum_all.result == 2
 
 
 def test_composition_all_3():
@@ -332,9 +330,9 @@ def test_composition_all_3():
     """
     add1 = Add1()
     sum_all = list_x.All(actions=[add1, add1, list_x.Success(), add1, add1]).execute(
-        data={"result": 10.1}
+        rez=Rez(result=10.1)
     )
-    assert sum_all["result"] == 14.1
+    assert sum_all.result == 14.1
 
 
 def test_composition_uf():
@@ -344,9 +342,8 @@ def test_composition_uf():
     add1 = Add1()
     sum_uf = list_x.UntilFailure(
         actions=[add1, add1, list_x.Failure(), add1, add1]
-    ).execute(data={"result": 10.1})
-    print(sum_uf)
-    assert sum_uf["result"] == 12.1
+    ).execute(rez=Rez(result=10.1))
+    assert sum_uf.result == 12.1
 
 
 def test_composition_us():
@@ -356,8 +353,8 @@ def test_composition_us():
     add1 = Add1()
     sum_us = list_x.UntilSuccess(
         actions=[add1, add1, list_x.Failure(), add1, add1]
-    ).execute(data={"result": 10.1})
-    assert sum_us["result"] == 11.1
+    ).execute(rez=Rez(result=10.1))
+    assert sum_us.result == 11.1
 
 
 def test_composition_arg():
@@ -366,10 +363,9 @@ def test_composition_arg():
     """
     add1 = Add1()
     sum_all = list_x.All(
-        actions=[list_x.Arg(data={"result": 10.1}), add1, add1, add1]
+        actions=[list_x.Result(value=10.1), add1, add1, add1]
     ).execute()
-    print("sum_all", sum_all)
-    assert sum_all["result"] == 13.1
+    assert sum_all.result == 13.1
 
 
 def test_compose():
@@ -378,7 +374,7 @@ def test_compose():
     """
     add1 = Add1()
     result = list_x.Compose(actions=[add1, add1, list_x.Success(), add1]).execute()
-    assert result["result"] == 3
+    assert result.result == 3
 
 
 def test_terminate():
@@ -409,7 +405,7 @@ def test_raise_if_equal_1():
         include_processing_info=True,
         actions=[add1, add1, list_x.RaiseIfEqual(value=2), add1, add1],
     ).execute()
-    assert result["result"] == 2
+    assert result.result == 2
 
 
 def test_raise_if_equal_2():
@@ -420,7 +416,7 @@ def test_raise_if_equal_2():
     result = list_x.UntilFailure(
         actions=[add1, add1, list_x.RaiseIfEqual(value=1), add1, add1]
     ).execute()
-    assert result["result"] == 4
+    assert result.result == 4
 
 
 def test_raise_if_equal_3():
@@ -430,13 +426,13 @@ def test_raise_if_equal_3():
     add1 = Add1()
     result = list_x.UntilFailure(
         actions=[
-            list_x.Arg(data={"result": 2}),
+            list_x.Result(value=2),
             list_x.RaiseIfEqual(value=2),
             add1,
             add1,
         ]
     ).execute()
-    assert result["result"] == 2
+    assert result.result == 2
 
 
 def test_raise_if_equal_4():
@@ -446,13 +442,13 @@ def test_raise_if_equal_4():
     add1 = Add1()
     result = list_x.UntilFailure(
         actions=[
-            list_x.Arg(data={"result": 2}),
+            list_x.Result(value=2),
             list_x.RaiseIfEqual(value=1),
             add1,
             add1,
         ]
     ).execute()
-    assert result["result"] == 4
+    assert result.result == 4
 
 
 # helpers
@@ -464,5 +460,5 @@ class Add1(Action):
     def execute(self, tag: str = None, rez: Rez = None):
         if rez:
             if isinstance(rez.result, int) or isinstance(rez.result, float):
-                return self.action_result(result=rez.result+1)
+                return self.action_result(result=rez.result + 1)
         return self.action_result(result=1)

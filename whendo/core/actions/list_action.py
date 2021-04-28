@@ -3,7 +3,7 @@ from enum import Enum
 import json
 import logging
 from collections import namedtuple
-from whendo.core.action import Action, add_dicts, Rez
+from whendo.core.action import Action, Rez
 from whendo.core.exception import TerminateSchedulerException
 
 
@@ -43,7 +43,22 @@ class Fields(Action):
         rez_flds = rez.flds.copy() if rez else {}
         rez_flds.update(self.compute_flds(rez=rez))
         result = f"fields ({rez_flds}) added to data flow"
-        return self.action_result(result=rez.result if rez else None, rez=rez, flds=rez_flds)
+        return self.action_result(
+            result=rez.result if rez else None, rez=rez, flds=rez_flds
+        )
+
+
+class Result(Action):
+    result: str = "result"
+    value: Any
+
+    def description(self):
+        return f"This action returns the stored value as a Rez.result."
+
+    def execute(self, tag: str = None, rez: Rez = None):
+        flds = self.compute_flds(rez=rez)
+        value = flds["value"]
+        return self.action_result(result=value, rez=rez, flds=rez.flds if rez else {})
 
 
 class RaiseIfEqual(Action):
@@ -71,7 +86,11 @@ class RaiseIfEqual(Action):
             result = (
                 f"exception not thrown because ({value}) not equal to ({data_value})"
             )
-            return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
+            return self.action_result(
+                result=rez.result if rez else None,
+                rez=rez,
+                flds=rez.flds if rez else {},
+            )
 
 
 class Terminate(Action):
@@ -193,8 +212,9 @@ class ListAction(Action):
                 json.dumps(processing_info),
             )
         extra = processing_info if flds["include_processing_info"] else None
+        rez = processing_info["result"]
         return self.action_result(
-            result=processing_info["result"],
+            result=rez.result if rez else None,
             rez=rez,
             flds=rez.flds if rez else {},
             extra=extra,
@@ -274,7 +294,7 @@ def process_actions(
             exception_actions.append(exception_dict)
             if isinstance(exception, TerminateSchedulerException):
                 exception.value = processing_results(
-                    self.action_result(result=str(exception)),
+                    Rez(result=str(exception)),
                     processing_count,
                     success_count,
                     exception_count,
@@ -284,9 +304,7 @@ def process_actions(
                 raise exception
             if op_mode == ListOpMode.UNTIL_FAILURE:  # stop after first failure
                 break
-            loop_rez = self.action_result(
-                result=exception_dict, rez=rez, flds=rez.flds if rez else {}
-            )
+            loop_rez = Rez(result=exception_dict, rez=rez, flds=rez.flds if rez else {})
         else:
             success_count += 1
             successful_actions.append(action.dict())
@@ -333,7 +351,7 @@ class IfElse(Action):
         flds = self.compute_flds(rez=rez)
         test_action = flds["test_action"]
         else_action = flds["else_action"]
-        if_action = flds["if_action"]
+        if_action = flds["if_action"] if "if_action" in flds else None
         exception_on_no_success = flds["exception_on_no_success"]
         include_processing_info = flds["include_processing_info"]
         exception = None
@@ -438,7 +456,7 @@ class IfElse(Action):
                     result = exception_dict
                 else:
                     success_count += 1
-                    successful_actions.append(self.if_action.dict())
+                    successful_actions.append(if_action.dict())
             else:  # just use test_result since there is no if_action
                 pass
 
@@ -461,8 +479,9 @@ class IfElse(Action):
                 json.dumps(processing_info),
             )
         extra = processing_info if self.include_processing_info else None
+        rez = result = processing_info["result"]
         return self.action_result(
-            result=processing_info["result"],
+            result=rez.result if rez else None,
             rez=rez,
             flds=rez.flds if rez else {},
             extra=extra,

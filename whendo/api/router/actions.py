@@ -1,7 +1,6 @@
 from fastapi import APIRouter, status, Depends
 from whendo.api.shared import return_success, raised_exception, get_dispatcher
-from whendo.core.resolver import resolve_action
-from whendo.core.util import Rez
+from whendo.core.resolver import resolve_action, resolve_rez
 
 router = APIRouter(prefix="/actions", tags=["Actions"])
 
@@ -73,7 +72,7 @@ def execute_action(action_name: str):
 
 
 @router.post("/{action_name}/execute", status_code=status.HTTP_200_OK)
-def execute_action_with_rez(action_name: str, rez: Rez):
+def execute_action_with_rez(action_name: str, rez=Depends(resolve_rez)):
     """
     Two potential types of exceptions below. One resulting from the actual execute_action call and
     the other returned from the execution of the action itself.

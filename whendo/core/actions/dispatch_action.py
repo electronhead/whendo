@@ -4,6 +4,7 @@ from typing import Optional, Dict, Set, Any
 from whendo.core.util import Now, Http, KeyTagMode, DateTime2, DateTime
 from whendo.core.hooks import DispatcherHooks
 from whendo.core.action import Action, ActionRez, Rez
+from whendo.core.resolver import resolve_rez
 
 
 logger = logging.getLogger(__name__)
@@ -215,17 +216,20 @@ class Exec(DispatcherAction):
                     tag=tag, rez=rez
                 )
             else:
-                result = Http(host=host, port=port).post(
+                response = Http(host=host, port=port).post(
                     f"/actions/{action_name}/execute", rez
                 )
+                result = resolve_rez(response)
         else:
             if host == self.local_host() and port == self.local_port():
                 # execute locally
                 result = DispatcherHooks.get_action(action_name).execute(tag=tag)
             else:
-                result = Http(host=server.host, port=server.port).get(
+                response = Http(host=server.host, port=server.port).get(
                     f"/actions/{action_name}/execute"
                 )
+                result = resolve_rez(response)
+
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
@@ -270,11 +274,10 @@ class ExecKeyTags(DispatcherAction):
                         )
                     )
                 else:
-                    result.append(
-                        Http(host=server.host, port=server.port).post(
-                            f"/actions/{action_name}/execute", rez
-                        )
+                    response = Http(host=server.host, port=server.port).post(
+                        f"/actions/{action_name}/execute", rez
                     )
+                    result.append(resolve_rez(response))
         else:
             for server in servers:
                 if (
@@ -286,11 +289,10 @@ class ExecKeyTags(DispatcherAction):
                         DispatcherHooks.get_action(action_name).execute(tag=tag)
                     )
                 else:
-                    result.append(
-                        Http(host=server.host, port=server.port).get(
-                            f"/actions/{action_name}/execute"
-                        )
+                    response = Http(host=server.host, port=server.port).get(
+                        f"/actions/{action_name}/execute"
                     )
+                    result.append(resolve_rez(response))
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
@@ -330,17 +332,19 @@ class ExecSupplied(DispatcherAction):
                 result = action.execute(tag=tag, rez=rez)
             else:
                 action_rez = ActionRez(action=action, rez=rez)
-                result = Http(host=host, port=port).post(
+                response = Http(host=host, port=port).post(
                     f"/execution/with_rez", action_rez
                 )
+                result = resolve_rez(response)
         else:
             if host == self.local_host() and port == self.local_port():
                 # execute locally
                 result = action.execute(tag=tag)
             else:
-                result = Http(host=server.host, port=server.port).post(
+                response = Http(host=server.host, port=server.port).post(
                     f"/execution", action
                 )
+                result = resolve_rez(response)
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
@@ -382,11 +386,10 @@ class ExecSuppliedKeyTags(DispatcherAction):
                     result.append(action.execute(tag=tag, rez=rez))
                 else:
                     action_rez = ActionRez(action=action, rez=rez)
-                    result.append(
-                        Http(host=server.host, port=server.port).post(
-                            f"/execution/with_rez", action_rez
-                        )
+                    response = Http(host=server.host, port=server.port).post(
+                        f"/execution/with_rez", action_rez
                     )
+                    result.append(resolve_rez(response))
         else:
             for server in servers:
                 if (
@@ -396,9 +399,8 @@ class ExecSuppliedKeyTags(DispatcherAction):
                     # execute locally
                     result.append(action.execute(tag=tag))
                 else:
-                    result.append(
-                        Http(host=server.host, port=server.port).post(
-                            f"/execution", action
-                        )
+                    response = Http(host=server.host, port=server.port).post(
+                        f"/execution", action
                     )
+                    result.append(resolve_rez(response))
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status, Depends
 from whendo.api.shared import return_success, raised_exception, get_dispatcher
 from whendo.core.resolver import resolve_scheduler
-import whendo.core.util as util
+from whendo.core.util import DateTime
 
 router = APIRouter(prefix="/schedulers", tags=["Schedulers"])
 
@@ -126,7 +126,7 @@ def unschedule_scheduler_action(scheduler_name: str, action_name: str):
     "/{scheduler_name}/actions/{action_name}/defer",
     status_code=status.HTTP_200_OK,
 )
-def defer_action(scheduler_name: str, action_name: str, wait_until: util.DateTime):
+def defer_action(scheduler_name: str, action_name: str, wait_until: DateTime):
     try:
         get_dispatcher(router).defer_action(
             scheduler_name=scheduler_name,
@@ -146,7 +146,7 @@ def defer_action(scheduler_name: str, action_name: str, wait_until: util.DateTim
     "/{scheduler_name}/actions/{action_name}/expire",
     status_code=status.HTTP_200_OK,
 )
-def expire_action(scheduler_name: str, action_name: str, expire_on: util.DateTime):
+def expire_action(scheduler_name: str, action_name: str, expire_on: DateTime):
     try:
         get_dispatcher(router).expire_action(
             scheduler_name=scheduler_name,

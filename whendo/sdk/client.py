@@ -11,6 +11,7 @@ from whendo.core.resolver import (
     resolve_file_pathe,
     resolve_program,
     resolve_server,
+    resolve_rez,
 )
 from whendo.core.util import FilePathe, DateTime, Http, DateTime2, Rez, RezDict
 from whendo.core.dispatcher import Dispatcher
@@ -73,11 +74,13 @@ class Client(BaseModel):
     # /execution
 
     def execute_supplied_action(self, supplied_action: Action):
-        return self.http().post(f"/execution", supplied_action)
+        response = self.http().post(f"/execution", supplied_action)
+        return resolve_rez(response)
 
     def execute_supplied_action_with_rez(self, supplied_action: Action, rez: Rez):
         action_rez = ActionRez(action=supplied_action, rez=rez)
-        return self.http().post(f"/execution/with_rez", action_rez)
+        response = self.http().post(f"/execution/with_rez", action_rez)
+        return resolve_rez(response)
 
     # /actions
     def get_action(self, action_name: str):
@@ -98,7 +101,7 @@ class Client(BaseModel):
     def execute_action(self, action_name: str):
         return self.http().get(f"/actions/{action_name}/execute")
 
-    def execute_action_with_rez(self, action_name: str, rez:Rez):
+    def execute_action_with_rez(self, action_name: str, rez: Rez):
         return self.http().post(f"/actions/{action_name}/execute", rez)
 
     # /schedulers
@@ -200,13 +203,15 @@ class Client(BaseModel):
         return self.http().post_dict(f"/servers/by_tags", key_tags)
 
     def execute_on_server(self, server_name: str, action_name: str):
-        return self.http().get(f"/servers/{server_name}/actions/{action_name}/execute")
+        return resolve_rez(
+            self.http().get(f"/servers/{server_name}/actions/{action_name}/execute")
+        )
 
-    def execute_on_server_with_rez(
-        self, server_name: str, action_name: str, rez:Rez
-    ):
-        return self.http().post(
-            f"/servers/{server_name}/actions/{action_name}/execute", rez
+    def execute_on_server_with_rez(self, server_name: str, action_name: str, rez: Rez):
+        return resolve_rez(
+            self.http().post(
+                f"/servers/{server_name}/actions/{action_name}/execute", rez
+            )
         )
 
     def execute_on_servers(self, mode: str, action_name: str, key_tags: dict):
@@ -215,7 +220,7 @@ class Client(BaseModel):
         )
 
     def execute_on_servers_with_rez(
-        self, mode: str, action_name: str, key_tags: dict, rez:Rez
+        self, mode: str, action_name: str, key_tags: dict, rez: Rez
     ):
         rez_dict = RezDict(r=rez, d=key_tags)
         return self.http().post(

@@ -7,7 +7,14 @@ from .action import Action
 from .scheduler import Scheduler
 from .program import Program
 from .server import Server
-from .util import FilePathe, resolve_instance
+from .util import (
+    FilePathe,
+    resolve_instance,
+    resolve_instance_multi_class,
+    Rez,
+    DateTime,
+    DateTime2,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +41,20 @@ def resolve_program(dictionary: dict, check_for_found_class: bool = True):
 def resolve_server(dictionary: dict, check_for_found_class: bool = True):
     result = resolve_instance(
         Server, dictionary, check_for_found_class=check_for_found_class
+    )
+    return result
+
+
+def resolve_rez(dictionary: dict, check_for_found_class: bool = False):
+    result = resolve_instance_multi_class(
+        [
+            Rez,
+            DateTime,
+            DateTime2,
+            Action,
+        ],  # BaseModel objects that may be found in a Rez
+        dictionary,
+        check_for_found_class=check_for_found_class,
     )
     return result
 

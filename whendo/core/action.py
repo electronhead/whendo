@@ -55,18 +55,18 @@ class Action(BaseModel):
 
     def compute_flds(self, rez: Rez = None):
         field_values = self.field_values()
-        if rez:
+        if rez and rez.flds:
             selected_flds = {
                 key: rez.flds[key] for key in self.fields() if key not in field_values
             }
-            return add_dicts(field_values, selected_flds)
+            return {**field_values, **selected_flds}
         else:
             return field_values
 
     def action_result(
         self,
         result: Any = None,
-        flds: Dict[str, Any] = {},
+        flds: Optional[Dict[str, Any]] = {},
         rez: Optional[BaseModel] = None,
         extra: Optional[Dict[str, Any]] = None,
         info: Optional[Dict[str, Any]] = None,
@@ -76,13 +76,8 @@ class Action(BaseModel):
             flds=flds,
             rez=rez,
             extra=extra,
-            info=info if info else self.info,
+            info=info if info else self.info(),
         )
-
-
-def add_dicts(dict1: dict, dict2: dict):
-    return {**dict1, **dict2}
-
 
 
 class ActionRez(Action):
