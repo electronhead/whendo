@@ -50,14 +50,12 @@ def describe_action(action_name: str):
     except Exception as e:
         raise raised_exception(f"failed to describe action ({action_name})", e)
 
-import traceback
 
 @router.get("/{action_name}/execute", status_code=status.HTTP_200_OK)
 def execute_action(action_name: str):
     try:
         return get_dispatcher(router).execute_action(action_name=action_name)
-    except Exception as e:  # from execute_action
-        print("/{action_name}/execute", ":", ", ".join(traceback.TracebackException.from_exception(e).format()))
+    except Exception as e:
         raise raised_exception(f"failed to execute action ({action_name})", e)
 
 
@@ -68,7 +66,6 @@ def execute_action_with_rez(action_name: str, rez=Depends(resolve_rez)):
             action_name=action_name, rez=rez
         )
     except Exception as e:
-        print("/{action_name}/execute", ":", ", ".join(traceback.TracebackException.from_exception(e).format()))
         raise raised_exception(
             f"failed to execute action ({action_name}) with rez ({rez})", e
         )

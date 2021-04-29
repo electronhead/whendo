@@ -474,6 +474,7 @@ class SystemInfo:
                 "load_avg": lambda: dict(zip(["1min", "5min", "15min"], getloadavg())),
                 "cpu_percent": lambda: cpu_percent(),
                 "servers": {},
+                "log_dir": os.path.join(Dirs.log_dir()),
             },
         )
 
@@ -532,8 +533,8 @@ class Http(BaseModel):
     Includes signatures with BaseModel as well as json string arguments.
     """
 
-    host: str = "127.0.0.1"
-    port: int = 8000
+    host: str
+    port: int
 
     def get(self, path: str, data=None):
         response = requests.get(self.cmd(path), data)

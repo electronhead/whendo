@@ -28,21 +28,20 @@ def processing_results(
     }
 
 
-class Fields(Action):
+class Vals(Action):
     """
     flds in this object override supplied rez.flds.
     """
 
-    _fields: str = "_fields"
-    flds: Optional[dict] = None
+    _vals: str = "_vals"
+    vals: Optional[dict] = None
 
     def description(self):
-        return f"This action adds ({self.flds}) to the field value flow."
+        return f"This action adds ({self.vals}) to the field value flow."
 
     def execute(self, tag: str = None, rez: Rez = None):
         rez_flds = rez.flds.copy() if rez and rez.flds else {}
         rez_flds.update(self.compute_flds(rez=rez))
-        result = f"fields ({rez_flds}) added to data flow"
         return self.action_result(
             result=rez.result if rez else None, rez=rez, flds=rez_flds
         )

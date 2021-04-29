@@ -68,7 +68,7 @@ async def test_uvicorn_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
     output_file = str(tmp_path / "output.txt")
     xtra = {"base_url": base_url}
     action = file_x.FileAppend(
-        relative_to_output_dir=False, file=output_file, xtra=xtra
+        relative_to_output_dir=False, file=output_file
     )
     scheduler = Timely(interval=1)
 

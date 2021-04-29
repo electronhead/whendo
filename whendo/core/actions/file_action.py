@@ -24,8 +24,18 @@ class FileAppend(Action):
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
         file = flds["file"]
+        if file == None:
+            raise ValueError("file missing")
         relative_to_output_dir = flds["relative_to_output_dir"]
-        payload = rez.result if rez and rez.result else flds["payload"]
+        payload = (
+            rez.result
+            if rez and rez.result is not None
+            else (
+                flds["payload"]
+                if "payload" in flds
+                else {"payload": "***PAYLOAD EMPTY***"}
+            )
+        )
         file = os.path.join(Dirs.output_dir(), file) if relative_to_output_dir else file
         with open(file, "a") as outfile:
             PP.pprint(payload, stream=outfile)

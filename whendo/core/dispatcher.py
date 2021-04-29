@@ -519,7 +519,7 @@ class Dispatcher(BaseModel):
         with Lok.lock:
             for dp in self.deferred_programs.pop():
                 try:
-                    self.disseminate_program(dp.program_name, dp.start, dp.stop)
+                    self.disseminate_program(program_name=dp.program_name, start=dp.start, stop=dp.stop)
                 except Exception as exception:
                     logger.error(
                         f"failed to dissemminate program ({program_name}) using start ({start}), ({stop})",
@@ -538,12 +538,12 @@ class Dispatcher(BaseModel):
             self.check_program_name(program_name)
             program = self.programs[program_name]
             self.check_program(program)
-            program_items = program.compute_program_items(start, stop)
+            program_items = program.compute_program_items(start=start, stop=stop)
             for item in program_items:
                 if item.type == "defer":
-                    self.defer_action(item.scheduler_name, item.action_name, item.dt)
+                    self.defer_action(scheduler_name=item.scheduler_name, action_name=item.action_name, wait_until=item.dt)
                 elif item.type == "expire":
-                    self.expire_action(item.scheduler_name, item.action_name, item.dt)
+                    self.expire_action(scheduler_name=item.scheduler_name, action_name=item.action_name, expire_on=item.dt)
 
     def get_deferred_program_count(self):
         # returns the total number of datetime2s in the deferred programs dictionary (a dictionary

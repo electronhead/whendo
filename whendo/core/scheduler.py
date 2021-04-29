@@ -58,12 +58,17 @@ class Scheduler(BaseModel):
         """
 
         if (self.start is not None) and (self.stop is not None):
-            is_in_period_wrapper = lambda start, stop: (
-                lambda now: start < now and now < stop
-                if (start < stop)
-                else start < now or now < stop
-            )
-            is_in_period = is_in_period_wrapper(self.start, self.stop)
+            def is_in_period_wrapper(start: time, stop: time):
+                def inner(now: time):
+                    return (
+                        (start < now and now < stop)
+                        if (start < stop)
+                        else (start < now or now < stop)
+                    )
+
+                return inner
+
+            is_in_period = is_in_period_wrapper(start=self.start, stop=self.stop)
 
             def thunk():
                 if is_in_period(Now.t()):

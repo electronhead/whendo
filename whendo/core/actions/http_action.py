@@ -20,8 +20,14 @@ class SendPayload(Action):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        response = requests.post(flds["url"], flds["payload"])
+        url = flds["url"]
+        if url == None:
+            raise ValueError("url missing")
+        payload = flds["payload"]
+        if payload == None:
+            raise ValueError("payload missing")
+        response = requests.post(url, payload)
         if response.status_code != requests.codes.ok:
             raise Exception(response)
-        result = f"payload ({flds['payload']} sent to url ({flds['url']})"
+        result = f"payload (payload sent to url ({url})."
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})

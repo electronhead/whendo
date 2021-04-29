@@ -24,8 +24,8 @@ class ClientAsync(BaseModel):
     dictionaries if resolution fails.
     """
 
-    host: str = "127.0.0.1"
-    port: int = 8000
+    host: str
+    port: int
 
     # /dispatcher
     async def load_dispatcher(self):

@@ -17,19 +17,14 @@ from whendo.core.util import FilePathe, DateTime, Http, DateTime2, Rez, RezDict
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 
-default_host = "127.0.0.1"
-default_port = 8000
-
 logger = logging.getLogger(__name__)
 
 
 class Client(BaseModel):
-    host: str = default_host
-    port: int = default_port
+    host: str
+    port: int
     client_used: bool = False
-
-    # hidden private field
-    _http: Http = PrivateAttr(default_factory=Http)
+    _http: Optional[Http] = None
 
     def get_host(self):
         return self.host
@@ -38,9 +33,8 @@ class Client(BaseModel):
         """
         Cache the Http object.
         """
-        if not self.client_used:
+        if self._http == None:
             self._http = Http(host=self.host, post=self.port)
-            self.client_used = True
         return self._http
 
     # /dispatcher
