@@ -24,7 +24,7 @@ class Client(BaseModel):
     host: str
     port: int
     client_used: bool = False
-    _http: Optional[Http] = None
+    http_instance: Optional[Http] = None
 
     def get_host(self):
         return self.host
@@ -33,9 +33,9 @@ class Client(BaseModel):
         """
         Cache the Http object.
         """
-        if self._http == None:
-            self._http = Http(host=self.host, port=self.port)
-        return self._http
+        if self.http_instance == None:
+            self.http_instance = Http(host=self.host, port=self.port)
+        return self.http_instance
 
     # /dispatcher
     def load_dispatcher(self):
