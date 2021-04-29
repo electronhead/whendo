@@ -34,7 +34,7 @@ class Client(BaseModel):
         Cache the Http object.
         """
         if self._http == None:
-            self._http = Http(host=self.host, post=self.port)
+            self._http = Http(host=self.host, port=self.port)
         return self._http
 
     # /dispatcher
