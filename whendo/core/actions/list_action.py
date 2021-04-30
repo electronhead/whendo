@@ -40,8 +40,10 @@ class Vals(Action):
         return f"This action adds ({self.vals}) to the field value flow."
 
     def execute(self, tag: str = None, rez: Rez = None):
+        flds = self.compute_flds(rez=rez)
+        vals = flds["vals"]
         rez_flds = rez.flds.copy() if rez and rez.flds else {}
-        rez_flds.update(self.compute_flds(rez=rez))
+        rez_flds.update(vals)
         return self.action_result(
             result=rez.result if rez else None, rez=rez, flds=rez_flds
         )

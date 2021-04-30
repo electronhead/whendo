@@ -2,7 +2,7 @@ from pydantic import BaseModel, PrivateAttr
 import requests
 import logging
 from typing import Optional
-from whendo.core.action import Action, ActionRez, Rez
+from whendo.core.action import Action, ActionRez, Rez, RezDict
 from whendo.core.scheduler import Scheduler
 from whendo.core.server import Server
 from whendo.core.resolver import (
@@ -13,7 +13,7 @@ from whendo.core.resolver import (
     resolve_server,
     resolve_rez,
 )
-from whendo.core.util import FilePathe, DateTime, Http, DateTime2, Rez, RezDict
+from whendo.core.util import FilePathe, DateTime, Http, DateTime2, Rez
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 

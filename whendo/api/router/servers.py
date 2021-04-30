@@ -1,7 +1,8 @@
 from fastapi import APIRouter, status, Depends
-from whendo.core.util import KeyTagMode, RezDict
+from whendo.core.util import KeyTagMode
 from whendo.api.shared import return_success, raised_exception, get_dispatcher
-from whendo.core.resolver import resolve_server, resolve_rez
+from whendo.core.resolver import resolve_server, resolve_rez, resolve_action
+from whendo.core.action import RezDict
 
 router = APIRouter(prefix="/servers", tags=["Servers"])
 
@@ -139,7 +140,7 @@ def execute_on_servers(action_name: str, mode: str, key_tags: dict):
         )
     except Exception as e:
         raise raised_exception(
-            f"failed to get servers by key-tags ({key_tags}) using mode ({mode}))", e
+            f"failed to get execute action ({action_name}) by key tags ({key_tags})", e
         )
 
 
@@ -147,10 +148,10 @@ def execute_on_servers(action_name: str, mode: str, key_tags: dict):
     "/by_tags/{mode}/actions/{action_name}/execute_with_rez",
     status_code=status.HTTP_200_OK,
 )
-def execute_on_servers_with_rez(action_name: str, mode: str, rez_dict: RezDict):
+def execute_on_servers_with_rez(action_name: str, mode: str, rez_dict= Depends(resolve_action)):
     try:
-        rez = rez_dict.r
-        key_tags = rez_dict.d
+        rez = rez_dict.rez
+        key_tags = rez_dict.dictionary
         return get_dispatcher(router).execute_on_servers_with_rez(
             action_name=action_name,
             key_tags=key_tags,
@@ -159,5 +160,5 @@ def execute_on_servers_with_rez(action_name: str, mode: str, rez_dict: RezDict):
         )
     except Exception as e:
         raise raised_exception(
-            f"failed to get servers by key-tags ({key_tags}) using mode ({mode}))", e
+            f"failed to execute action ({action_name}) by rez-dict ({rez_dict})", e
         )

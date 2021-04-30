@@ -58,6 +58,47 @@ def test_not_2():
     assert not computes_exception(action3.execute)
 
 
+def test_vals_1():
+    class Action1(Action):
+        n : Optional[int] = None
+
+        def execute(self, tag: str = None, rez: Rez = None):
+            assert rez
+            assert rez.flds
+            flds = self.compute_flds(rez=rez)
+            assert "n" in flds
+            n = flds["n"]
+            return self.action_result(result=n)
+    
+    action1 = Action1()
+    action2 = list_x.Vals(vals={"n":137})
+    action3 = list_x.All(actions=[action2, action1])
+    result = action3.execute()
+    assert result.result==137
+
+def test_vals_2():
+    class Action1(Action):
+        n : Optional[int] = None
+        m : Optional[int] = None
+
+        def execute(self, tag: str = None, rez: Rez = None):
+            assert rez
+            assert rez.flds
+            flds = self.compute_flds(rez=rez)
+            assert "n" in flds
+            assert "m" in flds
+            n = flds["n"]
+            m= flds["m"]
+            return self.action_result(result=n*m)
+    
+    action1 = Action1()
+    action2 = list_x.Vals(vals={"n":137})
+    action3 = list_x.Vals(vals={"m":2})
+    action3 = list_x.All(actions=[action3, action2, action1])
+    result = action3.execute()
+    assert result.result==137*2
+
+
 def test_list_action_all_1():
     dictionary = {"value": None}
 

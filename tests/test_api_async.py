@@ -15,7 +15,7 @@ import whendo.core.actions.file_action as file_x
 import whendo.core.actions.dispatch_action as disp_x
 import whendo.core.actions.http_action as http_x
 import whendo.core.actions.sys_action as sys_x
-from whendo.core.actions.list_action import All, Success
+from whendo.core.actions.list_action import All, Success, Vals
 from whendo.core.actions.sys_action import SysInfo
 from whendo.core.scheduler import Scheduler, Immediately
 from whendo.core.schedulers.timed_scheduler import Timely
@@ -958,6 +958,29 @@ async def test_file_append_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
     assert any("virtual_memory" in line for line in lines)
 
+@pytest.mark.asyncio
+async def test_file_append_3(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action1 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output.txt")
+    )
+    action2 = Vals(vals={"payload":{"x":"Eureka!"}})
+    action3 = All(include_processing_info=True, actions=[action2, action1])
+    scheduler = Timely(interval=1)
+
+    await add_action(base_url=base_url, action_name="foo", action=action3)
+    await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
+    await schedule_action(base_url=base_url, action_name="foo", scheduler_name="bar")
+
+    await run_and_stop_jobs(base_url=base_url, pause=2)
+    lines = None
+    with open(action1.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("Eureka!" in line for line in lines)
+
 
 @pytest.mark.asyncio
 async def test_file_append_execute_action(
@@ -994,6 +1017,8 @@ async def test_file_append_execute_action(
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
     assert any("virtual_memory" in line for line in lines)
+
+
 
 
 @pytest.mark.asyncio
@@ -1073,7 +1098,7 @@ async def test_file_append_execute_action_key_tags(
 
 
 @pytest.mark.asyncio
-async def test_file_append_execute_action_key_tags(
+async def test_file_append_execute_action_supplied_key_tags(
     startup_and_shutdown_uvicorn, base_url, tmp_path, host, port
 ):
     await reset_dispatcher(base_url, str(tmp_path))

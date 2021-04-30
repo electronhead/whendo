@@ -4,7 +4,6 @@ from whendo.core.resolver import resolve_action
 
 router = APIRouter(prefix="/execution", tags=["Execution"])
 
-# uses put because you cannot supply an Action using get; the use case is RPC - not supported by protocol, hence the hack
 @router.post("", status_code=status.HTTP_200_OK)
 def execute_supplied_action(supplied_action=Depends(resolve_action)):
     try:

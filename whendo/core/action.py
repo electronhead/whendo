@@ -83,3 +83,7 @@ class Action(BaseModel):
 class ActionRez(Action):
     action: Action
     rez: Rez
+
+class RezDict(Action):
+    rez: Rez
+    dictionary: dict
