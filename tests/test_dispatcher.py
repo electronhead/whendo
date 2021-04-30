@@ -896,7 +896,6 @@ def test_execute_with_rez(friends):
     """
     dispatcher, scheduler, action = friends()
     result = action.execute(rez=Rez(result={"fleacount": "infinite"}))
-    print("ASDFSDF", result)
     assert result.rez.result == {"fleacount": "infinite"}
 
 
@@ -990,6 +989,7 @@ def test_if_else_2(friends):
 
     assert action.flea_count == 0
     assert action2.flea_count == 101
+
 
 
 # ====================================

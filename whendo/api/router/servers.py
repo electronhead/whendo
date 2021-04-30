@@ -124,7 +124,7 @@ def execute_on_server_with_rez(
         )
     except Exception as e:
         raise raised_exception(
-            f"failed to get execute action ({action_name}) on server ({server_name})", e
+            f"failed to execute action ({action_name}) on server ({server_name}) using rez ({rez})", e
         )
 
 
@@ -140,7 +140,7 @@ def execute_on_servers(action_name: str, mode: str, key_tags: dict):
         )
     except Exception as e:
         raise raised_exception(
-            f"failed to get execute action ({action_name}) by key tags ({key_tags})", e
+            f"failed to execute action ({action_name}) by key tags ({key_tags})", e
         )
 
 
