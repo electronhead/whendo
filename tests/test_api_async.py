@@ -604,8 +604,10 @@ async def test_execute_supplied_action_with_rez(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
     rez = Rez(flds={"payload": {"higher": "and higher"}})
-    action_rez = ActionRez(action=action, rez=rez)
-    await post(base_url, "/execution/with_rez", action_rez)
+    # action_rez = ActionRez(action=action, rez=rez)
+    # await post(base_url, "/execution/with_rez", action_rez)
+    action.complete_fields(rez=rez)
+    await post(base_url, "/execution", action)
     time.sleep(4)
 
     lines = None
@@ -879,7 +881,6 @@ async def test_delete_program(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await add_program(base_url=base_url, program_name="baz", program=program)
     start_stop = DateTime2(dt1=Now().dt(), dt2=Now().dt() + timedelta(seconds=4))
     await schedule_program(base_url=base_url, program_name="baz", start_stop=start_stop)
-
     await assert_deferred_program_count(base_url=base_url, n=1)
     await assert_scheduled_action_count(base_url=base_url, n=0)
     await delete_program(base_url=base_url, program_name="baz")

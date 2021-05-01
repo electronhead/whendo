@@ -3,7 +3,7 @@ These functions resolve dispatcher element instances from supplied dictionaries.
 """
 import logging
 from pydantic import ValidationError
-from .action import Action
+from .action import Action, ActionRez
 from .scheduler import Scheduler
 from .program import Program
 from .server import Server
@@ -53,6 +53,20 @@ def resolve_rez(dictionary: dict, check_for_found_class: bool = False):
             DateTime2,
             Action,
         ],  # BaseModel objects that may be found in a Rez
+        dictionary,
+        check_for_found_class=check_for_found_class,
+    )
+    return result
+
+def resolve_action_rez(dictionary: dict, check_for_found_class: bool = False):
+    result = resolve_instance_multi_class(
+        [
+            Rez,
+            Action,
+            DateTime,
+            DateTime2,
+            ActionRez,
+        ],  # BaseModel objects that may be found in an ActionRez
         dictionary,
         check_for_found_class=check_for_found_class,
     )

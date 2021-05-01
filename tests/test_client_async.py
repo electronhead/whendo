@@ -614,9 +614,9 @@ async def test_expire_action(startup_and_shutdown_uvicorn, host, port, tmp_path)
     await add_action(client=client, action_name="foo", action=action)
     await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
     await schedule_action(client=client, action_name="foo", scheduler_name="bar")
-
-    await assert_expiring_action_count(client=client, n=0)
+    time.sleep(0.5)
     await assert_scheduled_action_count(client=client, n=1)
+    await assert_expiring_action_count(client=client, n=0)
 
     await expire_action(
         client=client,

@@ -65,8 +65,10 @@ class ClientAsync(BaseModel):
         return resolve_rez(response.json())
 
     async def execute_supplied_action_with_rez(self, supplied_action: Action, rez: Rez):
-        action_rez = ActionRez(action=supplied_action, rez=rez)
-        response = await self.post("/execution/with_rez", action_rez)
+        # action_rez = ActionRez(action=supplied_action, rez=rez)
+        # response = await self.post("/execution/with_rez", action_rez)
+        supplied_action.complete_fields(rez=rez)
+        response = await self.post("/execution", supplied_action)
         return resolve_rez(response.json())
 
     # /actions

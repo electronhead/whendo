@@ -331,9 +331,11 @@ class ExecSupplied(DispatcherAction):
                 # execute locally
                 result = action.execute(tag=tag, rez=rez)
             else:
-                action_rez = ActionRez(action=action, rez=rez)
+                # see implementation of complete_fields
+                action.complete_fields(rez=rez)
+                # action_rez = ActionRez(action=action, rez=rez)
                 response = Http(host=host, port=port).post(
-                    f"/execution/with_rez", action_rez
+                    f"/execution", action
                 )
                 result = resolve_rez(response)
         else:
@@ -368,7 +370,6 @@ class ExecSuppliedKeyTags(DispatcherAction):
             raise ValueError(f"action missing")
         key_tags = flds["key_tags"]
         key_tag_mode = flds["key_tag_mode"]
-
         if key_tags:
             servers = DispatcherHooks.get_servers_by_tags(
                 key_tags=key_tags, key_tag_mode=key_tag_mode
@@ -385,9 +386,10 @@ class ExecSuppliedKeyTags(DispatcherAction):
                     # execute locally
                     result.append(action.execute(tag=tag, rez=rez))
                 else:
-                    action_rez = ActionRez(action=action, rez=rez)
+                    # action_rez = ActionRez(action=action, rez=rez)
+                    action.complete_fields(rez=rez)
                     response = Http(host=server.host, port=server.port).post(
-                        f"/execution/with_rez", action_rez
+                        f"/execution", action
                     )
                     result.append(resolve_rez(response))
         else:

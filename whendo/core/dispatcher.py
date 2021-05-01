@@ -364,11 +364,7 @@ class Dispatcher(BaseModel):
 
     def execute_supplied_action_with_rez(self, supplied_action: Action, rez: Rez):
         with Lok.lock:
-            result = supplied_action.execute(rez=rez)
-            print(
-                f"DISPATCHER.execute_supplied_action_with_rez:: result({result}) supplied_action ({supplied_action})"
-            )
-            return result
+            return supplied_action.execute(rez=rez)
 
     # schedulers
     def get_scheduler(self, scheduler_name: str):

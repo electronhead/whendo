@@ -957,7 +957,7 @@ def test_if_else_1(friends):
         if_action=ScheduleAction(scheduler_name="immediately", action_name="foo1"),
         else_action=ScheduleAction(scheduler_name="immediately", action_name="foo2"),
     )
-    schedule_action = All(actions=[Vals(vals={"result": 2}), if_else])
+    schedule_action = All(actions=[Result(value=2), if_else])
 
     dispatcher.add_action("schedule_action", schedule_action)
     dispatcher.schedule_action("immediately", "schedule_action")
