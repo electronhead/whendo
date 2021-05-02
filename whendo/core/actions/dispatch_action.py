@@ -49,8 +49,11 @@ class UnscheduleProgram(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        DispatcherHooks.unschedule_program(**flds)
-        result = f"program ({flds['program_name']}) unscheduled"
+        if "program_name" not in flds:
+            raise ValueError("missing program name")
+        program_name = flds["program_name"]
+        DispatcherHooks.unschedule_program(program_name=program_name)
+        result = f"program ({program_name}) unscheduled"
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
@@ -64,8 +67,14 @@ class ScheduleAction(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        DispatcherHooks.schedule_action(**flds)
-        result = f"action ({flds['action_name']}) scheduled using scheduler ({flds['scheduler_name']})"
+        if "scheduler_name" not in flds:
+            raise ValueError("missing scheduler name")
+        scheduler_name = flds["scheduler_name"]
+        if "action_name" not in flds:
+            raise ValueError("missing action name")
+        action_name = flds["action_name"]
+        DispatcherHooks.schedule_action(scheduler_name=scheduler_name, action_name=action_name)
+        result = f"action ({action_name}) scheduled using scheduler ({scheduler_name})"
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
@@ -79,8 +88,14 @@ class UnscheduleSchedulerAction(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        DispatcherHooks.unschedule_scheduler_action(**flds)
-        result = f"action ({flds['action_name']}) unscheduled from scheduler ({flds['scheduler_name']})"
+        if "scheduler_name" not in flds:
+            raise ValueError("missing scheduler name")
+        scheduler_name = flds["scheduler_name"]
+        if "action_name" not in flds:
+            raise ValueError("missing action name")
+        action_name = flds["action_name"]
+        DispatcherHooks.unschedule_scheduler_action(scheduler_name=scheduler_name, action_name=action_name)
+        result = f"action ({action_name}) unscheduled from scheduler ({scheduler_name})"
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
@@ -93,8 +108,22 @@ class UnscheduleScheduler(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        DispatcherHooks.unschedule_scheduler(**flds)
-        result = f"scheduler ({flds['scheduler_name']}) unscheduled"
+        if "scheduler_name" not in flds:
+            raise ValueError("missing scheduler name")
+        scheduler_name = flds["scheduler_name"]
+        DispatcherHooks.unschedule_scheduler(scheduler_name=scheduler_name)
+        result = f"scheduler ({scheduler_name}) unscheduled"
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
+
+class UnscheduleAllSchedulers(DispatcherAction):
+    unschedule_all_schedulers: str = "unschedule_all_schedulers"
+
+    def description(self):
+        return f"This action unschedules all schedulers."
+
+    def execute(self, tag: str = None, rez: Rez = None):
+        DispatcherHooks.unschedule_all_schedulers()
+        result = f"all schedulers unscheduled"
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 
@@ -178,6 +207,18 @@ class ClearAllExpiringActions(DispatcherAction):
     def execute(self, tag: str = None, rez: Rez = None):
         DispatcherHooks.clear_all_expiring_actions()
         result = "All expiring scheduled actions removed."
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
+
+
+class ClearAllScheduling(DispatcherAction):
+    clear_all_scheduling: str = "clear_all_scheduling"
+
+    def description(self):
+        return "Removes all scheduled actions, current or planned, and foreground Timed instance jobs. Ignores the 'inventory' objects and the out-of-band Timed instance."
+
+    def execute(self, tag: str = None, rez: Rez = None):
+        DispatcherHooks.clear_all_scheduling()
+        result = "All scheduling artifacts cleared or reset."
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 

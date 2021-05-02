@@ -151,7 +151,7 @@ class Dispatcher(BaseModel):
             unschedule_scheduler_action_thunk=lambda scheduler_name, action_name: self.unschedule_scheduler_action(
                 scheduler_name, action_name
             ),
-            unschedule_scheduler_thunk=lambda scheduler_name, action_name: self.unschedule_scheduler(
+            unschedule_scheduler_thunk=lambda scheduler_name: self.unschedule_scheduler(
                 scheduler_name
             ),
             unschedule_all_schedulers_thunk=lambda: self.unschedule_all_schedulers(),
