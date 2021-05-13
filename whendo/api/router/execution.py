@@ -4,6 +4,7 @@ from whendo.core.resolver import resolve_action_rez, resolve_action
 
 router = APIRouter(prefix="/execution", tags=["Execution"])
 
+
 @router.post("", status_code=status.HTTP_200_OK)
 def execute_supplied_action(supplied_action=Depends(resolve_action)):
     try:
@@ -16,8 +17,9 @@ def execute_supplied_action(supplied_action=Depends(resolve_action)):
             f"failed to directly execute the action ({supplied_action})", e
         )
 
+
 @router.post("/with_rez", status_code=status.HTTP_200_OK)
-def execute_supplied_action_with_data(action_rez_str=Depends(resolve_action_rez)):
+def execute_supplied_action_with_rez(action_rez=Depends(resolve_action_rez)):
     """
     The supplied action needs to be passed as an ActionRez
     """

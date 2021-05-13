@@ -351,20 +351,38 @@ class Dispatcher(BaseModel):
     def execute_action(self, action_name: str):
         with Lok.lock:
             self.check_action_name(action_name)
-            return self.get_action(action_name).execute()
+            action = self.get_action(action_name)
+            result = action.execute()
+            logger.info(
+                f"Dispatcher: tag (:{action_name}); executed action ({action}); result ({result})"
+            )
+            return result
 
     def execute_action_with_rez(self, action_name: str, rez: Rez):
         with Lok.lock:
             self.check_action_name(action_name)
-            return self.get_action(action_name).execute(rez=rez)
+            action = self.get_action(action_name)
+            result = action.execute(rez=rez)
+            logger.info(
+                f"Dispatcher: tag (:{action_name}); executed action ({action}); rez ({rez}); result ({result})"
+            )
+            return result
 
     def execute_supplied_action(self, supplied_action: Action):
         with Lok.lock:
-            return supplied_action.execute()
+            result = supplied_action.execute()
+            logger.info(
+                f"Dispatcher: tag (); executed action ({supplied_action}); result ({result})"
+            )
+            return result
 
     def execute_supplied_action_with_rez(self, supplied_action: Action, rez: Rez):
         with Lok.lock:
-            return supplied_action.execute(rez=rez)
+            result = supplied_action.execute(rez=rez)
+            logger.info(
+                f"Dispatcher: tag (); executed action ({supplied_action}); rez ({rez}); result ({result})"
+            )
+            return result
 
     # schedulers
     def get_scheduler(self, scheduler_name: str):
@@ -515,7 +533,9 @@ class Dispatcher(BaseModel):
         with Lok.lock:
             for dp in self.deferred_programs.pop():
                 try:
-                    self.disseminate_program(program_name=dp.program_name, start=dp.start, stop=dp.stop)
+                    self.disseminate_program(
+                        program_name=dp.program_name, start=dp.start, stop=dp.stop
+                    )
                 except Exception as exception:
                     logger.error(
                         f"failed to dissemminate program ({program_name}) using start ({start}), ({stop})",
@@ -537,9 +557,17 @@ class Dispatcher(BaseModel):
             program_items = program.compute_program_items(start=start, stop=stop)
             for item in program_items:
                 if item.type == "defer":
-                    self.defer_action(scheduler_name=item.scheduler_name, action_name=item.action_name, wait_until=item.dt)
+                    self.defer_action(
+                        scheduler_name=item.scheduler_name,
+                        action_name=item.action_name,
+                        wait_until=item.dt,
+                    )
                 elif item.type == "expire":
-                    self.expire_action(scheduler_name=item.scheduler_name, action_name=item.action_name, expire_on=item.dt)
+                    self.expire_action(
+                        scheduler_name=item.scheduler_name,
+                        action_name=item.action_name,
+                        expire_on=item.dt,
+                    )
 
     def get_deferred_program_count(self):
         # returns the total number of datetime2s in the deferred programs dictionary (a dictionary
@@ -712,8 +740,10 @@ class Dispatcher(BaseModel):
                 tag = f"{scheduler_name}:{action_name}"
                 action = self.get_action(action_name)
                 try:
-                    action.execute(tag=tag)
-                    logger.info(f"Execution: tag ({tag}); executed action ({action})")
+                    result = action.execute(tag=tag)
+                    logger.info(
+                        f"Immediately: tag ({tag}); executed action ({action}); result ({result})"
+                    )
                 except Exception as exception:
                     logger.exception(
                         f"Execution: tag ({tag}); error while executing action ({action})",

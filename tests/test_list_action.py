@@ -60,7 +60,7 @@ def test_not_2():
 
 def test_vals_1():
     class Action1(Action):
-        n : Optional[int] = None
+        n: Optional[int] = None
 
         def execute(self, tag: str = None, rez: Rez = None):
             assert rez
@@ -69,17 +69,18 @@ def test_vals_1():
             assert "n" in flds
             n = flds["n"]
             return self.action_result(result=n)
-    
+
     action1 = Action1()
-    action2 = list_x.Vals(vals={"n":137})
+    action2 = list_x.Vals(vals={"n": 137})
     action3 = list_x.All(actions=[action2, action1])
     result = action3.execute()
-    assert result.result==137
+    assert result.result == 137
+
 
 def test_vals_2():
     class Action1(Action):
-        n : Optional[int] = None
-        m : Optional[int] = None
+        n: Optional[int] = None
+        m: Optional[int] = None
 
         def execute(self, tag: str = None, rez: Rez = None):
             assert rez
@@ -88,15 +89,15 @@ def test_vals_2():
             assert "n" in flds
             assert "m" in flds
             n = flds["n"]
-            m= flds["m"]
-            return self.action_result(result=n*m)
-    
+            m = flds["m"]
+            return self.action_result(result=n * m)
+
     action1 = Action1()
-    action2 = list_x.Vals(vals={"n":137})
-    action3 = list_x.Vals(vals={"m":2})
+    action2 = list_x.Vals(vals={"n": 137})
+    action3 = list_x.Vals(vals={"m": 2})
     action3 = list_x.All(actions=[action3, action2, action1])
     result = action3.execute()
-    assert result.result==137*2
+    assert result.result == 137 * 2
 
 
 def test_list_action_all_1():
@@ -437,30 +438,31 @@ def test_terminate():
     assert action2.flea_count == 0
 
 
-def test_raise_if_equal_1():
+
+def test_raise_cmp_1():
     """
     Show that raising stops processing of the list action.
     """
     add1 = Add1()
     result = list_x.UntilFailure(
         include_processing_info=True,
-        actions=[add1, add1, list_x.RaiseIfEqual(value=2), add1, add1],
+        actions=[add1, add1, list_x.RaiseCmp(cmp=0, value=2), add1, add1],
     ).execute()
     assert result.result == 2
 
 
-def test_raise_if_equal_2():
+def test_raise_cmp_2():
     """
     Show that not raising has no effect on the passing of results to the last action.
     """
     add1 = Add1()
     result = list_x.UntilFailure(
-        actions=[add1, add1, list_x.RaiseIfEqual(value=1), add1, add1]
+        actions=[add1, add1, list_x.RaiseCmp(cmp=0, value=1), add1, add1]
     ).execute()
     assert result.result == 4
 
 
-def test_raise_if_equal_3():
+def test_raise_cmp_3():
     """
     Show that not raising has no effect on the passing of results to the last action.
     """
@@ -468,7 +470,7 @@ def test_raise_if_equal_3():
     result = list_x.UntilFailure(
         actions=[
             list_x.Result(value=2),
-            list_x.RaiseIfEqual(value=2),
+            list_x.RaiseCmp(cmp=0, value=2),
             add1,
             add1,
         ]
@@ -476,7 +478,7 @@ def test_raise_if_equal_3():
     assert result.result == 2
 
 
-def test_raise_if_equal_4():
+def test_raise_cmp_4():
     """
     Show that not raising has no effect on the passing of results to the last action.
     """
@@ -484,7 +486,62 @@ def test_raise_if_equal_4():
     result = list_x.UntilFailure(
         actions=[
             list_x.Result(value=2),
-            list_x.RaiseIfEqual(value=1),
+            list_x.RaiseCmp(cmp=0, value=1),
+            add1,
+            add1,
+        ]
+    ).execute()
+    assert result.result == 4
+
+
+def test_raise_cmp_5():
+    """
+    Show that raising stops processing of the list action.
+    """
+    add1 = Add1()
+    result = list_x.UntilFailure(
+        include_processing_info=True,
+        actions=[add1, add1, list_x.RaiseCmp(cmp=-1, value=3), add1, add1],
+    ).execute()
+    assert result.result == 2
+
+
+def test_raise_cmp_6():
+    """
+    Show that not raising has no effect on the passing of results to the last action.
+    """
+    add1 = Add1()
+    result = list_x.UntilFailure(
+        actions=[add1, add1, list_x.RaiseCmp(cmp=-1, value=2), add1, add1]
+    ).execute()
+    assert result.result == 4
+
+
+def test_raise_cmp_7():
+    """
+    Show that not raising has no effect on the passing of results to the last action.
+    """
+    add1 = Add1()
+    result = list_x.UntilFailure(
+        actions=[
+            list_x.Result(value=2),
+            list_x.RaiseCmp(cmp=1, value=1),
+            add1,
+            add1,
+        ]
+    ).execute()
+    assert result.result == 2
+
+
+def test_raise_cmp_8():
+    """
+    Show that not raising has no effect on the passing of results to the last action.
+    """
+    add1 = Add1()
+    result = list_x.UntilFailure(
+        actions=[
+            list_x.Result(value=2),
+            list_x.RaiseCmp(cmp=1, value=3),
             add1,
             add1,
         ]

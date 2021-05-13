@@ -58,6 +58,7 @@ class Scheduler(BaseModel):
         """
 
         if (self.start is not None) and (self.stop is not None):
+
             def is_in_period_wrapper(start: time, stop: time):
                 def inner(now: time):
                     return (

@@ -67,9 +67,7 @@ async def test_uvicorn_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
     output_file = str(tmp_path / "output.txt")
     xtra = {"base_url": base_url}
-    action = file_x.FileAppend(
-        relative_to_output_dir=False, file=output_file
-    )
+    action = file_x.FileAppend(relative_to_output_dir=False, file=output_file)
     scheduler = Timely(interval=1)
 
     await add_action(base_url=base_url, action_name="foo", action=action)
@@ -959,15 +957,15 @@ async def test_file_append_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
     assert any("virtual_memory" in line for line in lines)
 
+
 @pytest.mark.asyncio
 async def test_file_append_3(startup_and_shutdown_uvicorn, base_url, tmp_path):
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = file_x.FileAppend(
-        relative_to_output_dir=False,
-        file=str(tmp_path / "output.txt")
+        relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
-    action2 = Vals(vals={"payload":{"x":"Eureka!"}})
+    action2 = Vals(vals={"payload": {"x": "Eureka!"}})
     action3 = All(include_processing_info=True, actions=[action2, action1])
     scheduler = Timely(interval=1)
 
@@ -1018,8 +1016,6 @@ async def test_file_append_execute_action(
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
     assert any("virtual_memory" in line for line in lines)
-
-
 
 
 @pytest.mark.asyncio

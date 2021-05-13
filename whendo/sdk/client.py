@@ -95,10 +95,10 @@ class Client(BaseModel):
         return self.http().delete(f"/actions/{action_name}")
 
     def execute_action(self, action_name: str):
-        return self.http().get(f"/actions/{action_name}/execute")
+        return resolve_rez(self.http().get(f"/actions/{action_name}/execute"))
 
     def execute_action_with_rez(self, action_name: str, rez: Rez):
-        return self.http().post(f"/actions/{action_name}/execute", rez)
+        return resolve_rez(self.http().post(f"/actions/{action_name}/execute", rez))
 
     # /schedulers
 

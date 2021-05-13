@@ -58,6 +58,7 @@ def resolve_rez(dictionary: dict, check_for_found_class: bool = False):
     )
     return result
 
+
 def resolve_action_rez(dictionary: dict, check_for_found_class: bool = False):
     result = resolve_instance_multi_class(
         [

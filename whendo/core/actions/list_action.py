@@ -62,36 +62,58 @@ class Result(Action):
         return self.action_result(result=value, rez=rez, flds=rez.flds if rez else {})
 
 
-class RaiseIfEqual(Action):
+class RaiseCmp(Action):
     """
-    If fails to raise, pass through the supplied the result value
-    from the supplied execute argument, data.
+    The execute method of this action will raise an exception if:
+
+    1. both RaiseCmp.value, Rez.result are not None
+    AND
+    2. if RaiseCmp.cmp < 0 AND Rez.Result < RaiseCmp.value
+       OR if RaiseCmp.cmp == 0 AND Rez.Result == RaiseCmp.value
+       OR if RaiseCmp.cmp > 0 AND Rez.Result > RaiseCmp.value
+
     """
 
-    raise_if_equal: str = "raise_if_equal"
+    raise_cmp: str = "raise_cmp"
     value: Any
+    cmp: Optional[int] = 0
 
     def description(self):
-        return f"This action raises an exception if the result in the supplied argument, data, is equal to ({self.value}). Otherwise it returns the value untouched."
+        return f"This action raises an exception if the supplied result {self.operand_str()} the action's value"
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        data_value = rez.result if rez else None
+        result = rez.result if rez else None
         value = flds["value"]
-        should_raise = data_value == value
-        if should_raise:
-            raise ValueError(
-                f"exception thrown because ({value}) == ({data_value}); info ({self.info()})"
+        if result is None or value is None:
+            should_raise = False
+            logger.info(
+                f"one of RaiseCmp.value, Rez.result equals None; RaiseCmp ignored; info ({self.info()}"
             )
         else:
-            result = (
-                f"exception not thrown because ({value}) not equal to ({data_value})"
+            cmp = flds["cmp"]
+            should_raise = (
+                result < value
+                if cmp < 0
+                else (result == value if cmp == 0 else result > value)
             )
+        if should_raise:
+            raise ValueError(
+                f"exception thrown because ({value}) ({self.operand_str(flds['cmp'])}) ({result}); info ({self.info()})"
+            )
+        else:
             return self.action_result(
-                result=rez.result if rez else None,
+                result=result,
                 rez=rez,
                 flds=rez.flds if rez else {},
             )
+
+    def operand_str(self, cmp: Optional[int] = None):
+        if cmp is None:
+            cmp = (
+                self.cmp if self.cmp is not None else 0
+            )  # compiler doesn't catch that self.cmp is not None
+        return "<" if cmp < 0 else ("=" if cmp == 0 else ">")
 
 
 class Terminate(Action):
@@ -339,11 +361,9 @@ class IfElse(Action):
 
     def logger_info(self, s: str):
         logger.info(s)
-        print(s)
 
     def logger_exception(self, s: str, exc_info: object):
         logger.info(s, exc_info)
-        print(s)
 
     def description(self):
         return f"If  action ({self.test_action}) succeeds, then IfElse executes ({self.if_action}), otherwise executes ({self.else_action})"

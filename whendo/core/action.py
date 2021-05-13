@@ -65,8 +65,8 @@ class Action(BaseModel):
             return rez_flds
         else:
             return field_values
-    
-    def complete_fields(self, rez:Rez):
+
+    def complete_fields(self, rez: Rez):
         """
         This method sets None-fields to the values
         in rez.flds (if extant). Needed for situations
@@ -87,7 +87,6 @@ class Action(BaseModel):
             for name in self.fields():
                 if name not in self_fields and name in rez_flds:
                     self.__setattr__(name, rez_flds[name])
-            
 
     def action_result(
         self,
@@ -109,6 +108,7 @@ class Action(BaseModel):
 class ActionRez(Action):
     action: Action
     rez: Rez
+
 
 class RezDict(Action):
     rez: Rez

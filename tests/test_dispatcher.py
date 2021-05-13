@@ -10,11 +10,8 @@ from whendo.core.actions.list_action import (
     All,
     Terminate,
     IfElse,
-    RaiseIfEqual,
-    Vals,
+    RaiseCmp,
     Result,
-    Success,
-    Failure,
 )
 from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.scheduler import Immediately
@@ -953,7 +950,7 @@ def test_if_else_1(friends):
     dispatcher.add_scheduler("immediately", immediately)
 
     if_else = IfElse(
-        test_action=RaiseIfEqual(value=1),
+        test_action=RaiseCmp(value=1),
         if_action=ScheduleAction(scheduler_name="immediately", action_name="foo1"),
         else_action=ScheduleAction(scheduler_name="immediately", action_name="foo2"),
     )
@@ -978,7 +975,7 @@ def test_if_else_2(friends):
     dispatcher.add_scheduler("immediately", immediately)
 
     if_else = IfElse(
-        test_action=RaiseIfEqual(value=2),
+        test_action=RaiseCmp(value=2),
         if_action=ScheduleAction(scheduler_name="immediately", action_name="foo1"),
         else_action=ScheduleAction(scheduler_name="immediately", action_name="foo2"),
     )
@@ -989,7 +986,6 @@ def test_if_else_2(friends):
 
     assert action.flea_count == 0
     assert action2.flea_count == 101
-
 
 
 # ====================================

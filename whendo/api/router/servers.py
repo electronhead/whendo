@@ -124,7 +124,8 @@ def execute_on_server_with_rez(
         )
     except Exception as e:
         raise raised_exception(
-            f"failed to execute action ({action_name}) on server ({server_name}) using rez ({rez})", e
+            f"failed to execute action ({action_name}) on server ({server_name}) using rez ({rez})",
+            e,
         )
 
 
@@ -148,7 +149,9 @@ def execute_on_servers(action_name: str, mode: str, key_tags: dict):
     "/by_tags/{mode}/actions/{action_name}/execute_with_rez",
     status_code=status.HTTP_200_OK,
 )
-def execute_on_servers_with_rez(action_name: str, mode: str, rez_dict= Depends(resolve_action)):
+def execute_on_servers_with_rez(
+    action_name: str, mode: str, rez_dict=Depends(resolve_action)
+):
     try:
         rez = rez_dict.rez
         key_tags = rez_dict.dictionary

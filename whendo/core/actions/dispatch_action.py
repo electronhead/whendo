@@ -73,7 +73,9 @@ class ScheduleAction(DispatcherAction):
         if "action_name" not in flds:
             raise ValueError("missing action name")
         action_name = flds["action_name"]
-        DispatcherHooks.schedule_action(scheduler_name=scheduler_name, action_name=action_name)
+        DispatcherHooks.schedule_action(
+            scheduler_name=scheduler_name, action_name=action_name
+        )
         result = f"action ({action_name}) scheduled using scheduler ({scheduler_name})"
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
@@ -94,7 +96,9 @@ class UnscheduleSchedulerAction(DispatcherAction):
         if "action_name" not in flds:
             raise ValueError("missing action name")
         action_name = flds["action_name"]
-        DispatcherHooks.unschedule_scheduler_action(scheduler_name=scheduler_name, action_name=action_name)
+        DispatcherHooks.unschedule_scheduler_action(
+            scheduler_name=scheduler_name, action_name=action_name
+        )
         result = f"action ({action_name}) unscheduled from scheduler ({scheduler_name})"
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
@@ -114,6 +118,7 @@ class UnscheduleScheduler(DispatcherAction):
         DispatcherHooks.unschedule_scheduler(scheduler_name=scheduler_name)
         result = f"scheduler ({scheduler_name}) unscheduled"
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
+
 
 class UnscheduleAllSchedulers(DispatcherAction):
     unschedule_all_schedulers: str = "unschedule_all_schedulers"
@@ -375,9 +380,7 @@ class ExecSupplied(DispatcherAction):
                 # see implementation of complete_fields
                 action.complete_fields(rez=rez)
                 # action_rez = ActionRez(action=action, rez=rez)
-                response = Http(host=host, port=port).post(
-                    f"/execution", action
-                )
+                response = Http(host=host, port=port).post(f"/execution", action)
                 result = resolve_rez(response)
         else:
             if host == self.local_host() and port == self.local_port():
