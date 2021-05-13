@@ -438,7 +438,6 @@ def test_terminate():
     assert action2.flea_count == 0
 
 
-
 def test_raise_cmp_1():
     """
     Show that raising stops processing of the list action.
