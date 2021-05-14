@@ -176,7 +176,7 @@ class Client(BaseModel):
     def get_server(self, server_name: str):
         return resolve_server(self.http().get(f"/servers/{server_name}"))
 
-    def get_servers(self, server_name: str):
+    def get_servers(self):
         servers = self.http().get(f"/servers")
         return {name: resolve_server(servers[name]) for name in servers}
 
@@ -195,8 +195,9 @@ class Client(BaseModel):
     def get_server_tags(self, server_name: str):
         return self.http().get(f"/servers/{server_name}/get_tags")
 
-    def get_servers_by_tags(self, server_name: str, key_tags: dict):
-        return self.http().post_dict(f"/servers/by_tags", key_tags)
+    def get_servers_by_tags(self, mode: str, key_tags: dict):
+        servers = self.http().post_dict(f"/servers/by_tags/{mode}", key_tags)
+        return [resolve_server(server) for server in servers]
 
     def execute_on_server(self, server_name: str, action_name: str):
         return resolve_rez(

@@ -635,7 +635,7 @@ class Dispatcher(BaseModel):
     def get_servers_by_tags(
         self,
         key_tags: Dict[str, List[str]],
-        key_tag_mode: KeyTagMode,
+        key_tag_mode: KeyTagMode = KeyTagMode.ANY,
     ):
         if key_tags:
             result = []
