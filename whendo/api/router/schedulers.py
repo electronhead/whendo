@@ -7,7 +7,7 @@ router = APIRouter(prefix="/schedulers", tags=["Schedulers"])
 
 
 @router.get("", status_code=status.HTTP_200_OK)
-def get_schedulers(action_name: str):
+def get_schedulers():
     try:
         return get_dispatcher(router).get_schedulers()
     except Exception as e:

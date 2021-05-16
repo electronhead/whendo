@@ -7,7 +7,7 @@ router = APIRouter(prefix="/programs", tags=["Programs"])
 
 
 @router.get("", status_code=status.HTTP_200_OK)
-def get_programs(action_name: str):
+def get_programs():
     try:
         return get_dispatcher(router).get_programs()
     except Exception as e:

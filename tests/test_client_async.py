@@ -1053,6 +1053,81 @@ async def test_file_append_execute_supplied_action_key_tag(
     assert any("virtual_memory" in line for line in lines)
 
 
+@pytest.mark.asyncio
+async def test_collections(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    server = Server(host=host, port=port, tags={"role": ["pivot"]})
+    assert server.port == port
+    assert server.host == host
+    await add_server(client=client, server_name="test", server=server)
+
+    action1 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"show": "two"},
+    )
+    action2 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"show": "two"},
+    )
+    action3 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output3.txt"),
+        payload={"show": "two"},
+    )
+    scheduler = Timely(interval=1)
+    immediately = Immediately()
+
+    await add_action(client=client, action_name="foo1", action=action1)
+    await add_action(client=client, action_name="foo2", action=action2)
+    await add_action(client=client, action_name="foo3", action=action3)
+    await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
+    await add_scheduler(
+        client=client, scheduler_name="immediately", scheduler=immediately
+    )
+
+    program = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
+    await add_program(client=client, program_name="baz", program=program)
+    start = Now().dt()
+    stop = start + timedelta(seconds=4)
+    start_stop = DateTime2(dt1=start, dt2=stop)
+    await schedule_program(client=client, program_name="baz", start_stop=start_stop)
+
+    # action1,2,3 doing their things
+    await run_and_stop_jobs(client=client, pause=6)
+    lines = None
+    with open(action1.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    lines = None
+    with open(action2.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    lines = None
+    with open(action3.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+    actions = await client.get_actions()
+    schedulers = await client.get_schedulers()
+    programs = await client.get_programs()
+    servers = await client.get_servers()
+
+    assert len(actions) == 3
+    assert len(schedulers) == 2
+    assert len(programs) == 1
+    assert len(servers) == 1
+    assert actions["foo1"] == action1
+    assert actions["foo2"] == action2
+    assert actions["foo3"] == action3
+    assert schedulers["bar"] == scheduler
+    assert schedulers["immediately"] == immediately
+    assert servers["test"] == server
+
+
 # ==========================================
 # helpers
 
