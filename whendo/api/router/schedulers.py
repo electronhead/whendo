@@ -6,6 +6,14 @@ from whendo.core.util import DateTime
 router = APIRouter(prefix="/schedulers", tags=["Schedulers"])
 
 
+@router.get("", status_code=status.HTTP_200_OK)
+def get_schedulers(action_name: str):
+    try:
+        return get_dispatcher(router).get_schedulers()
+    except Exception as e:
+        raise raised_exception(f"failed to retrieve schedulers", e)
+
+
 @router.get("/action_count", status_code=status.HTTP_200_OK)
 def get_scheduled_action_count():
     try:

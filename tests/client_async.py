@@ -78,6 +78,13 @@ class ClientAsync(BaseModel):
             check_for_found_class=False,
         )
 
+    async def get_actions(self):
+        actions = await self.get(f"/actions")
+        return {
+            name: resolve_action(actions[name], check_for_found_class=False)
+            for name in actions
+        }
+
     async def add_action(self, action_name: str, action: Action):
         return await self.post(f"/actions/{action_name}", action)
 
@@ -102,6 +109,13 @@ class ClientAsync(BaseModel):
             await self.get_as_json(f"/schedulers/{scheduler_name}"),
             check_for_found_class=False,
         )
+
+    async def get_schedulers(self):
+        schedulers = await self.get(f"/schedulers")
+        return {
+            name: resolve_scheduler(schedulers[name], check_for_found_class=False)
+            for name in schedulers
+        }
 
     async def describe_scheduler(self, scheduler_name: str):
         return await self.get(f"/schedulers/{scheduler_name}/describe")
@@ -139,6 +153,13 @@ class ClientAsync(BaseModel):
             await self.get_as_json(f"/programs/{program_name}"),
             check_for_found_class=False,
         )
+
+    async def get_programs(self):
+        programs = await self.get(f"/programs")
+        return {
+            name: resolve_program(programs[name], check_for_found_class=False)
+            for name in programs
+        }
 
     async def add_program(self, program_name: str, program: Program):
         return await self.post(f"/programs/{program_name}", program)

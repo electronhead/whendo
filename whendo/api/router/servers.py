@@ -7,6 +7,14 @@ from whendo.core.action import RezDict
 router = APIRouter(prefix="/servers", tags=["Servers"])
 
 
+@router.get("", status_code=status.HTTP_200_OK)
+def get_servers():
+    try:
+        return get_dispatcher(router).get_servers()
+    except Exception as e:
+        raise raised_exception(f"failed to retrieve servers", e)
+
+
 @router.get("/{server_name}", status_code=status.HTTP_200_OK)
 def get_server(server_name: str):
     try:
@@ -14,15 +22,6 @@ def get_server(server_name: str):
         return return_success(server)
     except Exception as e:
         raise raised_exception(f"failed to retrieve the server ({server_name})", e)
-
-
-@router.get("", status_code=status.HTTP_200_OK)
-def get_servers():
-    try:
-        servers = get_dispatcher(router).get_servers()
-        return return_success(servers)
-    except Exception as e:
-        raise raised_exception(f"failed to retrieve servers", e)
 
 
 @router.post("/{server_name}", status_code=status.HTTP_200_OK)

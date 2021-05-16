@@ -6,6 +6,14 @@ from whendo.core.resolver import resolve_program
 router = APIRouter(prefix="/programs", tags=["Programs"])
 
 
+@router.get("", status_code=status.HTTP_200_OK)
+def get_programs(action_name: str):
+    try:
+        return get_dispatcher(router).get_programs()
+    except Exception as e:
+        raise raised_exception(f"failed to retrieve programs", e)
+
+
 @router.get("/deferred_program_count", status_code=status.HTTP_200_OK)
 def get_expiring_action_count():
     try:

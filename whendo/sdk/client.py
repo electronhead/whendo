@@ -82,6 +82,10 @@ class Client(BaseModel):
     def get_action(self, action_name: str):
         return resolve_action(self.http().get(f"/actions/{action_name}"))
 
+    def get_actions(self):
+        actions = self.http().get(f"/actions")
+        return {name: resolve_action(actions[name]) for name in actions}
+
     def describe_action(self, action_name: str):
         return self.http().get(f"/actions/{action_name}/describe")
 
@@ -104,6 +108,10 @@ class Client(BaseModel):
 
     def schedule_action(self, scheduler_name: str, action_name: str):
         return self.http().get(f"/schedulers/{scheduler_name}/actions/{action_name}")
+
+    def get_schedulers(self):
+        schedulers = self.http().get(f"/schedulers")
+        return {name: resolve_scheduler(schedulers[name]) for name in schedulers}
 
     def get_scheduler(self, scheduler_name: str):
         return resolve_scheduler(self.http().get(f"/schedulers/{scheduler_name}"))
@@ -146,6 +154,10 @@ class Client(BaseModel):
     # programs
     def get_program(self, program_name: str):
         return resolve_program(self.http().get(f"/programs/{program_name}"))
+
+    def get_programs(self):
+        programs = self.http().get(f"/programs")
+        return {name: resolve_program(programs[name]) for name in programs}
 
     def describe_program(self, program_name: str):
         return self.http().get(f"/programs/{program_name}/describe")

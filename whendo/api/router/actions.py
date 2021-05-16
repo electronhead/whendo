@@ -6,6 +6,14 @@ from whendo.core.resolver import resolve_action, resolve_rez
 router = APIRouter(prefix="/actions", tags=["Actions"])
 
 
+@router.get("", status_code=status.HTTP_200_OK)
+def get_actions(action_name: str):
+    try:
+        return get_dispatcher(router).get_actions()
+    except Exception as e:
+        raise raised_exception(f"failed to retrieve actions", e)
+
+
 @router.get("/{action_name}", status_code=status.HTTP_200_OK)
 def get_action(action_name: str):
     try:
