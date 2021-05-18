@@ -72,10 +72,8 @@ class Client(BaseModel):
         return resolve_rez(response)
 
     def execute_supplied_action_with_rez(self, supplied_action: Action, rez: Rez):
-        # action_rez = ActionRez(action=supplied_action, rez=rez)
-        # response = self.http().post(f"/execution/with_rez", action_rez)
-        supplied_action.complete_fields(rez=rez)
-        response = self.http().post(f"/execution", supplied_action)
+        action_rez = ActionRez(action=supplied_action, rez=rez)
+        response = self.http().post(f"/execution/with_rez", action_rez)
         return resolve_rez(response)
 
     # /actions

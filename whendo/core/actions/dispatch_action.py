@@ -27,11 +27,11 @@ class ScheduleProgram(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        program_name = flds["program_name"]
-        if not program_name:
-            raise ValueError(f"program name missing")
-        start_stop = flds["start_stop"]
-        if not start_stop:
+        program_name = flds.get("program_name", None)
+        if program_name == None:
+            raise ValueError("program name missing")
+        start_stop = flds.get("start_stop", None)
+        if start_stop == None:
             raise ValueError(f"start_stop missing")
         DispatcherHooks.schedule_program(
             program_name=program_name, start=start_stop.dt1, stop=start_stop.dt2
@@ -49,9 +49,9 @@ class UnscheduleProgram(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        if "program_name" not in flds:
-            raise ValueError("missing program name")
-        program_name = flds["program_name"]
+        program_name = flds.get("program_name", None)
+        if program_name == None:
+            raise ValueError("program name missing")
         DispatcherHooks.unschedule_program(program_name=program_name)
         result = f"program ({program_name}) unscheduled"
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
@@ -67,12 +67,12 @@ class ScheduleAction(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        if "scheduler_name" not in flds:
-            raise ValueError("missing scheduler name")
-        scheduler_name = flds["scheduler_name"]
-        if "action_name" not in flds:
-            raise ValueError("missing action name")
-        action_name = flds["action_name"]
+        scheduler_name = flds.get("scheduler_name", None)
+        if scheduler_name == None:
+            raise ValueError("scheduler name missing")
+        action_name = flds.get("action_name", None)
+        if action_name == None:
+            raise ValueError("action name missing")
         DispatcherHooks.schedule_action(
             scheduler_name=scheduler_name, action_name=action_name
         )
@@ -90,12 +90,12 @@ class UnscheduleSchedulerAction(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        if "scheduler_name" not in flds:
-            raise ValueError("missing scheduler name")
-        scheduler_name = flds["scheduler_name"]
-        if "action_name" not in flds:
-            raise ValueError("missing action name")
-        action_name = flds["action_name"]
+        scheduler_name = flds.get("scheduler_name", None)
+        if scheduler_name == None:
+            raise ValueError("scheduler name missing")
+        action_name = flds.get("action_name", None)
+        if action_name == None:
+            raise ValueError("action name missing")
         DispatcherHooks.unschedule_scheduler_action(
             scheduler_name=scheduler_name, action_name=action_name
         )
@@ -112,9 +112,9 @@ class UnscheduleScheduler(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        if "scheduler_name" not in flds:
-            raise ValueError("missing scheduler name")
-        scheduler_name = flds["scheduler_name"]
+        scheduler_name = flds.get("scheduler_name", None)
+        if scheduler_name == None:
+            raise ValueError("scheduler name missing")
         DispatcherHooks.unschedule_scheduler(scheduler_name=scheduler_name)
         result = f"scheduler ({scheduler_name}) unscheduled"
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
@@ -143,13 +143,13 @@ class DeferAction(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        scheduler_name = flds["scheduler_name"]
-        if not scheduler_name:
+        scheduler_name = flds.get("scheduler_name", None)
+        if scheduler_name == None:
             raise ValueError("scheduler name missing")
-        action_name = flds["action_name"]
+        action_name = flds.get("action_name", None)
         if not action_name:
             raise ValueError("action name missing")
-        wait_until = flds["wait_until"]
+        wait_until = flds.get("wait_until", None)
         if not wait_until:
             raise ValueError("wait_until missing")
         DispatcherHooks.defer_action(
@@ -173,14 +173,14 @@ class ExpireAction(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        scheduler_name = flds["scheduler_name"]
-        if not scheduler_name:
+        scheduler_name = flds.get("scheduler_name", None)
+        if scheduler_name == None:
             raise ValueError("scheduler name missing")
-        action_name = flds["action_name"]
-        if not action_name:
+        action_name = flds.get("action_name", None)
+        if action_name == None:
             raise ValueError("action name missing")
-        expire_on = flds["expire_on"]
-        if not expire_on:
+        expire_on = flds.get("expire_on", None)
+        if expire_on == None:
             raise ValueError("expire_on missing")
         DispatcherHooks.expire_action(
             scheduler_name=scheduler_name,
@@ -241,22 +241,22 @@ class Exec(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        server_name = flds["server_name"]
-        action_name = flds["action_name"]
-        if not action_name:
+        server_name = flds.get("server_name", None)
+        action_name = flds.get("action_name", None)
+        if action_name == None:
             raise ValueError(f"action name missing")
-        host = None
-        port = None
-        if server_name:
+        if server_name == None:
+            host = self.local_host()
+            port = self.local_port()
+            is_local = True
+        else:
             server = DispatcherHooks.get_server(server_name)
             host = server.host
             port = server.port
-        else:
-            host = self.local_host()
-            port = self.local_port()
+            is_local = False
 
         if rez:
-            if host == self.local_host() and port == self.local_port():
+            if is_local:
                 # execute locally
                 result = DispatcherHooks.get_action(action_name).execute(
                     tag=tag, rez=rez
@@ -267,7 +267,7 @@ class Exec(DispatcherAction):
                 )
                 result = resolve_rez(response)
         else:
-            if host == self.local_host() and port == self.local_port():
+            if is_local:
                 # execute locally
                 result = DispatcherHooks.get_action(action_name).execute(tag=tag)
             else:
@@ -286,7 +286,7 @@ class ExecKeyTags(DispatcherAction):
 
     action_name: Optional[str] = None
     key_tags: Optional[Dict[str, Set[str]]] = None
-    key_tag_mode: KeyTagMode = KeyTagMode.ANY
+    key_tag_mode: Optional[KeyTagMode] = None
     exec_key_tags: str = "exec_key_tags"
 
     def description(self):
@@ -294,11 +294,11 @@ class ExecKeyTags(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        action_name = flds["action_name"]
-        if not action_name:
+        action_name = flds.get("action_name", None)
+        if action_name == None:
             raise ValueError(f"action name missing")
-        key_tags = flds["key_tags"]
-        key_tag_mode = flds["key_tag_mode"]
+        key_tags = flds.get("key_tags", None)
+        key_tag_mode = flds.get("key_tag_mode", KeyTagMode.ANY)
 
         if key_tags:
             servers = DispatcherHooks.get_servers_by_tags(
@@ -358,32 +358,33 @@ class ExecSupplied(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        server_name = flds["server_name"]
-        action = flds["action"]
-        if not action:
+        action = flds.get("action", None)
+        if action == None:
             raise ValueError(f"action missing")
-        host = None
-        port = None
-        if server_name:
+        server_name = flds.get("server_name", None)
+        if server_name == None:
+            host = self.local_host()
+            port = self.local_port()
+            is_local = True
+        else:
             server = DispatcherHooks.get_server(server_name)
             host = server.host
             port = server.port
-        else:
-            host = self.local_host()
-            port = self.local_port()
-
+            is_local = False
+        print("REZ", rez.result if rez else None)
+        print("ACTION", action)
         if rez:
-            if host == self.local_host() and port == self.local_port():
+            if is_local:
                 # execute locally
                 result = action.execute(tag=tag, rez=rez)
             else:
-                # see implementation of complete_fields
-                action.complete_fields(rez=rez)
-                # action_rez = ActionRez(action=action, rez=rez)
-                response = Http(host=host, port=port).post(f"/execution", action)
+                action_rez = ActionRez(action=action, rez=rez)
+                response = Http(host=host, port=port).post(
+                    f"/execution/with_rez", action_rez
+                )
                 result = resolve_rez(response)
         else:
-            if host == self.local_host() and port == self.local_port():
+            if is_local:
                 # execute locally
                 result = action.execute(tag=tag)
             else:
@@ -401,7 +402,7 @@ class ExecSuppliedKeyTags(DispatcherAction):
 
     action: Optional[Action] = None
     key_tags: Optional[Dict[str, Set[str]]] = None
-    key_tag_mode: KeyTagMode = KeyTagMode.ANY
+    key_tag_mode: Optional[KeyTagMode] = None
     exec_supplied_key_tags: str = "exec_supplied_key_tags"
 
     def description(self):
@@ -409,11 +410,11 @@ class ExecSuppliedKeyTags(DispatcherAction):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        action = flds["action"]
-        if not action:
+        action = flds.get("action", None)
+        if action == None:
             raise ValueError(f"action missing")
-        key_tags = flds["key_tags"]
-        key_tag_mode = flds["key_tag_mode"]
+        key_tags = flds.get("key_tags", None)
+        key_tag_mode = flds.get("key_tag_mode", KeyTagMode.ANY)
         if key_tags:
             servers = DispatcherHooks.get_servers_by_tags(
                 key_tags=key_tags, key_tag_mode=key_tag_mode
@@ -430,10 +431,9 @@ class ExecSuppliedKeyTags(DispatcherAction):
                     # execute locally
                     result.append(action.execute(tag=tag, rez=rez))
                 else:
-                    # action_rez = ActionRez(action=action, rez=rez)
-                    action.complete_fields(rez=rez)
+                    action_rez = ActionRez(action=action, rez=rez)
                     response = Http(host=server.host, port=server.port).post(
-                        f"/execution", action
+                        f"/execution/with_rez", action_rez
                     )
                     result.append(resolve_rez(response))
         else:

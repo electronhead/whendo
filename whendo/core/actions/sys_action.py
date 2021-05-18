@@ -1,5 +1,6 @@
 import time
 import logging
+from typing import Optional
 from whendo.core.action import Action, Rez
 import whendo.core.util as util
 
@@ -45,7 +46,7 @@ class Pause(Action):
     does not interfere with job execution (blocking the thread).
     """
 
-    seconds: float = 1.0
+    seconds: Optional[float] = None
     pause: str = "pause"
 
     def description(self):
@@ -53,7 +54,7 @@ class Pause(Action):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        seconds = flds["seconds"]
+        seconds = flds.get("seconds", 1.0)
         time.sleep(seconds)
         return self.action_result(
             result=f"slept for ({seconds}) seconds",

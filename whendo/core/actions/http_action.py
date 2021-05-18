@@ -20,10 +20,10 @@ class SendPayload(Action):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        url = flds["url"]
+        url = flds.get("url", None)
         if url == None:
             raise ValueError("url missing")
-        payload = flds["payload"]
+        payload = flds.get("payload", None)
         if payload == None:
             raise ValueError("payload missing")
         response = requests.post(url, payload)

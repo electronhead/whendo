@@ -56,37 +56,11 @@ class Action(BaseModel):
     def compute_flds(self, rez: Rez = None):
         field_values = self.field_values()
         if rez and rez.flds:
-            # selected_flds = {
-            #     key: rez.flds[key] for key in self.fields() if key not in field_values
-            # }
-            # return {**field_values, **selected_flds}
             rez_flds = rez.flds.copy()
             rez_flds.update(field_values)
             return rez_flds
         else:
             return field_values
-
-    def complete_fields(self, rez: Rez):
-        """
-        This method sets None-fields to the values
-        in rez.flds (if extant). Needed for situations
-        when an action and rez need to be passed to
-        the api using http from within the dispatcher.
-
-        For some reason ActionRez resolution is not
-        handled properly within FastAPI's handling
-        of /execute/with_rez requests. resolve_action_rez
-        works fine independently of FastAPI. This hack
-        will remain indefinitely. Its use means that
-        the Rez instance will not be propagated in
-        downstream execution method calls.
-        """
-        if rez and rez.flds:
-            rez_flds = rez.flds
-            self_fields = self.field_values()
-            for name in self.fields():
-                if name not in self_fields and name in rez_flds:
-                    self.__setattr__(name, rez_flds[name])
 
     def action_result(
         self,

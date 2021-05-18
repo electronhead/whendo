@@ -41,9 +41,8 @@ class Vals(Action):
 
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
-        vals = flds["vals"]
         rez_flds = rez.flds.copy() if rez and rez.flds else {}
-        rez_flds.update(vals)
+        rez_flds.update(flds.get("vals", {}))
         return self.action_result(
             result=rez.result if rez else None, rez=rez, flds=rez_flds
         )
@@ -75,8 +74,8 @@ class RaiseCmp(Action):
     """
 
     raise_cmp: str = "raise_cmp"
-    value: Any
-    cmp: Optional[int] = 0
+    value: Optional[Any] = None
+    cmp: Optional[int] = None
 
     def description(self):
         return f"This action raises an exception if the supplied result {self.operand_str()} the action's value"
@@ -84,14 +83,14 @@ class RaiseCmp(Action):
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
         result = rez.result if rez else None
-        value = flds["value"]
+        value = flds.get("value", None)
         if result is None or value is None:
             should_raise = False
             logger.info(
                 f"one of RaiseCmp.value, Rez.result equals None; RaiseCmp ignored; info ({self.info()}"
             )
         else:
-            cmp = flds["cmp"]
+            cmp = flds.get("cmp", 0)
             should_raise = (
                 result < value
                 if cmp < 0
@@ -199,10 +198,10 @@ class ListAction(Action):
     All, Or, and And, should be used instead.
     """
 
-    op_mode: ListOpMode
     actions: List[Action] = []
-    exception_on_no_success: bool = False
-    include_processing_info: bool = False
+    op_mode: Optional[ListOpMode] = None
+    exception_on_no_success: Optional[bool] = None
+    include_processing_info: Optional[bool] = None
 
     def description(self):
         if self.op_mode == ListOpMode.ALL:
@@ -218,7 +217,7 @@ class ListAction(Action):
         flds = self.compute_flds(rez=rez)
         processing_info = process_actions(
             rez=rez,
-            op_mode=flds["op_mode"],
+            op_mode=flds.get("op_mode", ListOpMode.ALL),
             tag=tag,
             actions=flds["actions"],
             successful_actions=[],
@@ -227,14 +226,14 @@ class ListAction(Action):
         if (
             processing_info["processing_count"] > 0
             and processing_info["success_count"] == 0
-            and flds["exception_on_no_success"]
+            and flds.get("exception_on_no_success", False)
         ):
             raise Exception(
                 "exception generated; all actions failing treated as a list action failure",
                 json.dumps(self.dict()),
                 json.dumps(processing_info),
             )
-        extra = processing_info if flds["include_processing_info"] else None
+        extra = processing_info if flds.get("include_processing_info", False) else None
         rez = processing_info["result"]
         return self.action_result(
             result=rez.result if rez else None,
@@ -355,9 +354,9 @@ class IfElse(Action):
     if_else: str = "if_else"
     test_action: Action
     else_action: Action
-    if_action: Optional[Action]
-    exception_on_no_success: bool = False
-    include_processing_info: bool = False
+    if_action: Optional[Action] = None
+    exception_on_no_success: Optional[bool] = None
+    include_processing_info: Optional[bool] = None
 
     def logger_info(self, s: str):
         logger.info(s)
@@ -372,12 +371,12 @@ class IfElse(Action):
         flds = self.compute_flds(rez=rez)
         test_action = flds["test_action"]
         else_action = flds["else_action"]
-        if_action = flds["if_action"] if "if_action" in flds else None
-        exception_on_no_success = flds["exception_on_no_success"]
-        include_processing_info = flds["include_processing_info"]
+        if_action = flds.get("if_action", None)
+        exception_on_no_success = flds.get("exception_on_no_success", False)
+        include_processing_info = flds.get("include_processing_info", False)
         exception = None
         try:
-            rez = flds["test_action"].execute(tag=tag, rez=rez)
+            rez = test_action.execute(tag=tag, rez=rez)
             self.logger_info(
                 f"IfElse: tag ({tag}); successfully executed 'test' action ({test_action})"
             )
@@ -474,7 +473,9 @@ class IfElse(Action):
                             exception_actions,
                         )
                         raise exception
-                    result = exception_dict
+                    rez = self.action_result(
+                        result=exception_dict, rez=rez, flds=rez.flds if rez else {}
+                    )
                 else:
                     success_count += 1
                     successful_actions.append(if_action.dict())
@@ -492,20 +493,49 @@ class IfElse(Action):
         if (
             processing_info["processing_count"] > 0
             and processing_info["success_count"] == 0
-            and self.exception_on_no_success
+            and exception_on_no_success
         ):
             raise Exception(
                 "exception generated; all actions failing treated as an if-else action failure",
                 json.dumps(self.dict()),
                 json.dumps(processing_info),
             )
-        extra = processing_info if self.include_processing_info else None
-        rez = result = processing_info["result"]
+        extra = processing_info if include_processing_info else None
+        rez = processing_info["result"]
         return self.action_result(
             result=rez.result if rez else None,
             rez=rez,
             flds=rez.flds if rez else {},
             extra=extra,
+        )
+
+
+class FormatOpMode(str, Enum):
+    FLATTEN = "flatten"
+    FIRST = "first"
+
+
+class Format(Action):
+    flatten: str = "flatten"
+    format_op_mode: Optional[FormatOpMode] = None
+
+    def description(self):
+        return f"Transforms Rez results recursively into a list structure or uses just the top-level rez."
+
+    def execute(self, tag: str = None, rez: Rez = None):
+        flds = self.compute_flds(rez=rez)
+        op_mode = flds.get("format_op_mode", FormatOpMode.FLATTEN)
+        if rez is not None:
+            if op_mode == FormatOpMode.FLATTEN:
+                result = rez.flatten_results()
+            else:
+                result = rez.flatten_result()
+        else:
+            result = "Incoming Rez is empty."
+        return self.action_result(
+            result=result,
+            rez=rez,
+            flds=rez.flds if rez else {},
         )
 
 

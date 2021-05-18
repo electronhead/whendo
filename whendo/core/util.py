@@ -142,9 +142,12 @@ def resolve_instance(
         # resolve singleton dictionary elements; not constrained to producing instance of klass subclass
         for (key, value) in dictionary.items():
             if isinstance(value, dict):
-                dictionary[key] = resolve_instance(
-                    klass, dictionary=value, check_for_found_class=False
-                )
+                if (
+                    key != "vals"
+                ):  # HACK!!! Val.vals can have dictionary elements that intersect with other BaseModel objects
+                    dictionary[key] = resolve_instance(
+                        klass, dictionary=value, check_for_found_class=False
+                    )
         # resolve list containing all dictionary elements; likelihood of non-klass in this circumstance
         # is very small, therefore more strict than for singletons
         for (key, value) in dictionary.items():
@@ -153,7 +156,10 @@ def resolve_instance(
                     dictionary[key] = list(
                         resolve_instance(klass, dictionary=element) for element in value
                     )
-        return found_class(**dictionary)
+        try:
+            return found_class(**dictionary)
+        except:
+            return dictionary
 
 
 def resolve_instance_multi_class(
@@ -164,8 +170,9 @@ def resolve_instance_multi_class(
     inheritance trees.
     """
     found_classes = [
-        x for x in [find_class(klass, dictionary) for klass in klasses] if x
+        x for x in set(find_class(klass, dictionary) for klass in klasses) if x
     ]
+
     count = len(found_classes)
     if count == 0:
         if check_for_found_class:
@@ -203,11 +210,10 @@ def resolve_instance_multi_class(
                         resolve_instance_multi_class(klasses, dictionary=element)
                         for element in value
                     )
-        return (
-            found_class(**dictionary)
-            if dictionary and len(dictionary) > 0
-            else found_class()
-        )
+        try:
+            return found_class(**dictionary)
+        except:
+            return dictionary
 
 
 def object_info(obj):
@@ -608,3 +614,17 @@ class Rez(BaseModel):
     ] = None  # actually a Rez -- cannot define self-referencing classes
     extra: Optional[Dict[str, Any]] = None
     info: Optional[Dict[str, Any]] = None
+
+    def flatten_results(self):
+        results = []
+        rez = self
+        while rez != None:
+            results.append(rez.flatten_result())
+            rez = rez.rez
+        return results
+
+    def flatten_result(self):
+        return {
+            "info": self.info,
+            "result": self.result if self.result != None else "Empty result",
+        }

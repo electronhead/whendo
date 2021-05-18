@@ -602,10 +602,8 @@ async def test_execute_supplied_action_with_rez(
         relative_to_output_dir=False, file=str(tmp_path / "output.txt")
     )
     rez = Rez(flds={"payload": {"higher": "and higher"}})
-    # action_rez = ActionRez(action=action, rez=rez)
-    # await post(base_url, "/execution/with_rez", action_rez)
-    action.complete_fields(rez=rez)
-    await post(base_url, "/execution", action)
+    action_rez = ActionRez(action=action, rez=rez)
+    await post(base_url, "/execution/with_rez", action_rez)
     time.sleep(4)
 
     lines = None
