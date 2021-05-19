@@ -14,14 +14,14 @@ import whendo.core.actions.file_action as file_x
 import whendo.core.actions.dispatch_action as disp_x
 import whendo.core.actions.http_action as http_x
 import whendo.core.actions.sys_action as sys_x
-from whendo.core.actions.list_action import All, Success
+from whendo.core.actions.list_action import All, Success, Vals
 from whendo.core.actions.sys_action import SysInfo
 from whendo.core.scheduler import Scheduler, Immediately
 from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 from whendo.core.programs.simple_program import PBEProgram
-from whendo.core.server import Server, KeyTagMode
+from whendo.core.server import Server
 from whendo.core.util import (
     FilePathe,
     resolve_instance,
@@ -979,7 +979,7 @@ async def test_file_append_execute_supplied_action(
 
 
 @pytest.mark.asyncio
-async def test_file_append_execute_action_key_tag(
+async def test_file_append_execute_action_key_tags_1(
     startup_and_shutdown_uvicorn, tmp_path, host, port
 ):
     client = ClientAsync(host=host, port=port)
@@ -1013,6 +1013,44 @@ async def test_file_append_execute_action_key_tag(
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
     assert any("virtual_memory" in line for line in lines)
+
+@pytest.mark.asyncio
+async def test_file_append_execute_action_key_tags_2(
+    startup_and_shutdown_uvicorn, tmp_path, host, port
+):
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    server = Server(host=host, port=port, tags={"role": ["pivot"]})
+    assert server.port == port
+    assert server.host == host
+    await add_server(client=client, server_name="test", server=server)
+    file_append = file_x.FileAppend(
+        relative_to_output_dir=False,
+        payload={"hi": "pyrambium"},
+    )
+    file = str(tmp_path / "output.txt")
+    vals = Vals(vals={"file": file, "print_header": False})
+    info = sys_x.SysInfo()
+    execute_action = disp_x.ExecKeyTags(
+        key_tags={"role": ["pivot"]}, action_name="file_append"
+    )
+    actions = All(actions=[vals, info, execute_action])
+    timely = Timely(interval=1)
+
+    await add_action(client=client, action_name="file_append", action=file_append)
+    await add_action(client=client, action_name="actions", action=actions)
+    await add_scheduler(client=client, scheduler_name="timely", scheduler=timely)
+    await schedule_action(client=client, action_name="actions", scheduler_name="timely")
+    await assert_scheduled_action_count(client=client, n=1)
+
+    await run_and_stop_jobs(client=client, pause=2)
+    lines = None
+    with open(file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("virtual_memory" in line for line in lines)
+    assert not any("---" in line for line in lines) # header line
 
 
 @pytest.mark.asyncio

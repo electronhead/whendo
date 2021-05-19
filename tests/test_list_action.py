@@ -548,6 +548,36 @@ def test_raise_cmp_8():
     assert result.result == 4
 
 
+def test_format_1():
+    action = list_x.All(actions=[Add1(), Add1(), list_x.RezFmt()])
+    rez = action.execute(rez=Rez(result=1))
+    assert len(rez.result) == 3
+    assert sum(n["action_result"] for n in rez.result) == 6
+
+
+def test_format_2():
+    class Str(Action):
+        val: str
+
+        def execute(self, tag: str = None, rez: Rez = None):
+            return self.action_result(result=self.val, rez=rez)
+
+    action = list_x.All(
+        actions=[
+            Str(val="bite"),
+            Str(val="with"),
+            Str(val="some"),
+            Str(val="regularity"),
+            list_x.RezFmt(),
+        ]
+    )
+    rez = action.execute(rez=Rez(result="fleas"))
+    assert len(rez.result) == 5
+    assert (
+        " ".join([r["action_result"] for r in rez.result]) == "regularity some with bite fleas"
+    )
+
+
 # helpers
 
 
@@ -557,5 +587,5 @@ class Add1(Action):
     def execute(self, tag: str = None, rez: Rez = None):
         if rez:
             if isinstance(rez.result, int) or isinstance(rez.result, float):
-                return self.action_result(result=rez.result + 1)
-        return self.action_result(result=1)
+                return self.action_result(result=rez.result + 1, rez=rez)
+        return self.action_result(result=1, rez=rez)

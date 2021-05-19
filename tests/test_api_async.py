@@ -13,7 +13,6 @@ from datetime import timedelta
 from whendo.core.action import Action, ActionRez
 import whendo.core.actions.file_action as file_x
 import whendo.core.actions.dispatch_action as disp_x
-import whendo.core.actions.http_action as http_x
 import whendo.core.actions.sys_action as sys_x
 from whendo.core.actions.list_action import All, Success, Vals
 from whendo.core.actions.sys_action import SysInfo
@@ -22,11 +21,9 @@ from whendo.core.schedulers.timed_scheduler import Timely
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.program import Program
 from whendo.core.programs.simple_program import PBEProgram
-from whendo.core.server import Server, KeyTagMode
+from whendo.core.server import Server
 from whendo.core.util import (
     FilePathe,
-    resolve_instance,
-    Output,
     DateTime,
     Now,
     DateTime2,
@@ -933,6 +930,9 @@ async def test_file_append_1(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
 @pytest.mark.asyncio
 async def test_file_append_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    """
+    Test use of a rez.result to override a <payload> value.
+    """
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = file_x.FileAppend(
@@ -958,6 +958,9 @@ async def test_file_append_2(startup_and_shutdown_uvicorn, base_url, tmp_path):
 
 @pytest.mark.asyncio
 async def test_file_append_3(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    """
+    Test use of Vals to introduce a <payload> value.
+    """
     await reset_dispatcher(base_url, str(tmp_path))
 
     action1 = file_x.FileAppend(
@@ -1054,7 +1057,7 @@ async def test_file_append_execute_supplied_action(
 
 
 @pytest.mark.asyncio
-async def test_file_append_execute_action_key_tags(
+async def test_file_append_execute_action_key_tags_1(
     startup_and_shutdown_uvicorn, base_url, tmp_path, host, port
 ):
     await reset_dispatcher(base_url, str(tmp_path))
@@ -1090,6 +1093,46 @@ async def test_file_append_execute_action_key_tags(
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
     assert any("virtual_memory" in line for line in lines)
+
+
+@pytest.mark.asyncio
+async def test_file_append_execute_action_key_tags_2(
+    startup_and_shutdown_uvicorn, base_url, tmp_path, host, port
+):
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    server = Server(host=host, port=port, tags={"role": ["pivot"]})
+    assert server.port == port
+    assert server.host == host
+    await add_server(base_url=base_url, server_name="test", server=server)
+    file_append = file_x.FileAppend(
+        relative_to_output_dir=False,
+        payload={"hi": "pyrambium"},
+    )
+    file = str(tmp_path / "output.txt")
+    vals = Vals(vals={"file": file, "print_header": False})
+    info = sys_x.SysInfo()
+    execute_action = disp_x.ExecKeyTags(
+        key_tags={"role": ["pivot"]}, action_name="file_append"
+    )
+    actions = All(actions=[vals, info, execute_action])
+    timely = Timely(interval=1)
+
+    await add_action(base_url=base_url, action_name="file_append", action=file_append)
+    await add_action(base_url=base_url, action_name="actions", action=actions)
+    await add_scheduler(base_url=base_url, scheduler_name="timely", scheduler=timely)
+    await schedule_action(
+        base_url=base_url, action_name="actions", scheduler_name="timely"
+    )
+    await assert_scheduled_action_count(base_url=base_url, n=1)
+
+    await run_and_stop_jobs(base_url=base_url, pause=2)
+    lines = None
+    with open(file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    assert any("virtual_memory" in line for line in lines)
+    assert not any("---" in line for line in lines) # header line
 
 
 @pytest.mark.asyncio

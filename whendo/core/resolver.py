@@ -51,7 +51,7 @@ def resolve_rez(dictionary: dict, check_for_found_class: bool = False):
             Rez,
             DateTime,
             DateTime2,
-            Action,
+            # Action, leave this out for now. Some fastAPI issues.
         ],  # BaseModel objects that may be found in a Rez
         dictionary,
         check_for_found_class=check_for_found_class,

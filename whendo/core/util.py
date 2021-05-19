@@ -10,12 +10,12 @@ from sys import stdout
 import socket
 import requests
 import json
-from datetime import datetime, timedelta, time
+from datetime import datetime, time
 from typing import Callable, Optional
 import os
 from pathlib import Path
 from pydantic import BaseModel
-from typing import List, Dict, Any
+from typing import Dict, Any
 from threading import RLock
 
 logger = logging.getLogger(__name__)
@@ -154,7 +154,7 @@ def resolve_instance(
             if isinstance(value, list):
                 if all(isinstance(element, dict) for element in value):
                     dictionary[key] = list(
-                        resolve_instance(klass, dictionary=element) for element in value
+                        resolve_instance(klass, dictionary=element, check_for_found_class=False) for element in value
                     )
         try:
             return found_class(**dictionary)
@@ -182,9 +182,10 @@ def resolve_instance_multi_class(
         else:
             for (key, value) in dictionary.items():
                 if isinstance(value, dict):
-                    dictionary[key] = resolve_instance_multi_class(
-                        klasses, dictionary=value, check_for_found_class=False
-                    )
+                    if key != "vals":  # see resolve_instance()
+                        dictionary[key] = resolve_instance_multi_class(
+                            klasses, dictionary=value, check_for_found_class=False
+                        )
             return dictionary
     if count > 1:
         if dictionary == None or len(dictionary) == 0:
@@ -198,16 +199,17 @@ def resolve_instance_multi_class(
         # resolve singleton dictionary elements; not constrained to producing instance of klass subclass
         for (key, value) in dictionary.items():
             if isinstance(value, dict):
-                dictionary[key] = resolve_instance_multi_class(
-                    klasses, dictionary=value, check_for_found_class=False
-                )
+                if key != "vals":  # see resolve_instance()
+                    dictionary[key] = resolve_instance_multi_class(
+                        klasses, dictionary=value, check_for_found_class=False
+                    )
         # resolve list containing all dictionary elements; likelihood of non-klass in this circumstance
         # is very small, therefore more strict than for singletons
         for (key, value) in dictionary.items():
             if isinstance(value, list):
                 if all(isinstance(element, dict) for element in value):
                     dictionary[key] = list(
-                        resolve_instance_multi_class(klasses, dictionary=element)
+                        resolve_instance_multi_class(klasses, dictionary=element, check_for_found_class=False)
                         for element in value
                     )
         try:
@@ -625,6 +627,6 @@ class Rez(BaseModel):
 
     def flatten_result(self):
         return {
-            "info": self.info,
-            "result": self.result if self.result != None else "Empty result",
+            "action_info": self.info,
+            "action_result": self.result if self.result != None else "Empty action result",
         }

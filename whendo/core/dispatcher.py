@@ -689,7 +689,8 @@ class Dispatcher(BaseModel):
                 server.host == SystemInfo.get()["host"]
                 and server.port == SystemInfo.get()["port"]
             ):
-                result.append(self.execute_action(action_name))
+                response = self.execute_action(action_name)
+                result.append(resolve_rez(response))
             else:
                 response = Http(host=server.host, port=server.port).get(
                     f"/actions/{action_name}/execute"
@@ -712,9 +713,8 @@ class Dispatcher(BaseModel):
                 server.host == SystemInfo.get()["host"]
                 and server.port == SystemInfo.get()["port"]
             ):
-                result.append(
-                    self.execute_action_with_rez(action_name=action_name, rez=rez)
-                )
+                response = self.execute_action_with_rez(action_name=action_name, rez=rez)
+                result.append(resolve_rez(response))
             else:
                 response = Http(host=server.host, port=server.port).post(
                     f"/actions/{action_name}/execute", rez

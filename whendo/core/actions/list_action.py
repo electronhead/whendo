@@ -515,8 +515,8 @@ class FormatOpMode(str, Enum):
     FIRST = "first"
 
 
-class Format(Action):
-    flatten: str = "flatten"
+class RezFmt(Action):
+    rez_fmt: str = "rez_fmt"
     format_op_mode: Optional[FormatOpMode] = None
 
     def description(self):
