@@ -170,6 +170,18 @@ class Dispatcher(BaseModel):
                 key_tags, key_tag_mode
             ),
             get_action_thunk=lambda action_name: self.get_action(action_name),
+            get_scheduling_info_thunk=lambda: {
+                key: value
+                for (key, value) in self.__dict__.items()
+                if key
+                in {
+                    "scheduled_actions",
+                    "deferred_scheduled_actions",
+                    "expiring_scheduled_actions",
+                    "deferred_programs",
+                }
+            },
+            get_dispatcher_dump_thunk=lambda: self.load_current(),
         )
 
     def pprint(self):
@@ -586,7 +598,6 @@ class Dispatcher(BaseModel):
             self.check_server_name(server_name, invert=True)
             self.servers[server_name] = server
             self.save_current()
-            SystemInfo.add_server(server_name=server_name, server_dict=server.dict())
 
     def add_server_key_tags(self, server_name: str, key_tags: Dict[str, List[str]]):
         with Lok.lock:
@@ -689,8 +700,8 @@ class Dispatcher(BaseModel):
                 server.host == SystemInfo.get()["host"]
                 and server.port == SystemInfo.get()["port"]
             ):
-                response = self.execute_action(action_name)
-                result.append(resolve_rez(response))
+                exec_rez = self.execute_action(action_name)
+                result.append(exec_rez)
             else:
                 response = Http(host=server.host, port=server.port).get(
                     f"/actions/{action_name}/execute"
@@ -713,8 +724,10 @@ class Dispatcher(BaseModel):
                 server.host == SystemInfo.get()["host"]
                 and server.port == SystemInfo.get()["port"]
             ):
-                response = self.execute_action_with_rez(action_name=action_name, rez=rez)
-                result.append(resolve_rez(response))
+                exec_rez = self.execute_action_with_rez(
+                    action_name=action_name, rez=rez
+                )
+                result.append(exec_rez)
             else:
                 response = Http(host=server.host, port=server.port).post(
                     f"/actions/{action_name}/execute", rez
@@ -1014,4 +1027,5 @@ class DispatcherSingleton:
             cls.dispatcher.set_timed(Timed.get())
             cls.dispatcher.initialize()
             cls.dispatcher.reschedule_all_schedulers()
+            cls.dispatcher.run_jobs()
         return cls.dispatcher

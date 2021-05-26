@@ -574,7 +574,8 @@ def test_format_2():
     rez = action.execute(rez=Rez(result="fleas"))
     assert len(rez.result) == 5
     assert (
-        " ".join([r["action_result"] for r in rez.result]) == "regularity some with bite fleas"
+        " ".join([r["action_result"] for r in rez.result])
+        == "regularity some with bite fleas"
     )
 
 

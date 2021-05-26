@@ -18,7 +18,6 @@ from whendo.core.scheduler import Immediately
 from whendo.core.dispatcher import Dispatcher
 from whendo.core.programs.simple_program import PBEProgram
 from whendo.core.actions.dispatch_action import (
-    ScheduleProgram,
     UnscheduleProgram,
     ScheduleAction,
     DeferAction,

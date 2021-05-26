@@ -450,3 +450,39 @@ class ExecSuppliedKeyTags(DispatcherAction):
                     )
                     result.append(resolve_rez(response))
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
+
+
+class SchedulingInfo(Action):
+    """
+    Returns scheduling related info found in Dispatcher fields:
+        scheduled_actions: ScheduledActions
+        deferred_scheduled_actions: DatedScheduledActions
+        expiring_scheduled_actions: DatedScheduledActions
+        deferred_programs: DeferredPrograms
+    """
+
+    def description(self):
+        return f"This action returns active scheduling information"
+
+    def execute(self, tag: str = None, rez: Rez = None):
+        return self.action_result(
+            result=DispatcherHooks.get_scheduling_info(),
+            rez=rez,
+            flds=rez.flds if rez else {},
+        )
+
+
+class DispatcherDump(Action):
+    """
+    Returns Dispatcher.load_current()
+    """
+
+    def description(self):
+        return f"This action returns the contents of the active Dispatcher"
+
+    def execute(self, tag: str = None, rez: Rez = None):
+        return self.action_result(
+            result=DispatcherHooks.get_dispatcher_dump(),
+            rez=rez,
+            flds=rez.flds if rez else {},
+        )

@@ -19,6 +19,8 @@ class DispatcherHooks:
     get_action_thunk: Callable
     clear_all_scheduling_thunk: Callable
     unschedule_all_schedulers_thunk: Callable
+    get_scheduling_info_thunk: Callable
+    get_dispatcher_dump_thunk: Callable
 
     @classmethod
     def init(
@@ -38,6 +40,8 @@ class DispatcherHooks:
         get_action_thunk: Callable,
         clear_all_scheduling_thunk: Callable,
         unschedule_all_schedulers_thunk: Callable,
+        get_scheduling_info_thunk: Callable,
+        get_dispatcher_dump_thunk: Callable,
     ):
         cls.schedule_program_thunk = schedule_program_thunk
         cls.unschedule_program_thunk = unschedule_program_thunk
@@ -54,6 +58,8 @@ class DispatcherHooks:
         cls.get_action_thunk = get_action_thunk
         cls.clear_all_scheduling_thunk = clear_all_scheduling_thunk
         cls.unschedule_all_schedulers_thunk = unschedule_all_schedulers_thunk
+        cls.get_scheduling_info_thunk = get_scheduling_info_thunk
+        cls.get_dispatcher_dump_thunk = get_dispatcher_dump_thunk
 
     @classmethod
     def schedule_program(cls, program_name: str, start: datetime, stop: datetime):
@@ -132,3 +138,11 @@ class DispatcherHooks:
     @classmethod
     def unschedule_all_schedulers(cls):
         return cls.unschedule_all_schedulers_thunk()
+
+    @classmethod
+    def get_scheduling_info(cls):
+        return cls.get_scheduling_info_thunk()
+
+    @classmethod
+    def get_dispatcher_dump(cls):
+        return cls.get_dispatcher_dump_thunk()

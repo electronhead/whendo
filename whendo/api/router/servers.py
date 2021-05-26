@@ -2,7 +2,6 @@ from fastapi import APIRouter, status, Depends
 from whendo.core.util import KeyTagMode
 from whendo.api.shared import return_success, raised_exception, get_dispatcher
 from whendo.core.resolver import resolve_server, resolve_rez, resolve_action
-from whendo.core.action import RezDict
 
 router = APIRouter(prefix="/servers", tags=["Servers"])
 

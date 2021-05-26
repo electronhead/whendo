@@ -154,7 +154,10 @@ def resolve_instance(
             if isinstance(value, list):
                 if all(isinstance(element, dict) for element in value):
                     dictionary[key] = list(
-                        resolve_instance(klass, dictionary=element, check_for_found_class=False) for element in value
+                        resolve_instance(
+                            klass, dictionary=element, check_for_found_class=False
+                        )
+                        for element in value
                     )
         try:
             return found_class(**dictionary)
@@ -209,7 +212,9 @@ def resolve_instance_multi_class(
             if isinstance(value, list):
                 if all(isinstance(element, dict) for element in value):
                     dictionary[key] = list(
-                        resolve_instance_multi_class(klasses, dictionary=element, check_for_found_class=False)
+                        resolve_instance_multi_class(
+                            klasses, dictionary=element, check_for_found_class=False
+                        )
                         for element in value
                     )
         try:
@@ -481,7 +486,6 @@ class SystemInfo:
                 ),
                 "load_avg": lambda: dict(zip(["1min", "5min", "15min"], getloadavg())),
                 "cpu_percent": lambda: cpu_percent(),
-                "servers": {},
                 "log_dir": os.path.join(Dirs.log_dir()),
             },
         )
@@ -501,15 +505,6 @@ class SystemInfo:
 
         def update(dictionary: dict):
             dictionary["failures"] = 1 + dictionary["failures"]
-
-        system_info.apply(update)
-
-    @classmethod
-    def add_server(cls, server_name: str, server_dict: dict):
-        system_info = SharedRWs.get("system_info")
-
-        def update(dictionary: dict):
-            dictionary["servers"].update({server_name: server_dict})
 
         system_info.apply(update)
 
@@ -603,11 +598,6 @@ class Http(BaseModel):
         return f"http://{self.host}:{self.port}{path}"
 
 
-class RezDict(BaseModel):
-    r: BaseModel  # a Rez
-    d: dict
-
-
 class Rez(BaseModel):
     result: Optional[Any] = None
     flds: Optional[Dict[str, Any]] = None
@@ -628,5 +618,7 @@ class Rez(BaseModel):
     def flatten_result(self):
         return {
             "action_info": self.info,
-            "action_result": self.result if self.result != None else "Empty action result",
+            "action_result": self.result
+            if self.result != None
+            else "Empty action result",
         }

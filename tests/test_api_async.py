@@ -1132,7 +1132,7 @@ async def test_file_append_execute_action_key_tags_2(
         lines = fid.readlines()
     assert lines is not None and isinstance(lines, list) and len(lines) >= 1
     assert any("virtual_memory" in line for line in lines)
-    assert not any("---" in line for line in lines) # header line
+    assert not any("---" in line for line in lines)  # header line
 
 
 @pytest.mark.asyncio
@@ -1246,6 +1246,97 @@ async def test_collections(
     assert schedulers["bar"] == scheduler
     assert schedulers["immediately"] == immediately
     assert servers["test"] == server
+
+
+@pytest.mark.asyncio
+async def test_scheduling_info(startup_and_shutdown_uvicorn, base_url, tmp_path):
+    """ clear all scheduling. """
+    await reset_dispatcher(base_url, str(tmp_path))
+
+    action1 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"show": "two"},
+    )
+    action2 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"show": "two"},
+    )
+    action3 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output3.txt"),
+        payload={"show": "two"},
+    )
+    action4 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output4.txt"),
+        payload={"show": "two"},
+    )
+    await add_action(base_url=base_url, action_name="foo1", action=action1)
+    await add_action(base_url=base_url, action_name="foo2", action=action2)
+    await add_action(base_url=base_url, action_name="foo3", action=action3)
+    await add_action(base_url=base_url, action_name="foo4", action=action4)
+
+    scheduler = Timely(interval=1)
+    await add_scheduler(base_url=base_url, scheduler_name="bar", scheduler=scheduler)
+    await add_scheduler(
+        base_url=base_url, scheduler_name="immediately", scheduler=Immediately()
+    )
+    program = PBEProgram().prologue("foo4").epilogue("foo3").body_element("bar", "foo2")
+    await add_program(base_url=base_url, program_name="blink", program=program)
+
+    await schedule_action(base_url=base_url, action_name="foo1", scheduler_name="bar")
+    await defer_action(
+        base_url=base_url,
+        action_name="foo2",
+        scheduler_name="bar",
+        wait_until=DateTime(dt=Now.dt() + timedelta(seconds=10)),
+    )
+    await expire_action(
+        base_url=base_url,
+        action_name="foo2",
+        scheduler_name="bar",
+        expire_on=DateTime(dt=Now.dt() + timedelta(seconds=15)),
+    )
+    await schedule_program(
+        base_url=base_url,
+        program_name="blink",
+        start_stop=DateTime2(
+            dt1=Now.dt() + timedelta(seconds=10), dt2=Now.dt() + timedelta(seconds=15)
+        ),
+    )
+    await assert_job_count(base_url=base_url, n=1)
+    await assert_scheduled_action_count(base_url=base_url, n=1)
+    await assert_deferred_action_count(base_url=base_url, n=1)
+    await assert_expiring_action_count(base_url=base_url, n=1)
+    await assert_deferred_program_count(base_url=base_url, n=1)
+
+    info = disp_x.SchedulingInfo().execute()
+    assert info.result and isinstance(info.result, dict)
+    scheduling_info = info.result
+    assert 1 == len(scheduling_info["scheduled_actions"].scheduler_actions)
+    assert 1 == len(
+        scheduling_info["deferred_scheduled_actions"].dated_scheduled_actions
+    )
+    assert 1 == len(
+        scheduling_info["expiring_scheduled_actions"].dated_scheduled_actions
+    )
+    assert 1 == len(scheduling_info["deferred_programs"].deferred_programs)
+
+    await clear_all_scheduling(base_url=base_url)
+
+    info = disp_x.SchedulingInfo().execute()
+    assert info.result and isinstance(info.result, dict)
+    scheduling_info = info.result
+    assert 0 == len(scheduling_info["scheduled_actions"].scheduler_actions)
+    assert 0 == len(
+        scheduling_info["deferred_scheduled_actions"].dated_scheduled_actions
+    )
+    assert 0 == len(
+        scheduling_info["expiring_scheduled_actions"].dated_scheduled_actions
+    )
+    assert 0 == len(scheduling_info["deferred_programs"].deferred_programs)
 
 
 # ==========================================
