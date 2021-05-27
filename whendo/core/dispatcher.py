@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 from .util import PP, Dirs, Now, str_to_dt, dt_to_str, Http, SystemInfo, KeyTagMode, Rez
 from .hooks import DispatcherHooks
-from .action import Action
+from .action import Action, log_action_result
 from .program import Program, ProgramItem
 from .scheduler import Scheduler, TimedScheduler, ThresholdScheduler, Immediately
 from .timed import Timed
@@ -365,8 +365,12 @@ class Dispatcher(BaseModel):
             self.check_action_name(action_name)
             action = self.get_action(action_name)
             result = action.execute()
-            logger.info(
-                f"Dispatcher: tag (:{action_name}); executed action ({action}); result ({result})"
+            log_action_result(
+                calling_logger=logger,
+                calling_object=self,
+                tag=f":{action_name}",
+                action=action,
+                result=result,
             )
             return result
 
@@ -375,24 +379,36 @@ class Dispatcher(BaseModel):
             self.check_action_name(action_name)
             action = self.get_action(action_name)
             result = action.execute(rez=rez)
-            logger.info(
-                f"Dispatcher: tag (:{action_name}); executed action ({action}); rez ({rez}); result ({result})"
+            log_action_result(
+                calling_logger=logger,
+                calling_object=self,
+                tag=f":{action_name}",
+                action=action,
+                result=result,
             )
             return result
 
     def execute_supplied_action(self, supplied_action: Action):
         with Lok.lock:
             result = supplied_action.execute()
-            logger.info(
-                f"Dispatcher: tag (); executed action ({supplied_action}); result ({result})"
+            log_action_result(
+                calling_logger=logger,
+                calling_object=self,
+                tag="",
+                action=supplied_action,
+                result=result,
             )
             return result
 
     def execute_supplied_action_with_rez(self, supplied_action: Action, rez: Rez):
         with Lok.lock:
             result = supplied_action.execute(rez=rez)
-            logger.info(
-                f"Dispatcher: tag (); executed action ({supplied_action}); rez ({rez}); result ({result})"
+            log_action_result(
+                calling_logger=logger,
+                calling_object=self,
+                tag="",
+                action=supplied_action,
+                result=result,
             )
             return result
 
@@ -754,8 +770,12 @@ class Dispatcher(BaseModel):
                 action = self.get_action(action_name)
                 try:
                     result = action.execute(tag=tag)
-                    logger.info(
-                        f"Immediately: tag ({tag}); executed action ({action}); result ({result})"
+                    log_action_result(
+                        calling_logger=logger,
+                        calling_object=self,
+                        tag="",
+                        action=action,
+                        result=result,
                     )
                 except Exception as exception:
                     logger.exception(

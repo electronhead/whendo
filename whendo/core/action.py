@@ -1,10 +1,10 @@
 from pydantic import BaseModel
 from typing import Dict, Any, Optional
-import logging
+from logging import Logger, getLogger
 from .util import object_info, SystemInfo, Rez
 
 
-logger = logging.getLogger(__name__)
+logger = getLogger(__name__)
 
 
 class Action(BaseModel):
@@ -77,6 +77,18 @@ class Action(BaseModel):
             extra=extra,
             info=info if info else self.info(),
         )
+
+
+def log_action_result(
+    calling_logger: Logger,
+    calling_object: Any,
+    action: Action,
+    result: Rez,
+    tag: str = None,
+):
+    calling_logger.info(
+        f"CLASS ({calling_object.__class__.__name__}) TAG ({tag}) ACTION ({action}) RESULT ({result.flatten_results()})"
+    )
 
 
 class ActionRez(Action):

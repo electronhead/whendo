@@ -7,6 +7,7 @@ the named scheduler are executed.
 from typing import Callable
 import logging
 from .exception import TerminateSchedulerException
+from .action import log_action_result
 
 logger = logging.getLogger(__name__)
 
@@ -28,9 +29,14 @@ class Executor:
             action = actions_dictionary[action_name]
             try:
                 result = action.execute(tag=tag)
-                logger.info(
-                    f"Executor: tag ({tag}); executed action ({action}); result ({result})"
+                log_action_result(
+                    calling_logger=logger,
+                    calling_object=self,
+                    tag=f":{action_name}",
+                    action=action,
+                    result=result,
                 )
+
             except TerminateSchedulerException as terminate:
                 self.unschedule_scheduler_thunk(scheduler_name)
                 logger.info(

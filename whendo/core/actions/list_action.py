@@ -3,7 +3,7 @@ from enum import Enum
 import json
 import logging
 from collections import namedtuple
-from whendo.core.action import Action, Rez
+from whendo.core.action import Action, Rez, log_action_result
 from whendo.core.exception import TerminateSchedulerException
 
 
@@ -166,6 +166,13 @@ class Fail(Action):
         operand_result = None
         try:
             operand_result = operand.execute(tag=tag, rez=rez)
+            log_action_result(
+                calling_logger=logger,
+                calling_object=self,
+                tag=tag,
+                action=operand,
+                result=operand_result,
+            )
         except Exception as exception:
             operand_result = exception
         if isinstance(operand_result, Exception):
@@ -216,6 +223,7 @@ class ListAction(Action):
     def execute(self, tag: str = None, rez: Rez = None):
         flds = self.compute_flds(rez=rez)
         processing_info = process_actions(
+            calling_object=self,
             rez=rez,
             op_mode=flds.get("op_mode", ListOpMode.ALL),
             tag=tag,
@@ -280,6 +288,7 @@ class UntilFailure(ListAction):
 
 
 def process_actions(
+    calling_object: Action,
     op_mode: ListOpMode,
     actions: List[Action],
     tag: str = None,
@@ -299,8 +308,12 @@ def process_actions(
         exception = None
         try:
             loop_rez = action.execute(tag=tag, rez=loop_rez)
-            logger.info(
-                f"ListAction: tag ({tag}); executed action ({action}); loop data ({loop_rez})"
+            log_action_result(
+                calling_logger=logger,
+                calling_object=calling_object,
+                tag=tag,
+                action=action,
+                result=loop_rez,
             )
         except Exception as e:
             exception = e
@@ -377,8 +390,12 @@ class IfElse(Action):
         exception = None
         try:
             rez = test_action.execute(tag=tag, rez=rez)
-            self.logger_info(
-                f"IfElse: tag ({tag}); successfully executed 'test' action ({test_action})"
+            log_action_result(
+                calling_logger=logger,
+                calling_object=self,
+                tag=tag,
+                action=test_action,
+                result=rez,
             )
         except Exception as e:
             exception = e
@@ -409,8 +426,12 @@ class IfElse(Action):
             exception = None
             try:
                 rez = else_action.execute(tag=tag, rez=rez)
-                self.logger_info(
-                    f"IfElse: tag ({tag}); successfully executed 'else' action ({else_action})"
+                log_action_result(
+                    calling_logger=logger,
+                    calling_object=self,
+                    tag=tag,
+                    action=else_action,
+                    result=rez,
                 )
             except Exception as e:
                 exception = e
@@ -448,8 +469,12 @@ class IfElse(Action):
                 exception = None
                 try:
                     rez = if_action.execute(tag=tag, rez=rez)
-                    self.logger_info(
-                        f"IfElse: tag ({tag}); successfully executed 'if' action ({if_action})"
+                    log_action_result(
+                        calling_logger=logger,
+                        calling_object=self,
+                        tag=tag,
+                        action=if_action,
+                        result=rez,
                     )
                 except Exception as e:
                     exception = e
@@ -557,4 +582,11 @@ class Compose(Action):
         loop_rez = rez
         for action in actions:
             loop_rez = action.execute(tag=tag, rez=loop_rez)
+            log_action_result(
+                calling_logger=logger,
+                calling_object=self,
+                tag=tag,
+                action=action,
+                result=loop_rez,
+            )
         return loop_rez
