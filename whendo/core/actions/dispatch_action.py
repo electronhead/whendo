@@ -518,6 +518,7 @@ class SchedulingInfo(Action):
         expiring_scheduled_actions: DatedScheduledActions
         deferred_programs: DeferredPrograms
     """
+    scheduling_info: str = "scheduling_info"
 
     def description(self):
         return f"This action returns active scheduling information"
@@ -534,6 +535,7 @@ class DispatcherDump(Action):
     """
     Returns Dispatcher.load_current()
     """
+    dispatcher_dump: str = "dispatcher_dump"
 
     def description(self):
         return f"This action returns the contents of the active Dispatcher"
