@@ -100,4 +100,13 @@ def unschedule_program(program_name: str):
         get_dispatcher(router).unschedule_program(program_name=program_name)
         return return_success(f"program ({program_name}) was successfully unscheduled")
     except Exception as e:
-        raise raised_exception(f"failed to schedule program ({program_name})", e)
+        raise raised_exception(f"failed to unschedule program ({program_name})", e)
+
+
+@router.get("/{program_name}/unschedule_active", status_code=status.HTTP_200_OK)
+def unschedule_active_program(program_name: str):
+    try:
+        get_dispatcher(router).unschedule_active_program(program_name=program_name)
+        return return_success(f"active program ({program_name}) elements were successfully unscheduled")
+    except Exception as e:
+        raise raised_exception(f"failed to unschedule program ({program_name}) active elements", e)

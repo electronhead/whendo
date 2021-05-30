@@ -1,5 +1,4 @@
 import logging
-from enum import Enum
 from typing import Optional, Dict, Set, Any
 from whendo.core.util import Now, Http, KeyTagMode, DateTime2, DateTime
 from whendo.core.hooks import DispatcherHooks
@@ -54,6 +53,23 @@ class UnscheduleProgram(DispatcherAction):
             raise ValueError("program name missing")
         DispatcherHooks.unschedule_program(program_name=program_name)
         result = f"program ({program_name}) unscheduled"
+        return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
+
+
+class UnscheduleActiveProgram(DispatcherAction):
+    program_name: Optional[str] = None
+    unschedule_active_program: str = "unschedule_active_program"
+
+    def description(self):
+        return f"This action unschedules the active elements of program ({self.program_name})."
+
+    def execute(self, tag: str = None, rez: Rez = None):
+        flds = self.compute_flds(rez=rez)
+        program_name = flds.get("program_name", None)
+        if program_name == None:
+            raise ValueError("program name missing")
+        DispatcherHooks.unschedule_active_program(program_name=program_name)
+        result = f"active program ({program_name}) elements unscheduled"
         return self.action_result(result=result, rez=rez, flds=rez.flds if rez else {})
 
 

@@ -145,6 +145,9 @@ class Dispatcher(BaseModel):
             unschedule_program_thunk=lambda program_name: self.unschedule_program(
                 program_name
             ),
+            unschedule_active_program_thunk=lambda program_name: self.unschedule_active_program(
+                program_name
+            ),
             schedule_action_thunk=lambda scheduler_name, action_name: self.schedule_action(
                 scheduler_name, action_name
             ),
@@ -518,6 +521,21 @@ class Dispatcher(BaseModel):
         with Lok.lock:
             self.check_program_name(program_name)
             self.deferred_programs.clear_program(program_name)
+            self.save_current()
+
+    def unschedule_active_program(self, program_name: str):
+        """
+        Deletes schedulers/actions referenced in program from deferred, expiring and active schedulers/actions
+        """
+        with Lok.lock:
+            self.check_program_name(program_name)
+            program = self.get_program(program_name)
+            program_items = program.compute_program_items()
+            for item in program_items:
+                action_name, scheduler_name = item.action_name, item.scheduler_name
+                self.scheduled_actions.delete(scheduler_name, action_name)
+                self.deferred_scheduled_actions.delete_dated(scheduler_name, action_name)
+                self.expiring_scheduled_actions.delete_dated(scheduler_name, action_name)
             self.save_current()
 
     def check_program(self, program: Program):

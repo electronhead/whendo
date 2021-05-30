@@ -87,7 +87,7 @@ def log_action_result(
     tag: str = None,
 ):
     calling_logger.info(
-        f"CLASS ({calling_object.__class__.__name__}) TAG ({tag}) ACTION ({action}) RESULT ({result.flatten_results()})"
+        f"CLASS ({calling_object.__class__.__name__}) TAG ({tag}) ACTION ({action}) RESULT ({result.flatten_results() if result else None})"
     )
 
 

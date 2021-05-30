@@ -6,6 +6,7 @@ from .util import KeyTagMode
 class DispatcherHooks:
     schedule_program_thunk: Callable
     unschedule_program_thunk: Callable
+    unschedule_active_program_thunk: Callable
     schedule_action_thunk: Callable
     unschedule_scheduler_action_thunk: Callable
     unschedule_scheduler_thunk: Callable
@@ -27,6 +28,7 @@ class DispatcherHooks:
         cls,
         schedule_program_thunk: Callable,
         unschedule_program_thunk: Callable,
+        unschedule_active_program_thunk: Callable,
         schedule_action_thunk: Callable,
         unschedule_scheduler_action_thunk: Callable,
         unschedule_scheduler_thunk: Callable,
@@ -45,6 +47,7 @@ class DispatcherHooks:
     ):
         cls.schedule_program_thunk = schedule_program_thunk
         cls.unschedule_program_thunk = unschedule_program_thunk
+        cls.unschedule_active_program_thunk = unschedule_active_program_thunk
         cls.schedule_action_thunk = schedule_action_thunk
         cls.unschedule_scheduler_action_thunk = unschedule_scheduler_action_thunk
         cls.unschedule_scheduler_thunk = unschedule_scheduler_thunk
@@ -70,6 +73,10 @@ class DispatcherHooks:
     @classmethod
     def unschedule_program(cls, program_name: str):
         return cls.unschedule_program_thunk(program_name=program_name)
+
+    @classmethod
+    def unschedule_active_program(cls, program_name: str):
+        return cls.unschedule_active_program_thunk(program_name=program_name)
 
     @classmethod
     def schedule_action(cls, scheduler_name: str, action_name: str):

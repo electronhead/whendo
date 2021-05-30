@@ -174,6 +174,9 @@ class ClientAsync(BaseModel):
     async def unschedule_program(self, program_name: str):
         return await self.get(f"/programs/{program_name}/unschedule")
 
+    async def unschedule_active_program(self, program_name: str):
+        return await self.get(f"/programs/{program_name}/unschedule_active")
+
     async def clear_deferred_programs(self):
         return await self.get(f"/programs/clear_deferred_programs")
 

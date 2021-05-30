@@ -187,6 +187,20 @@ class DatedScheduledActions(BaseModel):
     def action_count(self):
         return sum(sa.action_count() for sa in self.dated_scheduled_actions.values())
 
+    def delete_dated(self, scheduler_name: str, action_name: str):
+        """
+        This method deletes all dated ScheduledActions in the dictionary
+        that reference the named scheduler/action pair.
+        """
+        date_time_str_to_remove = []
+        for date_time_str in self.dated_scheduled_actions:
+            scheduled_actions = self.dated_scheduled_actions[date_time_str]
+            scheduled_actions.delete(scheduler_name, action_name)
+            if len(scheduled_actions.scheduler_names()) == 0:
+                date_time_str_to_remove.append(date_time_str)
+        for date_time_str in date_time_str_to_remove:
+            self.dated_scheduled_actions.pop(date_time_str)
+
     def delete_dated_action(self, action_name: str):
         """
         This method deletes all dated ScheduledActions in the dictionary
@@ -201,12 +215,12 @@ class DatedScheduledActions(BaseModel):
         for date_time_str in date_time_str_to_remove:
             self.dated_scheduled_actions.pop(date_time_str)
 
+
+    def delete_dated_scheduler(self, scheduler_name: str):
         """
         This method deletes all dated ScheduledActions in the dictionary
         that reference the named scheduler.
         """
-
-    def delete_dated_scheduler(self, scheduler_name: str):
         date_time_str_to_remove = []
         for date_time_str in self.dated_scheduled_actions:
             scheduled_actions = self.dated_scheduled_actions[date_time_str]

@@ -1524,9 +1524,15 @@ async def schedule_program(base_url: str, program_name: str, start_stop: DateTim
 
 
 async def unschedule_program(base_url: str, program_name: str):
-    """ schedule a program """
+    """ unschedule a program """
     response = await get(base_url=base_url, path=f"/programs/{program_name}/unschedule")
     assert response.status_code == 200, f"failed to unschedule program ({program_name})"
+
+
+async def unschedule_active_program(base_url: str, program_name: str):
+    """ unschedule a program's active elements """
+    response = await get(base_url=base_url, path=f"/programs/{program_name}/unschedule_active")
+    assert response.status_code == 200, f"failed to unschedule active program ({program_name}) elements"
 
 
 async def delete_program(base_url: str, program_name: str):
