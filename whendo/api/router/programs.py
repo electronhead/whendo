@@ -107,6 +107,10 @@ def unschedule_program(program_name: str):
 def unschedule_active_program(program_name: str):
     try:
         get_dispatcher(router).unschedule_active_program(program_name=program_name)
-        return return_success(f"active program ({program_name}) elements were successfully unscheduled")
+        return return_success(
+            f"active program ({program_name}) elements were successfully unscheduled"
+        )
     except Exception as e:
-        raise raised_exception(f"failed to unschedule program ({program_name}) active elements", e)
+        raise raised_exception(
+            f"failed to unschedule program ({program_name}) active elements", e
+        )

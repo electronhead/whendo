@@ -516,7 +516,7 @@ class Dispatcher(BaseModel):
     def unschedule_program(self, program_name: str):
         """
         Deletes program from programs and removes all references
-        in deferred_scheduled_programs.
+        in deferred_programs.
         """
         with Lok.lock:
             self.check_program_name(program_name)
@@ -526,6 +526,7 @@ class Dispatcher(BaseModel):
     def unschedule_active_program(self, program_name: str):
         """
         Deletes schedulers/actions referenced in program from deferred, expiring and active schedulers/actions
+        and Timed job processing.
         """
         with Lok.lock:
             self.check_program_name(program_name)
@@ -533,9 +534,13 @@ class Dispatcher(BaseModel):
             program_items = program.compute_program_items()
             for item in program_items:
                 action_name, scheduler_name = item.action_name, item.scheduler_name
-                self.scheduled_actions.delete(scheduler_name, action_name)
-                self.deferred_scheduled_actions.delete_dated(scheduler_name, action_name)
-                self.expiring_scheduled_actions.delete_dated(scheduler_name, action_name)
+                self.unschedule_scheduler_action(scheduler_name, action_name)
+                self.deferred_scheduled_actions.delete_dated(
+                    scheduler_name, action_name
+                )
+                self.expiring_scheduled_actions.delete_dated(
+                    scheduler_name, action_name
+                )
             self.save_current()
 
     def check_program(self, program: Program):
@@ -826,10 +831,12 @@ class Dispatcher(BaseModel):
             if isinstance(scheduler, TimedScheduler):
                 scheduler.set_timed(self._timed)
             # remove the action from the scheduler's actions
-            scheduler_name = self.scheduled_actions.delete(scheduler_name, action_name)
+            scheduler_name_to_unschedule = self.scheduled_actions.delete(
+                scheduler_name, action_name
+            )
             # unschedule the scheduler if a non-None scheduler name is returned
-            if scheduler_name:
-                scheduler.unschedule(scheduler_name)
+            if scheduler_name_to_unschedule:
+                scheduler.unschedule(scheduler_name_to_unschedule)
             self.save_current()
 
     def unschedule_scheduler(self, scheduler_name: str):

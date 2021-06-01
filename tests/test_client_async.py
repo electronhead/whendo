@@ -1258,6 +1258,263 @@ async def test_scheduling_info(startup_and_shutdown_uvicorn, host, port, tmp_pat
     )
     assert 0 == len(scheduling_info["deferred_programs"].deferred_programs)
 
+@pytest.mark.asyncio
+async def test_unschedule_active_program(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    """ test unscheduling the active elements of a program. """
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    action1 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"show": "two"},
+    )
+    action2 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"show": "two"},
+    )
+    action3 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output3.txt"),
+        payload={"show": "two"},
+    )
+    action4 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output4.txt"),
+        payload={"show": "two"},
+    )
+    action5 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output5.txt"),
+        payload={"show": "two"},
+    )
+    action6 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output6.txt"),
+        payload={"show": "two"},
+    )
+    await add_action(client=client, action_name="foo1", action=action1)
+    await add_action(client=client, action_name="foo2", action=action2)
+    await add_action(client=client, action_name="foo3", action=action3)
+    await add_action(client=client, action_name="foo4", action=action4)
+    await add_action(client=client, action_name="foo5", action=action5)
+    await add_action(client=client, action_name="foo6", action=action6)
+
+    scheduler = Timely(interval=0.5)
+    await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
+    await add_scheduler(
+        client=client, scheduler_name="immediately", scheduler=Immediately()
+    )
+    program1 = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
+    await add_program(client=client, program_name="program1", program=program1)
+    program2 = PBEProgram().prologue("foo4").epilogue("foo6").body_element("bar", "foo5")
+    await add_program(client=client, program_name="program2", program=program2)
+
+    await schedule_program(
+        client=client,
+        program_name="program1",
+        start_stop=DateTime2(
+            dt1=Now.dt(), dt2=Now.dt() + timedelta(seconds=5)
+        ),
+    )
+    await schedule_program(
+        client=client,
+        program_name="program2",
+        start_stop=DateTime2(
+            dt1=Now.dt() + timedelta(seconds=10), dt2=Now.dt() + timedelta(seconds=20)
+        ),
+    )
+
+    time.sleep(1)
+
+    # action2, (action1 has probably finished)
+    await assert_scheduled_action_count(client=client, n=1)
+
+    # action3 deferred
+    await assert_deferred_action_count(client=client, n=1)
+
+    # action2 expiring
+    await assert_expiring_action_count(client=client, n=1)
+
+    # program2 waiting around
+    await assert_deferred_program_count(client=client, n=1)
+
+    await run_and_stop_jobs(client=client, pause=2)
+
+    await unschedule_active_program(client=client, program_name= "program1")
+
+    # action1,2,3 doing their things or not
+    lines = None
+    with open(action1.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    lines = None
+    with open(action2.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+    with pytest.raises(FileNotFoundError):
+        with open(action3.file, "r") as fid:
+            lines = fid.readlines()
+
+    with pytest.raises(FileNotFoundError):
+        with open(action4.file, "r") as fid:
+            lines = fid.readlines()
+
+    with pytest.raises(FileNotFoundError):
+        with open(action5.file, "r") as fid:
+            lines = fid.readlines()
+
+    with pytest.raises(FileNotFoundError):
+        with open(action6.file, "r") as fid:
+            lines = fid.readlines()
+
+    info = disp_x.SchedulingInfo().execute()
+    assert info.result and isinstance(info.result, dict)
+    scheduling_info = info.result
+    assert 0 == len(scheduling_info["scheduled_actions"].scheduler_actions)
+    assert 0 == len(
+        scheduling_info["deferred_scheduled_actions"].dated_scheduled_actions
+    )
+    assert 0 == len(
+        scheduling_info["expiring_scheduled_actions"].dated_scheduled_actions
+    )
+    # program2 waiting around
+    assert 1 == len(scheduling_info["deferred_programs"].deferred_programs)
+
+    await clear_all_scheduling(client=client)
+
+
+@pytest.mark.asyncio
+async def test_unschedule_active_program_2(startup_and_shutdown_uvicorn, host, port, tmp_path):
+    """ test unscheduling the active elements of a program. """
+    client = ClientAsync(host=host, port=port)
+    await reset_dispatcher(client, str(tmp_path))
+
+    action1 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output1.txt"),
+        payload={"show": "two"},
+    )
+    action2 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output2.txt"),
+        payload={"show": "two"},
+    )
+    action3 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output3.txt"),
+        payload={"show": "two"},
+    )
+    action4 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output4.txt"),
+        payload={"show": "two"},
+    )
+    action5 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output5.txt"),
+        payload={"show": "two"},
+    )
+    action6 = file_x.FileAppend(
+        relative_to_output_dir=False,
+        file=str(tmp_path / "output6.txt"),
+        payload={"show": "two"},
+    )
+    await add_action(client=client, action_name="foo1", action=action1)
+    await add_action(client=client, action_name="foo2", action=action2)
+    await add_action(client=client, action_name="foo3", action=action3)
+    await add_action(client=client, action_name="foo4", action=action4)
+    await add_action(client=client, action_name="foo5", action=action5)
+    await add_action(client=client, action_name="foo6", action=action6)
+
+    scheduler = Timely(interval=0.5)
+    await add_scheduler(client=client, scheduler_name="bar", scheduler=scheduler)
+    await add_scheduler(
+        client=client, scheduler_name="immediately", scheduler=Immediately()
+    )
+    program1 = PBEProgram().prologue("foo1").epilogue("foo3").body_element("bar", "foo2")
+    await add_program(client=client, program_name="program1", program=program1)
+    program2 = PBEProgram().prologue("foo4").epilogue("foo6").body_element("bar", "foo5")
+    await add_program(client=client, program_name="program2", program=program2)
+
+    unscheduleActiveProgram = disp_x.UnscheduleActiveProgram(program_name="program1")
+    await add_action(client=client, action_name="unscheduleActiveProgram", action=unscheduleActiveProgram)
+
+    await schedule_program(
+        client=client,
+        program_name="program1",
+        start_stop=DateTime2(
+            dt1=Now.dt(), dt2=Now.dt() + timedelta(seconds=5)
+        ),
+    )
+    await schedule_program(
+        client=client,
+        program_name="program2",
+        start_stop=DateTime2(
+            dt1=Now.dt() + timedelta(seconds=10), dt2=Now.dt() + timedelta(seconds=20)
+        ),
+    )
+
+    time.sleep(1)
+
+    # action2, (action1 has probably finished)
+    await assert_scheduled_action_count(client=client, n=1)
+
+    # action3 deferred
+    await assert_deferred_action_count(client=client, n=1)
+
+    # action2 expiring
+    await assert_expiring_action_count(client=client, n=1)
+
+    # program2 waiting around
+    await assert_deferred_program_count(client=client, n=1)
+
+    await run_and_stop_jobs(client=client, pause=2)
+
+    await execute_action(client=client, action_name="unscheduleActiveProgram")
+
+    # action1,2,3 doing their things or not
+    lines = None
+    with open(action1.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+    lines = None
+    with open(action2.file, "r") as fid:
+        lines = fid.readlines()
+    assert lines is not None and isinstance(lines, list) and len(lines) >= 1
+
+    with pytest.raises(FileNotFoundError):
+        with open(action3.file, "r") as fid:
+            lines = fid.readlines()
+
+    with pytest.raises(FileNotFoundError):
+        with open(action4.file, "r") as fid:
+            lines = fid.readlines()
+
+    with pytest.raises(FileNotFoundError):
+        with open(action5.file, "r") as fid:
+            lines = fid.readlines()
+
+    with pytest.raises(FileNotFoundError):
+        with open(action6.file, "r") as fid:
+            lines = fid.readlines()
+
+    info = disp_x.SchedulingInfo().execute()
+    assert info.result and isinstance(info.result, dict)
+    scheduling_info = info.result
+    assert 0 == len(scheduling_info["scheduled_actions"].scheduler_actions)
+    assert 0 == len(
+        scheduling_info["deferred_scheduled_actions"].dated_scheduled_actions
+    )
+    assert 0 == len(
+        scheduling_info["expiring_scheduled_actions"].dated_scheduled_actions
+    )
+    # program2 waiting around
+    assert 1 == len(scheduling_info["deferred_programs"].deferred_programs)
+
+    await clear_all_scheduling(client=client)
 
 # ==========================================
 # helpers
@@ -1289,7 +1546,7 @@ async def set_program(client: ClientAsync, program_name: str, program: Program):
 
 
 async def delete_program(client: ClientAsync, program_name: str):
-    """ delete an program """
+    """ delete a program """
     response = await client.delete_program(
         program_name=program_name,
     )
@@ -1299,7 +1556,7 @@ async def delete_program(client: ClientAsync, program_name: str):
 async def schedule_program(
     client: ClientAsync, program_name: str, start_stop: DateTime2
 ):
-    """ schedule an program """
+    """ schedule a program """
     response = await client.schedule_program(
         program_name=program_name, start_stop=start_stop
     )
@@ -1307,11 +1564,19 @@ async def schedule_program(
 
 
 async def unschedule_program(client: ClientAsync, program_name: str):
-    """ schedule an program """
+    """ unschedule a program """
     response = await client.unschedule_program(
         program_name=program_name,
     )
     assert response.status_code == 200, f"failed to unschedule program ({program_name})"
+
+
+async def unschedule_active_program(client: ClientAsync, program_name: str):
+    """ schedule the active elements of a program """
+    response = await client.unschedule_active_program(
+        program_name=program_name,
+    )
+    assert response.status_code == 200, f"failed to unschedule active elements of program ({program_name})"
 
 
 async def add_server(client: ClientAsync, server_name: str, server: Server):

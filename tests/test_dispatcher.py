@@ -746,7 +746,6 @@ def test_unschedule_program(friends):
 
     dispatcher.unschedule_program("baz")
     assert len(dispatcher.get_programs()) == 1
-    print("BLEEEEEE", dispatcher.get_deferred_programs())
     assert dispatcher.get_deferred_program_count() == 0
 
     assert action1.fleas == 0

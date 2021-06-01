@@ -215,7 +215,6 @@ class DatedScheduledActions(BaseModel):
         for date_time_str in date_time_str_to_remove:
             self.dated_scheduled_actions.pop(date_time_str)
 
-
     def delete_dated_scheduler(self, scheduler_name: str):
         """
         This method deletes all dated ScheduledActions in the dictionary
