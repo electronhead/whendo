@@ -32,7 +32,7 @@ class Executor:
                 log_action_result(
                     calling_logger=logger,
                     calling_object=self,
-                    tag=f":{action_name}",
+                    tag=tag,
                     action=action,
                     result=result,
                 )
