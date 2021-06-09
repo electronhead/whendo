@@ -39,3 +39,10 @@ def getloadavg():
 
 def cpu_percent():
     return 0.0
+
+def disk_usage(path):
+    named_tuple = namedtuple(
+        "sdiskusage", ["total", "used", "free", "percent"]
+    )
+    sdiskusage = named_tuple(0.0, 0.0, 0.0, 0.0)
+    return {"unknown", [sdiskusage]}

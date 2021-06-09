@@ -1,7 +1,7 @@
 try:
-    from psutil import virtual_memory, net_if_addrs, cpu_percent, getloadavg
+    from psutil import virtual_memory, net_if_addrs, cpu_percent, getloadavg, disk_usage
 except:
-    from .mockpsutil import virtual_memory, net_if_addrs, cpu_percent, getloadavg
+    from .mockpsutil import virtual_memory, net_if_addrs, cpu_percent, getloadavg, disk_usage
 
 import logging
 from enum import Enum
@@ -486,6 +486,7 @@ class SystemInfo:
                 ),
                 "load_avg": lambda: dict(zip(["1min", "5min", "15min"], getloadavg())),
                 "cpu_percent": lambda: cpu_percent(),
+                "disk_usage": lambda: dict(zip(["total", "used", "free", "percent"], disk_usage("/"))),
                 "log_dir": os.path.join(Dirs.log_dir()),
             },
         )
